@@ -3,8 +3,12 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const CRM_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "SELLER"];
+const LEAD_STAGES = new Set(["NEW", "CONTACTED", "QUALIFIED", "MEETING", "PROPOSAL", "NEGOTIATION", "WON", "LOST", "DEFERRED", "RECURRING"]);
+const LEAD_SOURCES = new Set(["WEBSITE", "TELEGRAM", "PHONE", "REFERRAL", "PARTNER", "OTHER"]);
+const ASSIGNEE_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "SELLER"];
 
 async function getSession() {
   const session = await auth();
@@ -18,6 +22,7 @@ async function getSession() {
 export async function GET(req: NextRequest) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const { searchParams } = new URL(req.url);
   const stage = searchParams.get("stage");
@@ -25,6 +30,7 @@ export async function GET(req: NextRequest) {
   const assigneeId = searchParams.get("assigneeId");
 
   const where: any = {
+    tenantId,
     deletedAt: null,
     ...(stage ? { stage: stage as any } : {}),
     ...(assigneeId ? { assigneeId } : {}),
@@ -56,7 +62,7 @@ export async function GET(req: NextRequest) {
   // Статистика по этапам
   const stageStats = await prisma.lead.groupBy({
     by: ["stage"],
-    where: { deletedAt: null },
+    where: { tenantId, deletedAt: null },
     _count: true,
     _sum: { value: true },
   });
@@ -64,6 +70,7 @@ export async function GET(req: NextRequest) {
   // Список сотрудников для назначения
   const staff = await prisma.user.findMany({
     where: {
+      tenantId,
       role: { in: ["SUPER_ADMIN", "ADMIN", "MANAGER", "SELLER"] },
       staffStatus: "ACTIVE",
     },
@@ -78,24 +85,50 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const body = await req.json();
   const { name, phone, email, company, source, stage, value, comment, assigneeId, tags } = body;
 
   if (!name?.trim()) return NextResponse.json({ error: "Имя обязательно" }, { status: 400 });
+  if (stage !== undefined && !LEAD_STAGES.has(stage)) {
+    return NextResponse.json({ error: "Invalid lead stage" }, { status: 400 });
+  }
+  if (source !== undefined && !LEAD_SOURCES.has(source)) {
+    return NextResponse.json({ error: "Invalid lead source" }, { status: 400 });
+  }
+  if (value !== undefined && value !== null && value !== "" && !Number.isFinite(Number(value))) {
+    return NextResponse.json({ error: "Invalid lead value" }, { status: 400 });
+  }
+  if (assigneeId) {
+    const assignee = await prisma.user.findFirst({
+      where: {
+        id: assigneeId,
+        tenantId,
+        role: { in: ASSIGNEE_ROLES as any },
+        staffStatus: "ACTIVE",
+      },
+      select: { id: true },
+    });
+    if (!assignee) {
+      return NextResponse.json({ error: "Invalid assignee" }, { status: 400 });
+    }
+  }
 
   // Считаем кол-во лидов в этом этапе для sortOrder
-  const count = await prisma.lead.count({ where: { stage: stage || "NEW", deletedAt: null } });
+  const normalizedStage = stage || "NEW";
+  const count = await prisma.lead.count({ where: { tenantId, stage: normalizedStage, deletedAt: null } });
 
   const lead = await prisma.lead.create({
     data: {
+      tenantId,
       name: name.trim(),
       phone: phone?.trim() || null,
       email: email?.trim() || null,
       company: company?.trim() || null,
       source: source || "OTHER",
-      stage: stage || "NEW",
-      value: value ? parseFloat(value) : null,
+      stage: normalizedStage,
+      value: value ? Number(value) : null,
       comment: comment?.trim() || null,
       assigneeId: assigneeId || null,
       tags: tags || [],
@@ -116,6 +149,22 @@ export async function POST(req: NextRequest) {
       userId: s.id,
     },
   });
+
+  import("@/lib/workflow-engine").then(({ runWorkflows }) => {
+    runWorkflows("lead_created", {
+      tenantId,
+      leadId: lead.id,
+      name: lead.name,
+      phone: lead.phone || "",
+      email: lead.email || "",
+      company: lead.company || "",
+      source: lead.source,
+      stage: lead.stage,
+      value: lead.value ? Number(lead.value) : null,
+      assigneeId: lead.assigneeId || null,
+      userId: s.id,
+    }).catch(console.error);
+  }).catch(() => {});
 
   return NextResponse.json(lead, { status: 201 });
 }

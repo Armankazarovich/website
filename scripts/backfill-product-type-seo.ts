@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { extractProductType, getDefaultProductTypes, type ProductTypeInfo } from "../lib/product-types";
 
 const SETTINGS_KEY = "product_type_settings";
+const DEFAULT_TENANT_ID = "pilorus";
 
 const prisma = new PrismaClient();
 
@@ -29,8 +30,8 @@ function trimText(value?: string | null) {
 
 async function main() {
   const [settingsRow, products] = await Promise.all([
-    prisma.siteSettings.findUnique({ where: { key: SETTINGS_KEY } }),
-    prisma.product.findMany({ select: { name: true } }),
+    prisma.siteSettings.findUnique({ where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key: SETTINGS_KEY } } }),
+    prisma.product.findMany({ where: { tenantId: DEFAULT_TENANT_ID }, select: { name: true } }),
   ]);
 
   const counts = new Map<string, number>();
@@ -87,9 +88,9 @@ async function main() {
   });
 
   await prisma.siteSettings.upsert({
-    where: { key: SETTINGS_KEY },
+    where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key: SETTINGS_KEY } },
     create: {
-      id: SETTINGS_KEY,
+      tenantId: DEFAULT_TENANT_ID,
       key: SETTINGS_KEY,
       value: JSON.stringify(nextSettings),
     },

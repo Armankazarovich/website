@@ -3,6 +3,15 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import {
+  cleanBool,
+  cleanInt,
+  cleanNullableUrl,
+  cleanText,
+  parseJsonRecord,
+  requireWriteConfirmation,
+} from "@/lib/admin-content-guard";
 
 async function checkAdmin() {
   const session = await auth();
@@ -10,21 +19,20 @@ async function checkAdmin() {
   return role === "ADMIN" || role === "SUPER_ADMIN" || role === "MANAGER";
 }
 
-// GET — list reviews (supports ?pending=true&limit=5)
 export async function GET(req: NextRequest) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
   const url = new URL(req.url);
   const pending = url.searchParams.get("pending") === "true";
   const limitParam = url.searchParams.get("limit");
-
-  const where: any = {};
+  const tenantId = getCurrentTenantId();
+  const where: any = { tenantId };
   if (pending) where.approved = false;
 
   const reviews = await prisma.review.findMany({
     where,
     orderBy: { createdAt: "desc" },
-    ...(limitParam ? { take: Math.min(parseInt(limitParam) || 50, 100) } : {}),
+    ...(limitParam ? { take: Math.min(parseInt(limitParam, 10) || 50, 100) } : {}),
     select: {
       id: true,
       name: true,
@@ -39,36 +47,41 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ reviews });
 }
 
-// POST — создать/импортировать отзыв (из Google, Yandex, VK, 2GIS или вручную)
 export async function POST(req: NextRequest) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-  const body = await req.json();
-  const { name, rating, text, source, sourceUrl, externalId, approved, createdAt } = body;
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
 
-  if (!name || !rating || !text) {
-    return NextResponse.json({ error: "name, rating, text — обязательны" }, { status: 400 });
-  }
-  if (rating < 1 || rating > 5) {
-    return NextResponse.json({ error: "rating должен быть 1–5" }, { status: 400 });
+  const tenantId = getCurrentTenantId();
+  const cleanName = cleanText(body.name, 120);
+  const cleanReviewText = cleanText(body.text, 2000);
+  const cleanRating = cleanInt(body.rating, 0, 1, 5);
+  if (!cleanName || !cleanReviewText || !cleanRating) {
+    return NextResponse.json({ error: "name, rating, text are required" }, { status: 400 });
   }
 
-  // Дедупликация по externalId + source
+  const source = cleanText(body.source, 80, "internal");
+  const externalId = cleanText(body.externalId, 160);
   if (externalId && source) {
-    const exists = await prisma.review.findFirst({ where: { externalId, source } });
+    const exists = await prisma.review.findFirst({ where: { tenantId, externalId, source } });
     if (exists) return NextResponse.json({ duplicate: true, id: exists.id });
   }
 
+  const createdAt = cleanText(body.createdAt, 80);
+  const createdDate = createdAt ? new Date(createdAt) : null;
   const review = await prisma.review.create({
     data: {
-      name: String(name).trim(),
-      rating: Number(rating),
-      text: String(text).trim(),
-      source: source || "internal",
-      sourceUrl: sourceUrl || null,
+      tenantId,
+      name: cleanName,
+      rating: cleanRating,
+      text: cleanReviewText,
+      source,
+      sourceUrl: cleanNullableUrl(body.sourceUrl),
       externalId: externalId || null,
-      approved: approved !== false,
-      createdAt: createdAt ? new Date(createdAt) : undefined,
+      approved: cleanBool(body.approved, true),
+      createdAt: createdDate && !Number.isNaN(createdDate.getTime()) ? createdDate : undefined,
     },
   });
 

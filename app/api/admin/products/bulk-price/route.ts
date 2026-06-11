@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 async function checkAdmin() {
   const session = await auth();
@@ -20,6 +22,7 @@ async function checkAdmin() {
 export async function POST(req: Request) {
   const access = await checkAdmin();
   if (!access.allowed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   let body: { productIds?: unknown; percent?: unknown };
   try {
@@ -45,7 +48,7 @@ export async function POST(req: Request) {
 
   // Atomic batch: fetch current + update all in one transaction
   const variants = await prisma.productVariant.findMany({
-    where: { productId: { in: productIds } },
+    where: { productId: { in: productIds }, product: { tenantId } },
     select: { id: true, productId: true, size: true, pricePerCube: true, pricePerPiece: true },
   });
 
@@ -61,18 +64,39 @@ export async function POST(req: Request) {
       const data: { pricePerCube?: number; pricePerPiece?: number } = {};
       const oldCube = v.pricePerCube ? Number(v.pricePerCube) : null;
       const oldPiece = v.pricePerPiece ? Number(v.pricePerPiece) : null;
-      if (oldCube && oldCube > 0) data.pricePerCube = round50(oldCube * multiplier);
-      if (oldPiece && oldPiece > 0) data.pricePerPiece = round50(oldPiece * multiplier);
+      if (oldCube && oldCube > 0) {
+        const nextCube = round50(oldCube * multiplier);
+        if (nextCube !== oldCube) data.pricePerCube = nextCube;
+      }
+      if (oldPiece && oldPiece > 0) {
+        const nextPiece = round50(oldPiece * multiplier);
+        if (nextPiece !== oldPiece) data.pricePerPiece = nextPiece;
+      }
       if (Object.keys(data).length === 0) return null;
       return { id: v.id, productId: v.productId, size: v.size, data, oldCube, oldPiece };
     })
     .filter((u): u is NonNullable<typeof u> => u !== null);
+
+  if (updates.length === 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "В выбранных товарах нет цен, которые можно изменить этим процентом",
+        variantsScanned: variants.length,
+      },
+      { status: 409 },
+    );
+  }
 
   // Atomic transaction — all or nothing
   try {
     await prisma.$transaction(updates.map((u) =>
       prisma.productVariant.update({ where: { id: u.id }, data: u.data })
     ));
+
+    revalidateTag("store-shell-data");
+    revalidatePath("/catalog");
+    revalidatePath("/admin/products");
 
     // Audit log (non-blocking, don't fail request if log fails)
     if (access.userId) {
@@ -99,7 +123,8 @@ export async function POST(req: Request) {
       ok: true,
       updated: updates.length,
       percent: numPercent,
-      productsAffected: productIds.length,
+      productsAffected: new Set(updates.map((update) => update.productId)).size,
+      variantsScanned: variants.length,
     });
   } catch (err: unknown) {
     console.error("[bulk-price] transaction failed:", err);

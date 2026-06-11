@@ -31,45 +31,54 @@ import {
   Grid3x3,
   LayoutGrid,
 } from "lucide-react";
-import { getSiteSettings, getPhones } from "@/lib/site-settings";
+import { getSiteSettings, getPhones, getSetting } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
 import { RoutePrefetcher } from "@/components/shared/route-prefetcher";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { getProductAvailability } from "@/lib/product-availability";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const tenantId = getCurrentTenantId();
   const robots = getCatalogRobots(searchParams);
+  const settings = await getSiteSettings();
+  const siteName = getSetting(settings, "public_site_name") || getSetting(settings, "brand_name") || getSetting(settings, "company_name");
+  const city = getSetting(settings, "company_city");
+  const citySuffix = city && city !== "регион уточняется" ? ` в ${city}` : "";
+  const catalogTitle = settings.catalog_title || `Каталог ${siteName}`;
+  const catalogDescription = settings.catalog_description || getSetting(settings, "seo_description");
+
   if (searchParams.search) {
     const query = searchParams.search.trim();
     return {
-      title: `Поиск «${query}» — каталог ПилоРус`,
-      description: `Результаты поиска по каталогу ПилоРус: ${query}. Пиломатериалы от производителя в Химках с доставкой по Москве и МО.`,
+      title: `Поиск «${query}» — ${catalogTitle}`,
+      description: `Результаты поиска: ${query}. ${catalogDescription}`,
       alternates: { canonical: `https://pilo-rus.ru/catalog?search=${encodeURIComponent(query)}` },
       robots,
     };
   }
   if (searchParams.type) {
-    const [settings, cat] = await Promise.all([
+    const [typeSettings, cat] = await Promise.all([
       getProductTypeSettings(),
       searchParams.category
         ? prisma.category.findUnique({
-            where: { slug: searchParams.category },
+            where: { tenantId_slug: { tenantId, slug: searchParams.category } },
             select: { name: true },
           })
         : Promise.resolve(null),
     ]);
-    const type = getConfiguredProductType(searchParams.type, settings) ?? findTypeByKeyword(searchParams.type);
+    const type = getConfiguredProductType(searchParams.type, typeSettings) ?? findTypeByKeyword(searchParams.type);
     if (type && type.active !== false) {
       const label = cat ? `${type.label} ${cat.name}` : type.label;
       return {
         title: cat
-          ? `${label} — купить в Химках с доставкой`
-          : type.seoTitle || `${type.label} — купить в Химках с доставкой`,
+          ? `${label} — купить${citySuffix} с доставкой`
+          : type.seoTitle || `${type.label} — купить${citySuffix} с доставкой`,
         description:
           (cat
-            ? `${label} от производителя в Химках. Актуальные размеры, цены, наличие и доставка по Москве и Московской области.`
+            ? `${label}. Актуальные цены, наличие и доставка: ${getSetting(settings, "delivery_region")}.`
             : type.seoDescription) ||
-          `${type.label} от производителя в Химках. Цены, размеры, наличие и доставка по Москве и МО.`,
+          `${type.label}. Цены, наличие и доставка: ${getSetting(settings, "delivery_region")}.`,
         alternates: {
           canonical: `https://pilo-rus.ru/catalog?${new URLSearchParams({
             ...(searchParams.category ? { category: searchParams.category } : {}),
@@ -82,21 +91,21 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   }
   if (searchParams.category) {
     const cat = await prisma.category.findUnique({
-      where: { slug: searchParams.category },
+      where: { tenantId_slug: { tenantId, slug: searchParams.category } },
       select: { name: true, seoTitle: true, seoDescription: true },
     });
     if (cat) {
       return {
         title: cat.seoTitle || `${cat.name} — купить от производителя`,
-        description: cat.seoDescription || `Купить ${cat.name} от производителя. Широкий ассортимент, доставка по Москве и МО.`,
+        description: cat.seoDescription || `${cat.name}. ${catalogDescription}`,
         alternates: { canonical: `https://pilo-rus.ru/catalog?category=${searchParams.category}` },
         robots,
       };
     }
   }
   return {
-    title: "Каталог пиломатериалов — цены от производителя",
-    description: "Доска, брус, вагонка, блок-хаус от производителя в Химках. Цены без посредников, доставка по Москве и МО.",
+    title: `${catalogTitle} — ${siteName}`,
+    description: catalogDescription,
     alternates: { canonical: "https://pilo-rus.ru/catalog" },
     robots,
   };
@@ -164,6 +173,9 @@ export default async function CatalogPage({
   const currentMaxPrice = searchParams.maxprice ? Number(searchParams.maxprice) : null;
   const currentSearch = (searchParams.search || "").trim();
   const catalogView = getCatalogView(searchParams.view);
+  const tenantId = getCurrentTenantId();
+  const settings = await getSiteSettings();
+  const isArayCheckingSite = settings.aray_site_status === "checking";
 
   // Build variant sub-filter (user-driven: size, instock, price)
   const variantWhere: Prisma.ProductVariantWhereInput = {};
@@ -182,9 +194,16 @@ export default async function CatalogPage({
 
   // Public safety filter — не показываем в каталоге товары без фото/цены/остатка.
   // Админ видит всё в /admin/products с индикаторами, публика — только готовое.
-  const publicFilter = getPublicProductsFilter();
-  const publicVariantFilter = getPublicVariantsFilter();
-  const publicVariantSome = (publicFilter.variants as any)?.some ?? {};
+  // Published sites stay strict. ARAY checking sites can show scanned positions
+  // before final price/stock confirmation, so the launch draft never looks empty.
+  const publicFilter: Prisma.ProductWhereInput = isArayCheckingSite
+    ? { active: true, images: { isEmpty: false }, variants: { some: {} } }
+    : getPublicProductsFilter();
+  const publicVariantFilter: Prisma.ProductVariantWhereInput = isArayCheckingSite
+    ? {}
+    : getPublicVariantsFilter();
+  const publicVariantSome =
+    (publicFilter.variants as { some?: Prisma.ProductVariantWhereInput } | undefined)?.some ?? {};
 
   // Комбинируем публичный variant-фильтр с пользовательским через AND
   const combinedVariantSome = Object.keys(variantWhere).length > 0
@@ -194,11 +213,11 @@ export default async function CatalogPage({
   let scopedCategorySlugs: string[] | null = null;
   if (searchParams.category) {
     const scopedCategory = await prisma.category.findFirst({
-      where: { slug: searchParams.category, showInMenu: true },
+      where: { tenantId, slug: searchParams.category, showInMenu: true },
       select: {
         slug: true,
         children: {
-          where: { showInMenu: true },
+          where: { tenantId, showInMenu: true },
           select: { slug: true },
         },
       },
@@ -210,8 +229,8 @@ export default async function CatalogPage({
   // Build where clause (always filter hidden categories + public safety).
   // Parent category pages include direct child categories, so menu hierarchy works as one landing page.
   const categoryFilter: Prisma.CategoryWhereInput = scopedCategorySlugs
-    ? { slug: { in: scopedCategorySlugs }, showInMenu: true }
-    : { showInMenu: true };
+    ? { tenantId, slug: { in: scopedCategorySlugs }, showInMenu: true }
+    : { tenantId, showInMenu: true };
 
   const searchFilter: Prisma.ProductWhereInput = currentSearch
     ? {
@@ -229,7 +248,7 @@ export default async function CatalogPage({
   let typeProductIds: string[] | null = null;
   if (currentType) {
     const allProds = await prisma.product.findMany({
-      where: { active: true, category: categoryFilter, images: { isEmpty: false } },
+      where: { tenantId, active: true, category: categoryFilter, images: { isEmpty: false } },
       select: { id: true, name: true },
     });
     const groupKeywords = getTypeGroupKeywords(currentType);
@@ -244,6 +263,7 @@ export default async function CatalogPage({
   }
 
   const where: Prisma.ProductWhereInput = {
+    tenantId,
     active: true,
     images: { isEmpty: false },
     category: categoryFilter,
@@ -263,6 +283,7 @@ export default async function CatalogPage({
     : publicVariantSome;
 
   const whereForTypes: Prisma.ProductWhereInput = {
+    tenantId,
     active: true,
     images: { isEmpty: false },
     category: categoryFilter,
@@ -271,6 +292,7 @@ export default async function CatalogPage({
   };
 
   const whereForPriceRange: Prisma.ProductWhereInput = {
+    tenantId,
     active: true,
     images: { isEmpty: false },
     category: categoryFilter,
@@ -279,11 +301,14 @@ export default async function CatalogPage({
     variants: { some: combinedTypesVariantSome },
   };
 
-  const [settings, productTypeSettings] = await Promise.all([
-    getSiteSettings(),
-    getProductTypeSettings(),
-  ]);
+  const productTypeSettings = await getProductTypeSettings();
   const phones = getPhones(settings);
+  const siteName = getSetting(settings, "public_site_name") || getSetting(settings, "brand_name") || getSetting(settings, "company_name");
+  const deliveryRegion = getSetting(settings, "delivery_region");
+  const catalogTitle = settings.catalog_title || `Каталог ${siteName}`;
+  const catalogDescription = settings.catalog_description || getSetting(settings, "seo_description");
+  const catalogListingTitle = settings.catalog_listing_title || "Все товары";
+  const catalogHelpText = settings.catalog_help_text || "Менеджер поможет подобрать нужный товар, услугу и условия доставки.";
 
   let categories: any[] = [], productsRaw: any[] = [], totalCount = 0, allVariantSizes: any[] = [], productsForTypes: any[] = [];
   let priceRangeResult: {
@@ -293,7 +318,7 @@ export default async function CatalogPage({
   try {
     [categories, productsRaw, totalCount, allVariantSizes, productsForTypes, priceRangeResult] = await Promise.all([
       prisma.category.findMany({
-        where: { showInMenu: true },
+        where: { tenantId, showInMenu: true },
         orderBy: { sortOrder: "asc" },
         include: { _count: { select: { products: { where: publicFilter } } } },
       }),
@@ -312,16 +337,13 @@ export default async function CatalogPage({
       prisma.productVariant.findMany({
         where: {
           product: {
+            tenantId,
             active: true,
             images: { isEmpty: false },
             category: categoryFilter,
             ...(typeProductIds !== null ? { id: { in: typeProductIds } } : {}),
           },
-          inStock: true,
-          OR: [
-            { pricePerCube: { not: null, gt: 0 } },
-            { pricePerPiece: { not: null, gt: 0 } },
-          ],
+          ...publicVariantFilter,
         },
         select: { size: true },
         distinct: ["size"],
@@ -334,11 +356,7 @@ export default async function CatalogPage({
       prisma.productVariant.aggregate({
         where: {
           product: whereForPriceRange,
-          inStock: true,
-          OR: [
-            { pricePerCube: { not: null, gt: 0 } },
-            { pricePerPiece: { not: null, gt: 0 } },
-          ],
+          ...publicVariantFilter,
         },
         _min: { pricePerCube: true, pricePerPiece: true },
         _max: { pricePerCube: true, pricePerPiece: true },
@@ -493,22 +511,22 @@ export default async function CatalogPage({
       : currentTypeInfo.label
     : currentCat
       ? currentCat.name
-      : "Каталог";
+      : catalogTitle;
   const pageDescription =
     currentTypeInfo?.description ||
     currentCat?.seoDescription ||
-    (currentCat ? "Узнавайте первыми о поступлениях и скидках" : "Все пиломатериалы в наличии");
+    (currentCat ? "Узнавайте первыми о поступлениях и скидках" : catalogDescription);
   const listingTitle = currentSearch
     ? `Поиск: ${currentSearch}`
     : searchParams.category
     ? categories.find((c) => c.slug === searchParams.category)?.name || "Каталог"
-    : "Все пиломатериалы";
+    : catalogListingTitle;
   const heroDescription =
     currentSearch
       ? `Нашли позиции по запросу «${currentSearch}». Можно уточнить тип, размер, наличие и сразу перейти в карточку товара.`
       : currentTypeInfo?.description ||
         currentCat?.seoDescription ||
-        "Доска, брус, вагонка и другие пиломатериалы от производителя в Химках. Смотрите фото, размеры, цены и наличие без лишних шагов.";
+        catalogDescription;
   const catalogStats = [
     {
       label: `${totalCount} позиций`,
@@ -523,8 +541,8 @@ export default async function CatalogPage({
       href: "/calculator",
     },
     {
-      label: "Доставка 1–3 дня",
-      sub: "Москва и область",
+      label: "Доставка",
+      sub: deliveryRegion,
       Icon: Truck,
       href: "/delivery",
     },
@@ -633,7 +651,7 @@ export default async function CatalogPage({
             <div className="min-w-0">
               <p className="mb-1 inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-primary">
                 <BadgeCheck className="h-3.5 w-3.5" />
-                Каталог ПилоРус
+                Каталог {siteName}
               </p>
               <h1 className="font-display text-2xl font-bold leading-tight sm:text-3xl">
                 {pageTitle}
@@ -655,7 +673,7 @@ export default async function CatalogPage({
           href="/calculator"
           className="mt-3 flex items-center gap-3 rounded-2xl border border-primary/28 bg-primary/10 px-3 py-2.5 transition-colors hover:bg-primary/15 sm:px-4"
         >
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground ">
             <Calculator className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
@@ -715,7 +733,7 @@ export default async function CatalogPage({
                   <Link
                     prefetch
                     href="/catalog"
-                    className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
+                    className={`block px-3 py-2 rounded-xl text-sm transition-colors ${
                       !searchParams.category
                         ? "bg-primary/10 text-primary font-medium"
                         : "hover:bg-accent text-muted-foreground hover:text-foreground"
@@ -729,7 +747,7 @@ export default async function CatalogPage({
                     <Link
                       prefetch
                       href={`/catalog?category=${cat.slug}`}
-                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${
+                      className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-colors ${
                         searchParams.category === cat.slug
                           ? "bg-primary/10 text-primary font-medium"
                           : "hover:bg-accent text-muted-foreground hover:text-foreground"
@@ -770,7 +788,7 @@ export default async function CatalogPage({
             <div className="bg-primary/5 rounded-2xl border border-primary/20 p-5 text-center">
               <p className="text-sm font-medium mb-2">Нужна помощь с выбором?</p>
               <p className="text-xs text-muted-foreground mb-3">
-                Наши менеджеры помогут подобрать нужный материал
+                {catalogHelpText}
               </p>
               <PhoneLinks phones={phones} variant="sidebar" />
             </div>
@@ -794,7 +812,7 @@ export default async function CatalogPage({
                   <SlidersHorizontal className="h-3.5 w-3.5 text-primary" />
                   {currentSortLabel}
                 </summary>
-                <div className="absolute right-0 top-[calc(100%+0.45rem)] z-30 w-44 overflow-hidden rounded-2xl border border-border bg-card/95 p-1.5 shadow-2xl ring-1 ring-primary/10 backdrop-blur-xl">
+                <div className="absolute right-0 top-[calc(100%+0.45rem)] z-30 w-44 overflow-hidden rounded-2xl border border-border bg-card/95 p-1.5 shadow-2xl ring-1 ring-primary/10 ">
                   {sortOptions.map((opt) => (
                     <Link
                       key={opt.value}
@@ -810,13 +828,13 @@ export default async function CatalogPage({
                   ))}
                 </div>
               </details>
-              <div className="hidden items-center gap-1 rounded-xl border border-border/70 bg-card/70 p-1 shadow-sm xl:flex" aria-label="Вид каталога">
+              <div className="hidden items-center gap-1 rounded-xl border border-border/70 bg-card/70 p-1  xl:flex" aria-label="Вид каталога">
                 {viewOptions.map(({ value, label, title, Icon }) => (
                   <Link
                     key={value}
                     href={buildViewUrl(value)}
                     title={title}
-                    className={`inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-lg px-2 text-xs font-bold transition-colors ${
+                    className={`inline-flex h-8 min-w-8 items-center justify-center gap-1 rounded-xl px-2 text-xs font-bold transition-colors ${
                       catalogView === value
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -833,7 +851,7 @@ export default async function CatalogPage({
                   <Link
                     key={opt.value}
                     href={buildSortUrl(opt.value)}
-                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                    className={`rounded-xl px-3 py-1.5 text-xs font-medium transition-colors ${
                       (searchParams.sort || "") === opt.value
                         ? "bg-primary text-primary-foreground"
                         : "border border-border text-muted-foreground hover:bg-accent"

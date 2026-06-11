@@ -4,6 +4,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import os from "os";
 import nodemailer from "nodemailer";
+import { getSiteSetting } from "@/lib/tenant-settings";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 async function checkAdmin() {
   const session = await auth();
@@ -27,6 +29,7 @@ type CheckResult = {
 export async function GET() {
   if (!(await checkAdmin()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const checks: CheckResult[] = [];
 
@@ -116,10 +119,10 @@ export async function GET() {
     await prisma.$queryRaw`SELECT 1`;
     const [productCount, orderCount, userCount, variantCount] =
       await Promise.all([
-        prisma.product.count({ where: { active: true } }),
-        prisma.order.count({ where: { deletedAt: null } }),
-        prisma.user.count(),
-        prisma.productVariant.count(),
+        prisma.product.count({ where: { tenantId, active: true } }),
+        prisma.order.count({ where: { tenantId, deletedAt: null } }),
+        prisma.user.count({ where: { tenantId } }),
+        prisma.productVariant.count({ where: { product: { tenantId } } }),
       ]);
     checks.push({
       id: "db",
@@ -144,9 +147,7 @@ export async function GET() {
 
   // 5. SSL certificate check (HEAD request)
   try {
-    const siteUrlRow = await prisma.siteSettings.findUnique({
-      where: { key: "site_url" },
-    });
+    const siteUrlRow = await getSiteSetting("site_url");
     const siteUrl = siteUrlRow?.value || "https://pilo-rus.ru";
     const isHttps = siteUrl.startsWith("https://");
     if (!isHttps) {
@@ -181,9 +182,7 @@ export async function GET() {
 
   // 6. Sitemap XML
   try {
-    const siteUrlRow = await prisma.siteSettings.findUnique({
-      where: { key: "site_url" },
-    });
+    const siteUrlRow = await getSiteSetting("site_url");
     const siteUrl = siteUrlRow?.value || "https://pilo-rus.ru";
     const res = await fetch(`${siteUrl}/sitemap.xml`, {
       signal: AbortSignal.timeout(5000),
@@ -214,15 +213,13 @@ export async function GET() {
 
   // 7. YML feed
   try {
-    const siteUrlRow = await prisma.siteSettings.findUnique({
-      where: { key: "site_url" },
-    });
+    const siteUrlRow = await getSiteSetting("site_url");
     const siteUrl = siteUrlRow?.value || "https://pilo-rus.ru";
     const res = await fetch(`${siteUrl}/api/yml`, {
       signal: AbortSignal.timeout(5000),
     }).catch(() => null);
     const activeCount = await prisma.product
-      .count({ where: { active: true } })
+      .count({ where: { tenantId, active: true } })
       .catch(() => 0);
     if (res?.ok) {
       checks.push({
@@ -248,9 +245,7 @@ export async function GET() {
 
   // 8. Yandex Metrika
   try {
-    const metrika = await prisma.siteSettings.findUnique({
-      where: { key: "yandex_metrika_id" },
-    });
+    const metrika = await getSiteSetting("yandex_metrika_id");
     if (!metrika?.value) {
       checks.push({
         id: "metrika",
@@ -278,6 +273,7 @@ export async function GET() {
   try {
     const smtpRows = await prisma.siteSettings.findMany({
       where: {
+        tenantId,
         key: {
           in: ["smtp_host", "smtp_port", "smtp_user", "smtp_pass", "smtp_from"],
         },
@@ -338,10 +334,10 @@ export async function GET() {
 
   // 10. Push notifications (VAPID)
   try {
-    const vapidRow = await prisma.siteSettings.findUnique({
-      where: { key: "vapid_public" },
-    });
-    const subCount = await prisma.pushSubscription.count().catch(() => 0);
+    const vapidRow = await getSiteSetting("vapid_public");
+    const subCount = await prisma.pushSubscription.count({
+      where: { OR: [{ userId: null }, { user: { is: { tenantId } } }] },
+    }).catch(() => 0);
     const vapidOk = !!(
       vapidRow?.value ||
       process.env.VAPID_PUBLIC_KEY ||
@@ -409,9 +405,9 @@ export async function GET() {
   // 12. Product images coverage
   try {
     const noImg = await prisma.product.count({
-      where: { images: { isEmpty: true }, active: true },
+      where: { tenantId, images: { isEmpty: true }, active: true },
     });
-    const total = await prisma.product.count({ where: { active: true } });
+    const total = await prisma.product.count({ where: { tenantId, active: true } });
     if (noImg > 0) {
       checks.push({
         id: "product_images",
@@ -439,7 +435,7 @@ export async function GET() {
       where: {
         pricePerCube: null,
         pricePerPiece: null,
-        product: { active: true },
+        product: { tenantId, active: true },
       },
     });
     if (noPriceVariants > 0) {
@@ -468,6 +464,7 @@ export async function GET() {
     const threeDaysAgo = new Date(Date.now() - 3 * 86400000);
     const stale = await prisma.order.count({
       where: {
+        tenantId,
         status: "NEW",
         createdAt: { lt: threeDaysAgo },
         deletedAt: null,
@@ -496,9 +493,7 @@ export async function GET() {
 
   // 15. Watermark backup
   try {
-    const backup = await prisma.siteSettings.findUnique({
-      where: { key: "watermark_backup_date" },
-    });
+    const backup = await getSiteSetting("watermark_backup_date");
     if (!backup?.value) {
       checks.push({
         id: "watermark_backup",
@@ -577,9 +572,9 @@ export async function GET() {
     id: "aray_api_key",
     name: "ARAY API ключ",
     category: "aray",
-    status: process.env.ANTHROPIC_API_KEY ? "ok" : "error",
-    message: process.env.ANTHROPIC_API_KEY ? "Настроен" : "ОТСУТСТВУЕТ",
-    detail: "ANTHROPIC_API_KEY для Арая",
+    status: process.env.ANTHROPIC_API_KEY ? "ok" : "warn",
+    message: process.env.ANTHROPIC_API_KEY ? "Настроен" : "Не настроен",
+    detail: "Опциональный ключ AI-провайдера: без него сайт и админка работают, но ARAY-ответы ограничены",
   });
 
   const summary = {

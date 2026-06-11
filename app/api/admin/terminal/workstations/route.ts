@@ -4,16 +4,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTerminalAdmin, requireTerminalStaff } from "@/lib/terminal-auth";
 import { resolveTerminalProfile } from "@/lib/terminal-profiles";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { parseJsonRecord, requireWriteConfirmation } from "@/lib/admin-content-guard";
 
 export async function GET() {
   const auth = await requireTerminalStaff();
   if (!auth.authorized) return auth.response;
+  const tenantId = getCurrentTenantId();
 
   const workstations = await prisma.terminalWorkstation.findMany({
+    where: { tenantId },
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
     include: {
       shifts: {
-        where: { status: "OPEN" },
+        where: { tenantId, status: "OPEN" },
         orderBy: { openedAt: "desc" },
         take: 1,
       },
@@ -26,14 +30,19 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const auth = await requireTerminalAdmin();
   if (!auth.authorized) return auth.response;
+  const tenantId = getCurrentTenantId();
 
-  const body = await req.json().catch(() => ({}));
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+
   const name = String(body.name || "").trim();
   if (!name) return NextResponse.json({ error: "Укажите название рабочего места" }, { status: 400 });
 
   const profile = resolveTerminalProfile(body.profile).key;
   const workstation = await prisma.terminalWorkstation.create({
     data: {
+      tenantId,
       name,
       type: String(body.type || "MOBILE").trim() || "MOBILE",
       profile,

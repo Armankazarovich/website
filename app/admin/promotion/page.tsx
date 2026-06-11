@@ -1,5 +1,6 @@
 "use client";
 
+import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   TrendingUp,
@@ -948,6 +949,7 @@ function WeeklyTaskCard({ task }: { task: WeeklyTask }) {
 
 function AdvertisingModule() {
   const { toast } = useToast();
+  const confirmAction = useAdminConfirm();
   const [draft, setDraft] = useState<DirectDraftResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1229,6 +1231,7 @@ function AdvertisingModule() {
 
   const saveReadinessSetup = async () => {
     const normalizedCounterId = setupCounterId.replace(/[^\d]/g, "");
+    if (!(await confirmAction("Сохранить настройки Direct и Метрики?"))) return false;
     setReadinessSaving(true);
     try {
       const response = await fetch("/api/admin/direct/readiness", {
@@ -1240,6 +1243,7 @@ function AdvertisingModule() {
           metrikaCounterId: normalizedCounterId,
           businessProfileId: setupBusinessProfileId,
           goals: setupGoals,
+          confirm: true,
         }),
       });
       if (!response.ok) {
@@ -1312,12 +1316,13 @@ function AdvertisingModule() {
 
   const createArayMetrikaGoals = async () => {
     const counterId = setupCounterId || metrikaStatus?.selectedCounterId || "";
+    if (!(await confirmAction("Создать или обновить цели Метрики?"))) return;
     setMetrikaGoalsCreating(true);
     try {
       const response = await fetch("/api/admin/metrika/goals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ counterId }),
+        body: JSON.stringify({ counterId, confirm: true }),
       });
       const payload = (await response.json().catch(() => ({}))) as {
         ok?: boolean;
@@ -6195,6 +6200,7 @@ function statsSafeNumber(value: number) {
 // ─── SEO Health Mini Section ──────────────────────────────────────────────────
 
 function SeoHealthSection({ productCount }: { productCount: number }) {
+  const confirmAction = useAdminConfirm();
   const [pinging, setPinging] = useState(false);
   const [pingResult, setPingResult] = useState<string | null>(null);
   const [autoMetaLoading, setAutoMetaLoading] = useState(false);
@@ -6209,13 +6215,14 @@ function SeoHealthSection({ productCount }: { productCount: number }) {
   }, []);
 
   const pingSitemap = async () => {
+    if (!(await confirmAction("Отправить sitemap в поисковые системы?"))) return;
     setPinging(true);
     setPingResult(null);
     try {
       const res = await fetch("/api/admin/seo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "ping_sitemap" }),
+        body: JSON.stringify({ action: "ping_sitemap", confirm: true }),
       });
       const data = await res.json();
       if (data.results) {
@@ -6230,13 +6237,14 @@ function SeoHealthSection({ productCount }: { productCount: number }) {
   };
 
   const autoMeta = async () => {
+    if (!(await confirmAction("Автоматически заполнить пустые SEO-описания товаров?"))) return;
     setAutoMetaLoading(true);
     setAutoMetaResult(null);
     try {
       const res = await fetch("/api/admin/seo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "auto_meta" }),
+        body: JSON.stringify({ action: "auto_meta", confirm: true }),
       });
       const data = await res.json();
       if (data.updated !== undefined) {

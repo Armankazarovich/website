@@ -9,7 +9,7 @@
  * Пункты слева адаптируются под роль (warehouse → Товары вместо Заказы и т.д.)
  *
  * ARAY в центре:
- *  - Tap        → onArayOpen("phone") (открывает центр связи AR Phone)
+ *  - Tap        → onArayOpen("open") (открывает помощника ARAY)
  *  - Long-press → aray:voice (открывает единый чат сразу в голосовом режиме)
  *
  * Колокольчик: открывает popup с уведомлениями (новые заказы, отзывы, заявки сотрудников).
@@ -71,6 +71,7 @@ const MOBILE_GROUP_ICONS: Record<string, React.ElementType> = {
   content: BookOpen,
   marketing: Megaphone,
   finance: Wallet,
+  arayCms: ArayIcon,
   settings: Settings,
   help: HelpCircle,
   personal: UserCircle,
@@ -188,7 +189,7 @@ interface Props {
   /** @deprecated теперь menuOpen приходит из useAccountDrawer().open */
   menuOpen?: boolean;
   newOrdersCount?: number;
-  onArayOpen?: (mode?: "open" | "voice" | "phone") => void;
+  onArayOpen?: (mode?: "open" | "voice") => void;
   onSearchOpen?: () => void;
   arayListening?: boolean;
   arayHasNew?: boolean;
@@ -510,7 +511,7 @@ export function AdminMobileBottomNav({
       {sheetOpen && (
         <button
           type="button"
-          className="fixed inset-0 z-[55] bg-background/60 backdrop-blur-md lg:hidden"
+          className="fixed inset-0 z-[55] bg-background/60  lg:hidden"
           aria-label="Закрыть меню"
           onClick={() => {
             setNotifOpen(false);
@@ -971,8 +972,8 @@ export function AdminMobileBottomNav({
             <button
               type="button"
               disabled={!arayEnabled}
-              aria-label={arayEnabled ? "ARAY — открыть центр связи" : "ARAY недоступен для роли или модуля"}
-              title={arayEnabled ? "ARAY Phone" : "ARAY недоступен для роли или модуля"}
+              aria-label={arayEnabled ? "ARAY — открыть помощника" : "ARAY недоступен для роли или модуля"}
+              title={arayEnabled ? "ARAY помощник" : "ARAY недоступен для роли или модуля"}
               onPointerDown={() => {
                 if (!arayEnabled) return;
                 arayLongPressFiredRef.current = false;
@@ -1016,7 +1017,7 @@ export function AdminMobileBottomNav({
                   return;
                 }
                 haptic(8);
-                onArayOpen?.("phone");
+                onArayOpen?.("open");
               }}
               onContextMenu={(e) => e.preventDefault()}
               className={`flex flex-col items-center transition-transform duration-150 focus:outline-none ${

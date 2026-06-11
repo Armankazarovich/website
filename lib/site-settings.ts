@@ -1,13 +1,15 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 // Graceful degrade: если БД недоступна или исчерпан пул (SSG на build),
 // возвращаем пустой объект — getSetting() перейдёт на DEFAULT_SETTINGS.
 // Это предотвращает падение всего билда из-за одной страницы.
 export async function getSiteSettings(): Promise<Record<string, string>> {
   try {
-    const rows = await prisma.siteSettings.findMany();
+    const tenantId = getCurrentTenantId();
+    const rows = await prisma.siteSettings.findMany({ where: { tenantId } });
     const result: Record<string, string> = {};
     for (const row of rows) result[row.key] = row.value;
     return result;
@@ -19,22 +21,31 @@ export async function getSiteSettings(): Promise<Record<string, string>> {
 
 // Default values
 export const DEFAULT_SETTINGS: Record<string, string> = {
-  phone: "8-985-067-08-88",
-  phone_link: "+79850670888",
-  phone2: "",
-  phone2_link: "",
-  phone3: "8-977-606-80-20",
-  phone3_link: "+79776068020",
+  phone: "+7 (499) 372-04-41",
+  phone_link: "+74993720441",
+  phone2: "+7 (495) 135-02-03",
+  phone2_link: "+74951350203",
+  phone3: "",
+  phone3_link: "",
   email: "info@pilo-rus.ru",
   business_type: "lumber",
   terminal_profile: "lumber",
   terminal_enabled_modules: "",
-  address: "Химки, ул. Заводская 2А, стр.28",
+  address: "г. Химки, ул. Заводская 2А, стр.13",
   address_map: "https://yandex.ru/maps/-/CHqJJGqe",
   working_hours: "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00",
-  company_name: "ООО ПИТИ (ПилоРус)",
-  inn: "7735711780",
-  ogrn: "1157746520813",
+  company_name: "ООО «ДЕРЕВОЛИДЕР»",
+  legal_full_name: "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ «ДЕРЕВОЛИДЕР»",
+  inn: "7733291699",
+  ogrn: "1167746624902",
+  kpp: "773301001",
+  settlement_account: "40702810040000036989",
+  bank_name: "ПАО Сбербанк",
+  correspondent_account: "30101810400000000225",
+  bik: "044525225",
+  okpo: "03368545",
+  okato: "45283555000",
+  oktmo: "45366000000",
   about_text: "Производим и продаём пиломатериалы высокого качества с 2015 года. Собственное производство в Химках обеспечивает контроль качества на каждом этапе.",
   delivery_text: "Доставляем по Москве и МО собственным транспортом за 1–3 рабочих дня. Стоимость доставки рассчитывается индивидуально в зависимости от объёма и адреса.",
   footer_copyright: `© ${new Date().getFullYear()} ПилоРус. Все права защищены.`,
@@ -47,10 +58,11 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   site_logo_url: "/logo.png",
   pwa_logo_url: "/logo.png",
   social_telegram: "",
-  social_whatsapp: "+79850670888",
+  social_whatsapp: "+74993720441",
+  social_max: "https://max.ru/u/f9LHodD0cOKoOlL7NxRWbK5mRoS_CdJ9K0qX5LbbbFJXOW-acq-et78kUxo",
   // Мессенджеры — кнопки заказа
   whatsapp_enabled: "false",
-  whatsapp_number: "+79850670888",
+  whatsapp_number: "+74993720441",
   whatsapp_message: "Здравствуйте! Хочу сделать заказ.",
   telegram_enabled: "false",
   telegram_username: "",

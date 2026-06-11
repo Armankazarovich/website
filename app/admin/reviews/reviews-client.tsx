@@ -54,7 +54,7 @@ function AdminReplyBlock({
       const res = await fetch(`/api/reviews/${reviewId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reply", adminReply: replyText.trim() }),
+        body: JSON.stringify({ action: "reply", adminReply: replyText.trim(), confirm: true }),
       });
       if (res.ok) {
         onReply(replyText.trim());
@@ -226,11 +226,12 @@ function AddReviewForm({
           text: text.trim(),
           source,
           approved: true,
+          confirm: true,
         }),
       });
       if (res.ok) {
-        const r = await res.json();
-        onAdd(r);
+        const payload = await res.json();
+        onAdd(payload.review ?? payload);
       } else {
         setError("Ошибка при сохранении");
       }
@@ -371,7 +372,7 @@ export function ReviewsClient({
       const res = await fetch(`/api/admin/reviews/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approved: !approved }),
+        body: JSON.stringify({ approved: !approved, confirm: true }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Не удалось обновить отзыв");
@@ -391,7 +392,7 @@ export function ReviewsClient({
     setLoadingId(id);
     setActionError("");
     try {
-      const res = await fetch(`/api/admin/reviews/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/reviews/${id}?confirm=true`, { method: "DELETE" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Не удалось удалить отзыв");
       setReviews((prev) => prev.filter((r) => r.id !== id));
@@ -406,7 +407,11 @@ export function ReviewsClient({
     setStarterLoading(true);
     setStarterResult(null);
     try {
-      const res = await fetch("/api/admin/reviews/starter", { method: "POST" });
+      const res = await fetch("/api/admin/reviews/starter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: true }),
+      });
       const data = await res.json();
       if (res.ok && data.ok) {
         setStarterResult(

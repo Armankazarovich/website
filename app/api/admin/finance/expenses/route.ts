@@ -4,6 +4,11 @@ import { requireRole } from "@/lib/auth-helpers";
 import { requireArayModuleAccess } from "@/lib/aray-module-auth";
 import { prisma } from "@/lib/prisma";
 import { getCurrentTenantId } from "@/lib/tenant-context";
+import {
+  parseJsonRecord,
+  requireSearchConfirmation,
+  requireWriteConfirmation,
+} from "@/lib/admin-content-guard";
 
 async function requireFinanceAccess() {
   const auth = await requireRole("SUPER_ADMIN", "ADMIN", "ACCOUNTANT");
@@ -46,7 +51,10 @@ export async function POST(req: Request) {
   const denied = await requireFinanceAccess();
   if (denied) return denied;
 
-  const payload = await req.json();
+  const payload = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(payload);
+  if (confirmationError) return confirmationError;
+
   const { numericAmount, category, description, date } =
     normalizeExpensePayload(payload);
   if (
@@ -84,6 +92,9 @@ export async function DELETE(req: Request) {
   if (denied) return denied;
 
   const { searchParams } = new URL(req.url);
+  const confirmationError = requireSearchConfirmation(req);
+  if (confirmationError) return confirmationError;
+
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
@@ -103,7 +114,10 @@ export async function PATCH(req: Request) {
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  const payload = await req.json();
+  const payload = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(payload);
+  if (confirmationError) return confirmationError;
+
   const { numericAmount, category, description, date } =
     normalizeExpensePayload(payload);
   if (numericAmount !== undefined && (!Number.isFinite(numericAmount) || numericAmount <= 0)) {

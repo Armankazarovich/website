@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTerminalStaff } from "@/lib/terminal-auth";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 function normalizePhone(value: unknown) {
   return String(value ?? "").replace(/\D/g, "");
@@ -20,6 +21,7 @@ function phoneMatches(candidate: unknown, query: string) {
 export async function GET(req: NextRequest) {
   const access = await requireTerminalStaff();
   if (!access.authorized) return access.response;
+  const tenantId = getCurrentTenantId();
 
   const phone = req.nextUrl.searchParams.get("phone") || "";
   const queryPhone = normalizePhone(phone);
@@ -32,6 +34,7 @@ export async function GET(req: NextRequest) {
   const [users, orders] = await Promise.all([
     prisma.user.findMany({
       where: {
+        tenantId,
         role: "USER",
         phone: { contains: lookupTail },
       },
@@ -46,6 +49,7 @@ export async function GET(req: NextRequest) {
     }),
     prisma.order.findMany({
       where: {
+        tenantId,
         deletedAt: null,
         guestPhone: { contains: lookupTail },
       },

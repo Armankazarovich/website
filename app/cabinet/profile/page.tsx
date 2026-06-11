@@ -334,7 +334,6 @@ export default function ProfilePage() {
     resolver: zodResolver(passwordSchema),
   });
   const phoneVisibility = watch("phoneVisibility") || "contacts";
-  const arayPhoneVisibility = watch("arayPhoneVisibility") || "contacts";
 
   useEffect(() => {
     setMounted(true);
@@ -481,12 +480,12 @@ export default function ProfilePage() {
               <User className="w-10 h-10 text-muted-foreground" />
             )}
             {uploadingAvatar && (
-              <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-white animate-spin" />
+              <div className="absolute inset-0 bg-background/50 rounded-full flex items-center justify-center">
+                <Loader2 className="w-6 h-6 text-foreground animate-spin" />
               </div>
             )}
           </div>
-          <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors shadow-lg">
+          <label className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors ">
             <Camera className="w-4 h-4" />
             <input
               type="file"
@@ -652,9 +651,9 @@ export default function ProfilePage() {
               <Lock className="h-4 w-4" />
             </span>
             <div>
-              <p className="text-sm font-semibold">Приватность номеров</p>
+              <p className="text-sm font-semibold">Приватность телефона</p>
               <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                Как в Telegram: вы сами решаете, кому показывать обычный телефон и AR Phone номер.
+                Вы сами решаете, кому показывать номер телефона.
               </p>
             </div>
           </div>
@@ -662,11 +661,6 @@ export default function ProfilePage() {
             title="Обычный телефон"
             value={phoneVisibility}
             onChange={(value) => setValue("phoneVisibility", value, { shouldDirty: true })}
-          />
-          <ProfileVisibilityPicker
-            title="AR Phone номер"
-            value={arayPhoneVisibility}
-            onChange={(value) => setValue("arayPhoneVisibility", value, { shouldDirty: true })}
           />
         </div>
 
@@ -796,7 +790,7 @@ export default function ProfilePage() {
                           }}
                         />
                         {active && (
-                          <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-black shadow">
+                          <span className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-card text-foreground shadow">
                             <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
                           </span>
                         )}
@@ -1123,7 +1117,7 @@ function AvatarCropModal({
 
   const modal = (
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-background/60 px-4 "
       style={{
         paddingTop: "max(1rem, env(safe-area-inset-top, 0px))",
         paddingBottom: "max(6.5rem, calc(env(safe-area-inset-bottom, 0px) + 6rem))",

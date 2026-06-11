@@ -122,6 +122,8 @@ export function AutomationClient() {
   const [logsLoaded, setLogsLoaded] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Workflow | null>(null);
+  const [toggleTarget, setToggleTarget] = useState<Workflow | null>(null);
+  const [presetConfirmOpen, setPresetConfirmOpen] = useState(false);
   const [applyingPreset, setApplyingPreset] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -230,6 +232,7 @@ export function AutomationClient() {
       });
       const data = await res.json().catch(() => null);
       if (!res.ok || !data?.ok) throw new Error(getApiError(data, "Не удалось применить шаблон."));
+      setPresetConfirmOpen(false);
       await fetchWorkflows();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось применить шаблон.");
@@ -267,7 +270,7 @@ export function AutomationClient() {
 
         <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:justify-end">
           <button
-            onClick={applyPreset}
+            onClick={() => setPresetConfirmOpen(true)}
             disabled={applyingPreset}
             className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/15 px-4 text-sm font-medium text-foreground transition-colors hover:bg-primary/[0.05] disabled:opacity-50 sm:w-auto"
           >
@@ -324,7 +327,7 @@ export function AutomationClient() {
               items={robots}
               emptyText="Нет правил"
               emptySubtext="Нажмите «Применить шаблон», чтобы добавить готовые действия для пиломатериалов"
-              onToggle={toggleWorkflow}
+              onToggle={setToggleTarget}
               onDelete={setDeleteTarget}
               toggling={toggling}
             />
@@ -335,7 +338,7 @@ export function AutomationClient() {
               items={tunnels}
               emptyText="Нет цепочек"
               emptySubtext="Цепочка помогает не забыть следующий шаг, когда лид меняет этап"
-              onToggle={toggleWorkflow}
+              onToggle={setToggleTarget}
               onDelete={setDeleteTarget}
               toggling={toggling}
             />
@@ -371,6 +374,30 @@ export function AutomationClient() {
           onConfirm={confirmDelete}
           onClose={() => setDeleteTarget(null)}
           variant="danger"
+        />
+      )}
+
+      {toggleTarget && (
+        <ConfirmDialog
+          title={toggleTarget.active ? "Отключить правило?" : "Включить правило?"}
+          description={`«${toggleTarget.name}» ${toggleTarget.active ? "перестанет выполнять действия по будущим событиям" : "начнет выполнять действия по будущим событиям"}.`}
+          confirmLabel={toggleTarget.active ? "Отключить" : "Включить"}
+          variant="warning"
+          loading={toggling === toggleTarget.id}
+          onConfirm={() => { void toggleWorkflow(toggleTarget).then(() => setToggleTarget(null)); }}
+          onClose={() => setToggleTarget(null)}
+        />
+      )}
+
+      {presetConfirmOpen && (
+        <ConfirmDialog
+          title="Применить шаблон автоматизации?"
+          description="Будут созданы недостающие правила для пиломатериалов. Новые правила появятся выключенными, их можно включить отдельно после проверки."
+          confirmLabel="Применить"
+          variant="warning"
+          loading={applyingPreset}
+          onConfirm={applyPreset}
+          onClose={() => setPresetConfirmOpen(false)}
         />
       )}
     </div>

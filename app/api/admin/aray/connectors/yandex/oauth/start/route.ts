@@ -22,19 +22,25 @@ async function authorize() {
   return { authorized: true as const, role: auth.role };
 }
 
+function connectorsReturnUrl(req: Request, params: Record<string, string>) {
+  const url = new URL("/admin/aray/connectors", new URL(yandexUnifiedOAuthRedirectUri(req)).origin);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  return url;
+}
+
 export async function GET(req: Request) {
   const auth = await authorize();
   if (!auth.authorized) return auth.response;
 
   const app = getYandexUnifiedOAuthApp();
   if (!app) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          "Для единого входа нужны YANDEX_OAUTH_CLIENT_ID / YANDEX_OAUTH_CLIENT_SECRET или общий OAuth-app для Direct и Метрики.",
-      },
-      { status: 400 },
+    return NextResponse.redirect(
+      connectorsReturnUrl(req, {
+        yandex_oauth: "missing_app",
+        message: "Не настроен OAuth Яндекса: добавьте YANDEX_OAUTH_CLIENT_ID и YANDEX_OAUTH_CLIENT_SECRET.",
+      }),
     );
   }
 

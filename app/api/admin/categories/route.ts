@@ -5,6 +5,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slug";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
 const CATEGORY_WRITE_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
@@ -21,12 +22,12 @@ async function checkCategoryWrite() {
   return session && role && CATEGORY_WRITE_ROLES.includes(role);
 }
 
-async function makeUniqueCategorySlug(baseValue: string) {
+async function makeUniqueCategorySlug(baseValue: string, tenantId: string) {
   const base = slugify(baseValue) || "category";
   let candidate = base;
   let suffix = 1;
 
-  while (await prisma.category.findUnique({ where: { slug: candidate }, select: { id: true } })) {
+  while (await prisma.category.findUnique({ where: { tenantId_slug: { tenantId, slug: candidate } }, select: { id: true } })) {
     candidate = `${base}-${suffix}`;
     suffix += 1;
   }
@@ -36,7 +37,9 @@ async function makeUniqueCategorySlug(baseValue: string) {
 
 export async function GET() {
   if (!(await checkCategoryRead())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
   const categories = await prisma.category.findMany({
+    where: { tenantId },
     include: {
       parent: { select: { id: true, name: true, slug: true } },
       children: {
@@ -52,6 +55,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   if (!(await checkCategoryWrite())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
   const { name, slug, image, sortOrder, parentId, seoTitle, seoDescription, showInMenu, showInFooter } = await req.json();
   const cleanName = typeof name === "string" ? name.trim() : "";
   if (!cleanName || cleanName.length > 120) {
@@ -59,13 +63,14 @@ export async function POST(req: Request) {
   }
 
   if (parentId) {
-    const parent = await prisma.category.findUnique({ where: { id: String(parentId) }, select: { id: true } });
+    const parent = await prisma.category.findFirst({ where: { id: String(parentId), tenantId }, select: { id: true } });
     if (!parent) return NextResponse.json({ error: "Родительская категория не найдена" }, { status: 400 });
   }
 
-  const finalSlug = await makeUniqueCategorySlug(String(slug || cleanName));
+  const finalSlug = await makeUniqueCategorySlug(String(slug || cleanName), tenantId);
   const category = await prisma.category.create({
     data: {
+      tenantId,
       name: cleanName,
       slug: finalSlug,
       image: image || null,

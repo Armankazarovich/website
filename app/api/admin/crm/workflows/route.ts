@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/auth-helpers";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import { LUMBER_PRESET_WORKFLOWS } from "@/lib/workflow-engine";
 import { cleanWorkflowDisplayText, sanitizeWorkflowForDisplay } from "@/lib/workflow-text";
 
@@ -15,6 +16,7 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const authResult = await requireManager();
   if (!authResult.authorized) return authResult.response;
+  const tenantId = getCurrentTenantId();
 
   const { searchParams } = new URL(req.url);
   const category = searchParams.get("category"); // "robot" | "tunnel" | "report"
@@ -22,7 +24,7 @@ export async function GET(req: Request) {
   const includePresets = searchParams.get("presets") === "true";
 
   try {
-    const where: any = {};
+    const where: any = { tenantId };
     if (category) where.category = category;
 
     const workflows = await prisma.workflow.findMany({
@@ -40,12 +42,16 @@ export async function GET(req: Request) {
     if (includeStats) {
       [totalLogs, errorLogs] = await Promise.all([
         prisma.workflowLog.count({
-          where: { createdAt: { gte: new Date(Date.now() - 86400000) } },
+          where: {
+            createdAt: { gte: new Date(Date.now() - 86400000) },
+            workflow: { tenantId },
+          },
         }),
         prisma.workflowLog.count({
           where: {
             createdAt: { gte: new Date(Date.now() - 86400000) },
             result: "error",
+            workflow: { tenantId },
           },
         }),
       ]);
@@ -71,6 +77,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const authResult = await requireManager();
   if (!authResult.authorized) return authResult.response;
+  const tenantId = getCurrentTenantId();
 
   try {
     const body = await req.json();
@@ -82,18 +89,19 @@ export async function POST(req: Request) {
       for (const preset of presets) {
         // Проверяем дубликат по имени
         const safeName = cleanWorkflowDisplayText(preset.name);
-        const existing = await prisma.workflow.findFirst({ where: { name: safeName } });
+        const existing = await prisma.workflow.findFirst({ where: { tenantId, name: safeName } });
         if (existing) continue;
 
         const wf = await prisma.workflow.create({
           data: {
+            tenantId,
             name: safeName,
             description: cleanWorkflowDisplayText(preset.description),
             trigger: preset.trigger,
             category: preset.category,
             conditions: preset.conditions,
             actions: preset.actions,
-            active: true,
+            active: false,
           },
         });
         created.push(wf);
@@ -113,6 +121,7 @@ export async function POST(req: Request) {
     const wf = await prisma.workflow.create({
       data: {
         name: safeName,
+        tenantId,
         description: cleanWorkflowDisplayText(description) || null,
         trigger,
         conditions: conditions || {},

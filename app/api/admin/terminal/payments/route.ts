@@ -5,8 +5,17 @@ import { prisma } from "@/lib/prisma";
 import { requireTerminalStaff } from "@/lib/terminal-auth";
 import { enqueueTerminalSyncJob } from "@/lib/terminal-sync";
 import { getCurrentTenantId } from "@/lib/tenant-context";
+import { parseJsonRecord, requireWriteConfirmation } from "@/lib/admin-content-guard";
 
 const CLIENT_PAYMENT_STATUSES = new Set(["PENDING", "REQUESTED", "FAILED", "CANCELLED"]);
+const READ_PAYMENT_STATUSES = new Set([...CLIENT_PAYMENT_STATUSES, "PAID", "REFUNDED"]);
+
+function normalizeOptionalText(value: unknown, maxLength = 200) {
+  if (typeof value !== "string") return null;
+  const text = value.trim();
+  if (!text) return null;
+  return text.slice(0, maxLength);
+}
 
 export async function GET(req: NextRequest) {
   const auth = await requireTerminalStaff();
@@ -14,7 +23,11 @@ export async function GET(req: NextRequest) {
 
   const tenantId = getCurrentTenantId();
   const status = req.nextUrl.searchParams.get("status");
-  const where = status ? { tenantId, status: status.toUpperCase() } : { tenantId };
+  const normalizedStatus = status ? status.toUpperCase() : null;
+  if (normalizedStatus && !READ_PAYMENT_STATUSES.has(normalizedStatus)) {
+    return NextResponse.json({ error: "Unknown payment status" }, { status: 400 });
+  }
+  const where = normalizedStatus ? { tenantId, status: normalizedStatus } : { tenantId };
   const payments = await prisma.payment.findMany({
     where,
     orderBy: { createdAt: "desc" },
@@ -28,7 +41,10 @@ export async function POST(req: NextRequest) {
   const auth = await requireTerminalStaff();
   if (!auth.authorized) return auth.response;
 
-  const body = await req.json().catch(() => ({}));
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+
   const tenantId = getCurrentTenantId();
   const amount = Number(body.amount ?? 0);
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -42,6 +58,12 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
+
+  const method = normalizeOptionalText(body.method, 80) || "manual";
+  const provider = normalizeOptionalText(body.provider, 80);
+  const externalId = normalizeOptionalText(body.externalId, 160);
+  const qrPayload = normalizeOptionalText(body.qrPayload, 2000);
+  const receiptUrl = normalizeOptionalText(body.receiptUrl, 500);
 
   const orderId = body.orderId ? String(body.orderId) : null;
   if (orderId) {
@@ -70,13 +92,13 @@ export async function POST(req: NextRequest) {
       tenantId,
       orderId,
       shiftId,
-      method: String(body.method || "manual"),
+      method,
       status: requestedStatus,
       amount,
-      provider: body.provider ? String(body.provider) : null,
-      externalId: body.externalId ? String(body.externalId) : null,
-      qrPayload: body.qrPayload ? String(body.qrPayload) : null,
-      receiptUrl: body.receiptUrl ? String(body.receiptUrl) : null,
+      provider,
+      externalId,
+      qrPayload,
+      receiptUrl,
       createdById: auth.session.user.id,
       paidAt: null,
     },
@@ -90,6 +112,7 @@ export async function POST(req: NextRequest) {
 
     await Promise.all([
       enqueueTerminalSyncJob({
+        tenantId,
         channel: "payments",
         event: String(payment.status).toUpperCase() === "PAID" ? "payment.paid" : "payment.status_changed",
         entityType: "order",
@@ -106,6 +129,7 @@ export async function POST(req: NextRequest) {
         idempotencyKey: `payment:status:${payment.id}:${payment.status}`,
       }),
       enqueueTerminalSyncJob({
+        tenantId,
         channel: "notifications",
         event: payment.method === "QR / ссылка" ? "notifications.qr.status_changed" : "notifications.payment.status_changed",
         entityType: "order",

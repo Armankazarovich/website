@@ -6,6 +6,8 @@ import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { upsertSiteSetting } from "@/lib/tenant-settings";
 import { buildAraySystemPrompt, ArayRole, ARAY_TOOLS, getToolsForRole, calculateProjectMaterials } from "@/lib/aray-agent";
 import {
   getOrCreateMemory,
@@ -1743,28 +1745,30 @@ async function handleTool(
     if (name === "create_product") {
       const productName = String(input.name || "").trim();
       if (!productName) return { error: "Название товара обязательно" };
+      const tenantId = getCurrentTenantId();
 
       // Найти или создать категорию
       const catName = input.categoryName ? String(input.categoryName).trim() : "Без категории";
       let category = await prisma.category.findFirst({
-        where: { name: { equals: catName, mode: "insensitive" } },
+        where: { tenantId, name: { equals: catName, mode: "insensitive" } },
       });
       if (!category) {
         const slug = catName.toLowerCase().replace(/[^a-zа-яё0-9]/gi, "-").replace(/-+/g, "-").replace(/^-|-$/g, "") || `cat-${Date.now()}`;
         category = await prisma.category.create({
-          data: { name: catName, slug },
+          data: { tenantId, name: catName, slug },
         });
       }
 
       // Создать slug для товара
       const baseSlug = productName.toLowerCase().replace(/[^a-zа-яё0-9]/gi, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
       let slug = baseSlug || `product-${Date.now()}`;
-      const existing = await prisma.product.findUnique({ where: { slug } });
+      const existing = await prisma.product.findUnique({ where: { tenantId_slug: { tenantId, slug } } });
       if (existing) slug = `${baseSlug}-${Date.now().toString(36)}`;
 
       // Создать товар
       const product = await prisma.product.create({
         data: {
+          tenantId,
           name: productName,
           slug,
           categoryId: category.id,
@@ -2233,12 +2237,7 @@ async function handleTool(
         const value = input.value ? String(input.value) : null;
         if (!key || !value) return { error: "Укажи key и value" };
 
-        // Безопасный upsert (try create, catch update)
-        try {
-          await prisma.siteSettings.create({ data: { id: key, key, value } });
-        } catch {
-          await prisma.siteSettings.update({ where: { key }, data: { value } });
-        }
+        await upsertSiteSetting(key, value);
 
         return {
           success: true,

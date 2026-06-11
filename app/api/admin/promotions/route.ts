@@ -3,6 +3,14 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import {
+  cleanLongText,
+  cleanNullableUrl,
+  cleanText,
+  parseJsonRecord,
+  requireWriteConfirmation,
+} from "@/lib/admin-content-guard";
 
 function parseNullableNumber(value: unknown) {
   if (value === undefined || value === null || value === "") return null;
@@ -38,7 +46,9 @@ async function checkAdmin() {
 export async function GET() {
   if (!(await checkAdmin()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
   const promotions = await prisma.promotion.findMany({
+    where: { tenantId },
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(promotions);
@@ -47,9 +57,13 @@ export async function GET() {
 export async function POST(req: Request) {
   if (!(await checkAdmin()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { title, description, discount, imageUrl, validUntil, active } =
-    await req.json();
-  const cleanTitle = typeof title === "string" ? title.trim() : "";
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+
+  const { title, description, discount, imageUrl, validUntil, active } = body;
+  const tenantId = getCurrentTenantId();
+  const cleanTitle = cleanText(title, 160);
   const cleanDiscount = parseNullableNumber(discount);
   const cleanValidUntil = parseNullableDate(validUntil);
 
@@ -65,12 +79,10 @@ export async function POST(req: Request) {
   const promotion = await prisma.promotion.create({
     data: {
       title: cleanTitle,
-      description: typeof description === "string" ? description : "",
+      tenantId,
+      description: cleanLongText(description, 2000),
       discount: cleanDiscount,
-      imageUrl:
-        typeof imageUrl === "string" && imageUrl.trim()
-          ? imageUrl.trim()
-          : null,
+      imageUrl: cleanNullableUrl(imageUrl),
       validUntil: cleanValidUntil,
       active: active ?? true,
     },

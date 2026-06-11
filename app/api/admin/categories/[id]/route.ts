@@ -5,6 +5,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slug";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const CATEGORY_WRITE_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
 
@@ -20,14 +21,14 @@ async function checkAdmin() {
   return session && (role === "ADMIN" || role === "SUPER_ADMIN");
 }
 
-async function makeUniqueCategorySlug(baseValue: string, currentCategoryId: string) {
+async function makeUniqueCategorySlug(baseValue: string, currentCategoryId: string, tenantId: string) {
   const base = slugify(baseValue) || "category";
   let candidate = base;
   let suffix = 1;
 
   while (true) {
     const existing = await prisma.category.findUnique({
-      where: { slug: candidate },
+      where: { tenantId_slug: { tenantId, slug: candidate } },
       select: { id: true },
     });
     if (!existing || existing.id === currentCategoryId) return candidate;
@@ -37,7 +38,7 @@ async function makeUniqueCategorySlug(baseValue: string, currentCategoryId: stri
 }
 
 // Detect cycle: check if candidateParent is in children tree of category
-async function wouldCreateCycle(categoryId: string, candidateParentId: string): Promise<boolean> {
+async function wouldCreateCycle(categoryId: string, candidateParentId: string, tenantId: string): Promise<boolean> {
   if (candidateParentId === categoryId) return true;
   // Walk up from candidate; if we reach categoryId, cycle
   let current: string | null = candidateParentId;
@@ -46,8 +47,8 @@ async function wouldCreateCycle(categoryId: string, candidateParentId: string): 
     if (current === categoryId) return true;
     if (visited.has(current)) return true; // already has cycle
     visited.add(current);
-    const parent: { parentId: string | null } | null = await prisma.category.findUnique({
-      where: { id: current },
+    const parent: { parentId: string | null } | null = await prisma.category.findFirst({
+      where: { id: current, tenantId },
       select: { parentId: true },
     });
     current = parent?.parentId ?? null;
@@ -58,6 +59,7 @@ async function wouldCreateCycle(categoryId: string, candidateParentId: string): 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   if (!(await checkCategoryWrite()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   let body: Record<string, unknown>;
   try {
@@ -77,17 +79,25 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
   }
 
-  const currentCategory = await prisma.category.findUnique({
-    where: { id: params.id },
+  const currentCategory = await prisma.category.findFirst({
+    where: { id: params.id, tenantId },
     select: { id: true, name: true, slug: true },
   });
   if (!currentCategory) {
     return NextResponse.json({ error: "Категория не найдена" }, { status: 404 });
   }
+  const categoryId = currentCategory.id;
 
   // Cycle prevention — if setting parentId, ensure no loop
   if (body.parentId) {
-    const cycle = await wouldCreateCycle(params.id, String(body.parentId));
+    const parent = await prisma.category.findFirst({
+      where: { id: String(body.parentId), tenantId },
+      select: { id: true },
+    });
+    if (!parent) {
+      return NextResponse.json({ error: "Родительская категория не найдена" }, { status: 400 });
+    }
+    const cycle = await wouldCreateCycle(categoryId, String(body.parentId), tenantId);
     if (cycle) {
       return NextResponse.json(
         { error: "Нельзя сделать эту категорию дочерней её потомка — получится цикл" },
@@ -98,12 +108,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const nextSlug =
     body.slug !== undefined
-      ? await makeUniqueCategorySlug(String(body.slug || body.name || currentCategory.name), params.id)
+      ? await makeUniqueCategorySlug(String(body.slug || body.name || currentCategory.name), categoryId, tenantId)
       : undefined;
 
   try {
     const category = await prisma.category.update({
-      where: { id: params.id },
+      where: { id: categoryId },
       data: {
         ...(body.name !== undefined && { name: String(body.name).trim() }),
         ...(nextSlug !== undefined && { slug: nextSlug }),
@@ -144,10 +154,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
   if (!(await checkAdmin()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   // Check for products and children BEFORE delete
-  const category = await prisma.category.findUnique({
-    where: { id: params.id },
+  const category = await prisma.category.findFirst({
+    where: { id: params.id, tenantId },
     include: {
       _count: { select: { products: true, children: true } },
     },
@@ -176,7 +187,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
   }
 
   try {
-    await prisma.category.delete({ where: { id: params.id } });
+    await prisma.category.delete({ where: { id: category.id } });
     revalidateTag("store-shell-data");
     revalidatePath("/catalog");
     revalidatePath("/sitemap.xml");

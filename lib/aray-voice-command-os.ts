@@ -189,7 +189,7 @@ export function resolveArayVoiceCommand(
   }
 
   if (options.isAdmin && hasAny(text, ["мессенджер", "переписка", "сообщения", "диалоги"])) {
-    return openCommand("open-messenger", "/admin/messenger", "Мессенджер", "Открыл мессенджер. Диалоги, CRM и звонки будут рядом.", "prompt");
+    return openCommand("open-crm-from-messages", "/admin/crm", "CRM", "Открыл CRM. Мессенджер пока скрыт, чтобы в боевом интерфейсе не было недоделанных кнопок.", "target");
   }
 
   if (options.isAdmin && hasAny(text, ["финансы", "кошелек", "деньги", "выручка", "расходы", "прибыль", "бонусы", "бонусная программа"])) {

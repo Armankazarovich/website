@@ -118,6 +118,29 @@ const CATEGORIES: { key: CategoryKey; label: string }[] = [
 
 const ARTICLES: HelpArticle[] = [
   {
+    id: "aray-production-partner-sales",
+    title: "Как менеджеру продавать сайты ARAY Production",
+    summary: "Пошагово: заявка, превью, реферальный код, счет, запуск и вознаграждение.",
+    category: "site",
+    audiences: ["sales", "admin", "owner"],
+    popular: true,
+    icon: Megaphone,
+    steps: [
+      "Откройте «Конструктор магазина» или лендинг ARAY Production.",
+      "Укажите менеджера, реферальный код и план вознаграждения.",
+      "Заполните анкету клиента: название, город, домен, контакты, доставка и оплата.",
+      "Загрузите логотип и прайс, затем нажмите «Собрать превью».",
+      "Откройте живое превью и покажите клиенту будущий сайт.",
+      "Если клиент готов, нажмите «Добавить сайт» или «Опубликовать».",
+      "Счет выставляет ARAY Production или проверенный партнер по выбранной модели.",
+      "После оплаты клиентского сайта менеджер или реферал получает вознаграждение по правилам программы.",
+    ],
+    tip: "Для первых клиентов безопаснее: ARAY Production выставляет счет клиенту, менеджер получает процент после оплаты. Режим партнера-перепродавца включаем только проверенным партнерам.",
+    href: "/admin/site/constructor",
+    buttonLabel: "Открыть конструктор",
+    assistantPrompt: "Покажи пошагово, как менеджеру продать сайт ARAY Production и заработать реферальное вознаграждение",
+  },
+  {
     id: "orders-new",
     title: "Новый заказ с сайта",
     summary: "Что сделать сразу после появления заказа, чтобы клиент не ждал.",
@@ -578,7 +601,7 @@ function ArticleCard({
     <article
       id={`guide-${article.id}`}
       data-guide-card={article.id}
-      className="rounded-lg border border-border bg-card overflow-hidden transition-colors hover:border-primary/30"
+      className="rounded-xl border border-border bg-card overflow-hidden transition-colors hover:border-primary/30"
     >
       <button
         type="button"
@@ -589,7 +612,7 @@ function ArticleCard({
         className="w-full px-4 py-4 text-left sm:px-5"
       >
         <div className="flex items-start gap-3">
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-primary">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted text-primary">
             <Icon className="h-[18px] w-[18px]" />
           </span>
           <span className="min-w-0 flex-1">
@@ -598,7 +621,7 @@ function ArticleCard({
                 {article.title}
               </span>
               {article.popular && (
-                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                <span className="inline-flex items-center gap-1 rounded-xl border border-border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
                   <Star className="h-3 w-3" />
                   Часто нужно
                 </span>
@@ -626,7 +649,7 @@ function ArticleCard({
           <ol className="mt-4 space-y-3">
             {article.steps.map((step, index) => (
               <li key={step} className="flex gap-3">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs font-semibold text-primary">
+                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xs font-semibold text-primary">
                   {index + 1}
                 </span>
                 <p className="text-sm leading-relaxed text-foreground/90">
@@ -650,7 +673,7 @@ function ArticleCard({
               {article.href && (
                 <Link
                   href={article.href}
-                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   {article.buttonLabel ?? "Открыть раздел"}
                   <ArrowRight className="h-4 w-4" />
@@ -666,7 +689,7 @@ function ArticleCard({
                       }),
                     )
                   }
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
                 >
                   <MessageSquare className="h-4 w-4" />
                   Спросить помощника
@@ -687,7 +710,7 @@ function FaqItem({ faq }: { faq: Faq }) {
   return (
     <div
       data-faq-item={faq.id}
-      className="rounded-lg border border-border bg-card overflow-hidden"
+      className="rounded-xl border border-border bg-card overflow-hidden"
     >
       <button
         type="button"
@@ -786,7 +809,7 @@ export default function HelpPage() {
       <header className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
+            <div className="inline-flex items-center gap-2 rounded-xl bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
               <BookOpen className="h-3.5 w-3.5" />
               Помощь для команды
             </div>
@@ -800,7 +823,7 @@ export default function HelpPage() {
               </p>
             </div>
           </div>
-          <div className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
+          <div className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
             Показано:{" "}
             <span className="font-semibold text-foreground">
               {filteredArticles.length}
@@ -818,10 +841,10 @@ export default function HelpPage() {
               type="button"
               data-guide-shortcut={article.id}
               onClick={() => revealGuide(article.id)}
-              className="rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/50"
+              className="rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-muted/50"
             >
               <span className="flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-primary">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-muted text-primary">
                   <Icon className="h-4 w-4" />
                 </span>
                 <span className="min-w-0">
@@ -838,7 +861,7 @@ export default function HelpPage() {
         })}
       </section>
 
-      <section className="space-y-3 rounded-lg border border-border bg-card p-3">
+      <section className="space-y-3 rounded-xl border border-border bg-card p-3">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -846,7 +869,7 @@ export default function HelpPage() {
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Поиск: заказ, товар, сотрудник, доставка..."
             data-help-search
-            className="h-11 w-full rounded-md border border-border bg-background pl-9 pr-10 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
+            className="h-11 w-full rounded-xl border border-border bg-background pl-9 pr-10 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary/50 focus:ring-2 focus:ring-primary/10"
           />
           {search && (
             <button
@@ -854,7 +877,7 @@ export default function HelpPage() {
               aria-label="Очистить поиск"
               data-clear-search
               onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             >
               <ChevronUp className="h-4 w-4 rotate-45" />
             </button>
@@ -872,7 +895,7 @@ export default function HelpPage() {
                 data-audience-filter={item.key}
                 onClick={() => setAudience(item.key)}
                 title={item.description}
-                className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-colors ${
+                className={`inline-flex h-9 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition-colors ${
                   active
                     ? "border-primary/40 bg-primary/10 text-primary"
                     : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -894,7 +917,7 @@ export default function HelpPage() {
                 type="button"
                 data-category-filter={item.key}
                 onClick={() => setCategory(item.key)}
-                className={`h-8 shrink-0 rounded-md border px-3 text-sm font-medium transition-colors ${
+                className={`h-8 shrink-0 rounded-xl border px-3 text-sm font-medium transition-colors ${
                   active
                     ? "border-foreground/20 bg-foreground text-background"
                     : "border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -929,7 +952,7 @@ export default function HelpPage() {
       </section>
 
       {filteredArticles.length === 0 && (
-        <section className="rounded-lg border border-border bg-card px-4 py-10 text-center">
+        <section className="rounded-xl border border-border bg-card px-4 py-10 text-center">
           <HelpCircle className="mx-auto h-9 w-9 text-muted-foreground/50" />
           <h2 className="mt-3 text-base font-semibold text-foreground">
             Ничего не найдено
@@ -944,7 +967,7 @@ export default function HelpPage() {
               setAudience("all");
               setCategory("all");
             }}
-            className="mt-4 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+            className="mt-4 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
             Сбросить фильтры
           </button>
@@ -966,9 +989,9 @@ export default function HelpPage() {
           </div>
         </div>
 
-        <aside className="rounded-lg border border-border bg-muted/30 p-4">
+        <aside className="rounded-xl border border-border bg-muted/30 p-4">
           <div className="flex items-start gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-background text-primary">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-background text-primary">
               <MessageSquare className="h-4 w-4" />
             </span>
             <div>
@@ -984,7 +1007,7 @@ export default function HelpPage() {
           <div className="mt-4 flex flex-col gap-2">
             <a
               href={`tel:${PHONE_LINK}`}
-              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
             >
               <Phone className="h-4 w-4" />
               {PHONE_DISPLAY}
@@ -993,7 +1016,7 @@ export default function HelpPage() {
               href="https://t.me/pilorus_orders_bot"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground hover:bg-muted"
             >
               <MessageSquare className="h-4 w-4" />
               Telegram

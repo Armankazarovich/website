@@ -5,11 +5,11 @@ import { BackButton } from "@/components/ui/back-button";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
-  title: "О производстве — ООО ПИТИ, Химки",
-  description: "ООО ПИТИ (ПилоРус) — производитель пиломатериалов в Химках с 2013 года. Склад 2000 м², ГОСТ, напрямую без посредников.",
-  keywords: ["ООО ПИТИ", "производство пиломатериалов Химки", "о компании пилорус", "пиломатериалы производитель Подмосковье"],
+  title: "О производстве — ООО «ДЕРЕВОЛИДЕР», Химки",
+  description: "ООО «ДЕРЕВОЛИДЕР» (ПилоРус) — производитель пиломатериалов в Химках. Склад, ГОСТ, напрямую без посредников.",
+  keywords: ["ООО ДЕРЕВОЛИДЕР", "производство пиломатериалов Химки", "о компании пилорус", "пиломатериалы производитель Подмосковье"],
   openGraph: {
-    title: "О производстве ПилоРус — ООО ПИТИ, Химки МО",
+    title: "О производстве ПилоРус — ООО «ДЕРЕВОЛИДЕР», Химки МО",
     description: "Производитель пиломатериалов с 2013 года. Склад 2000 м², ГОСТ, без посредников.",
     url: "https://pilo-rus.ru/about",
     type: "website",
@@ -21,7 +21,17 @@ export default async function AboutPage() {
   const siteSettings = await getSiteSettings();
   const phones = getPhones(siteSettings);
   const email = getSetting(siteSettings, "email");
+  const address = getSetting(siteSettings, "address");
+  const companyName = getSetting(siteSettings, "company_name");
+  const legalFullName = getSetting(siteSettings, "legal_full_name") || companyName;
   const inn = getSetting(siteSettings, "inn");
+  const ogrn = getSetting(siteSettings, "ogrn");
+  const kpp = getSetting(siteSettings, "kpp");
+  const settlementAccount = getSetting(siteSettings, "settlement_account");
+  const bankName = getSetting(siteSettings, "bank_name");
+  const correspondentAccount = getSetting(siteSettings, "correspondent_account");
+  const bik = getSetting(siteSettings, "bik");
+  const okpo = getSetting(siteSettings, "okpo");
   const aboutPageSchema = {
     "@context": "https://schema.org",
     "@type": "AboutPage",
@@ -30,13 +40,13 @@ export default async function AboutPage() {
     "mainEntity": {
       "@type": "Organization",
       "name": "ПилоРус",
-      "legalName": "ООО «ПИТИ»",
+      "legalName": legalFullName,
       "email": email,
       "telephone": phones.map((phone) => phone.display),
       "taxID": inn,
       "address": {
         "@type": "PostalAddress",
-        "streetAddress": "ул. Заводская 2А, стр.28",
+        "streetAddress": address,
         "addressLocality": "Химки",
         "addressRegion": "Московская область",
         "addressCountry": "RU",
@@ -225,13 +235,19 @@ export default async function AboutPage() {
         <h2 className="font-display font-semibold text-xl mb-4">Реквизиты</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div className="space-y-2 text-muted-foreground">
-            <p><strong className="text-foreground">Полное название:</strong> Общество с ограниченной ответственностью «ПИТИ»</p>
-            <p><strong className="text-foreground">Краткое название:</strong> ООО «ПИТИ»</p>
+            <p><strong className="text-foreground">Полное название:</strong> {legalFullName}</p>
+            <p><strong className="text-foreground">Краткое название:</strong> {companyName}</p>
+            <p><strong className="text-foreground">ОГРН:</strong> {ogrn}</p>
             <p><strong className="text-foreground">ИНН:</strong> {inn}</p>
-            <p><strong className="text-foreground">КПП:</strong> 504701001</p>
+            <p><strong className="text-foreground">КПП:</strong> {kpp}</p>
+            <p><strong className="text-foreground">ОКПО:</strong> {okpo}</p>
           </div>
           <div className="space-y-2 text-muted-foreground">
-            <p><strong className="text-foreground">Юридический адрес:</strong> Московская обл., г. Химки, ул. Заводская 2А, стр.28</p>
+            <p><strong className="text-foreground">Юридический адрес:</strong> {address}</p>
+            <p><strong className="text-foreground">Расчетный счет:</strong> {settlementAccount}</p>
+            <p><strong className="text-foreground">Банк:</strong> {bankName}</p>
+            <p><strong className="text-foreground">Корр. счет:</strong> {correspondentAccount}</p>
+            <p><strong className="text-foreground">БИК:</strong> {bik}</p>
             <p><strong className="text-foreground">Email:</strong> {email}</p>
             <p><strong className="text-foreground">Телефон:</strong>{" "}
               {phones.map((p, i) => (

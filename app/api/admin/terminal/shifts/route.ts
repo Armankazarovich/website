@@ -3,20 +3,23 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTerminalStaff } from "@/lib/terminal-auth";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { parseJsonRecord, requireWriteConfirmation } from "@/lib/admin-content-guard";
 
 export async function GET() {
   const auth = await requireTerminalStaff();
   if (!auth.authorized) return auth.response;
+  const tenantId = getCurrentTenantId();
 
   const [openShifts, recentShifts] = await Promise.all([
     prisma.cashShift.findMany({
-      where: { status: "OPEN" },
+      where: { tenantId, status: "OPEN" },
       orderBy: { openedAt: "desc" },
       include: { workstation: true },
       take: 20,
     }),
     prisma.cashShift.findMany({
-      where: { status: "CLOSED" },
+      where: { tenantId, status: "CLOSED" },
       orderBy: { closedAt: "desc" },
       include: { workstation: true },
       take: 20,
@@ -29,15 +32,19 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const auth = await requireTerminalStaff();
   if (!auth.authorized) return auth.response;
+  const tenantId = getCurrentTenantId();
 
-  const body = await req.json().catch(() => ({}));
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+
   const action = String(body.action || "open");
 
   if (action === "close") {
     const shiftId = String(body.shiftId || "");
     if (!shiftId) return NextResponse.json({ error: "Не указана смена" }, { status: 400 });
 
-    const shift = await prisma.cashShift.findUnique({ where: { id: shiftId } });
+    const shift = await prisma.cashShift.findFirst({ where: { id: shiftId, tenantId } });
     if (!shift || shift.status !== "OPEN") {
       return NextResponse.json({ error: "Открытая смена не найдена" }, { status: 404 });
     }
@@ -62,6 +69,7 @@ export async function POST(req: NextRequest) {
 
     await prisma.shiftOperation.create({
       data: {
+        tenantId,
         shiftId,
         type: "CLOSE",
         amount: actualCash,
@@ -79,10 +87,19 @@ export async function POST(req: NextRequest) {
   }
 
   const workstationId = body.workstationId ? String(body.workstationId) : null;
+  if (workstationId) {
+    const workstation = await prisma.terminalWorkstation.findFirst({
+      where: { id: workstationId, tenantId, status: "ACTIVE" },
+      select: { id: true },
+    });
+    if (!workstation) {
+      return NextResponse.json({ error: "Рабочее место не найдено" }, { status: 404 });
+    }
+  }
   const existingOpenShift = await prisma.cashShift.findFirst({
     where: workstationId
-      ? { status: "OPEN", workstationId }
-      : { status: "OPEN", workstationId: null, openedById: auth.session.user.id },
+      ? { tenantId, status: "OPEN", workstationId }
+      : { tenantId, status: "OPEN", workstationId: null, openedById: auth.session.user.id },
     orderBy: { openedAt: "desc" },
     include: { workstation: true },
   });
@@ -96,6 +113,7 @@ export async function POST(req: NextRequest) {
 
   const open = await prisma.cashShift.create({
     data: {
+      tenantId,
       workstationId,
       openedById: auth.session.user.id,
       openingCash,
@@ -105,6 +123,7 @@ export async function POST(req: NextRequest) {
 
   await prisma.shiftOperation.create({
     data: {
+      tenantId,
       shiftId: open.id,
       type: "OPEN",
       amount: openingCash,

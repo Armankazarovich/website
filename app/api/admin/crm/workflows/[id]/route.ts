@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/auth-helpers";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import { cleanWorkflowDisplayText, sanitizeWorkflowForDisplay } from "@/lib/workflow-text";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +13,18 @@ export const dynamic = "force-dynamic";
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   const authResult = await requireManager();
   if (!authResult.authorized) return authResult.response;
+  const tenantId = getCurrentTenantId();
 
   try {
     const body = await req.json();
     const { id } = params;
+    const existing = await prisma.workflow.findFirst({
+      where: { id, tenantId },
+      select: { id: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
 
     const data: any = {};
     if ("active" in body) data.active = body.active;
@@ -28,7 +37,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if ("delayMinutes" in body) data.delayMinutes = body.delayMinutes;
     if ("sortOrder" in body) data.sortOrder = body.sortOrder;
 
-    const wf = await prisma.workflow.update({ where: { id }, data });
+    const wf = await prisma.workflow.update({ where: { id: existing.id }, data });
     return NextResponse.json({ ok: true, workflow: sanitizeWorkflowForDisplay(wf) });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
@@ -38,9 +47,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   const authResult = await requireManager();
   if (!authResult.authorized) return authResult.response;
+  const tenantId = getCurrentTenantId();
 
   try {
-    await prisma.workflow.delete({ where: { id: params.id } });
+    const existing = await prisma.workflow.findFirst({
+      where: { id: params.id, tenantId },
+      select: { id: true },
+    });
+    if (!existing) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+    await prisma.workflow.delete({ where: { id: existing.id } });
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });

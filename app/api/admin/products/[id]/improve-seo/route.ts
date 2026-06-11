@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 import { generateProductDescriptionAI, generateProductDescription } from "@/lib/product-seo";
 import { makeShortProductDescription } from "@/lib/product-descriptions";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
 
@@ -25,9 +26,10 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
   if (!session || !role || !PRODUCTS_ROLES.includes(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const tenantId = getCurrentTenantId();
 
-  const product = await prisma.product.findUnique({
-    where: { id: params.id },
+  const product = await prisma.product.findFirst({
+    where: { id: params.id, tenantId },
     include: {
       category: { select: { name: true } },
       variants: {

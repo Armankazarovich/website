@@ -95,15 +95,19 @@ function CategoryRow({
   const [modalOpen, setModalOpen] = useState(false);
   const [toggling, setToggling]   = useState(false);
   const [moving, setMoving]       = useState(false);
+  const [confirmToggle, setConfirmToggle] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const hidden = isHidden(cat);
 
   const handleToggle = async () => {
     setToggling(true);
-    await onUpdate(cat.id, hidden
-      ? { sortOrder: undefined, showInMenu: true, showInFooter: true }
-      : { sortOrder: HIDDEN_ORDER, showInMenu: false, showInFooter: false });
-    setToggling(false);
+    try {
+      await onUpdate(cat.id, hidden
+        ? { sortOrder: undefined, showInMenu: true, showInFooter: true }
+        : { sortOrder: HIDDEN_ORDER, showInMenu: false, showInFooter: false });
+    } finally {
+      setToggling(false);
+    }
   };
 
   return (
@@ -175,7 +179,7 @@ function CategoryRow({
         {/* Действия */}
         <div className="flex items-center gap-1 shrink-0">
           <button
-            onClick={handleToggle}
+            onClick={() => setConfirmToggle(true)}
             disabled={toggling}
             title={hidden ? "Показать на сайте" : "Скрыть с сайта"}
             className="flex min-h-[44px] min-w-[44px] items-center justify-center p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-accent transition-colors md:min-h-0 md:min-w-0"
@@ -210,6 +214,21 @@ function CategoryRow({
         }}
       />
       <ConfirmDialog
+        open={confirmToggle}
+        onClose={() => setConfirmToggle(false)}
+        onConfirm={() => {
+          setConfirmToggle(false);
+          void handleToggle();
+        }}
+        title={hidden ? `Показать «${cat.name}» на сайте?` : `Скрыть «${cat.name}» с сайта?`}
+        description={hidden
+          ? "Категория снова появится в навигации сайта."
+          : "Категория исчезнет из меню и футера, товары останутся в каталоге."}
+        confirmLabel={hidden ? "Показать" : "Скрыть"}
+        variant="warning"
+        loading={toggling}
+      />
+      <ConfirmDialog
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
         onConfirm={() => { setConfirmDelete(false); onDelete(cat.id); }}
@@ -237,8 +256,8 @@ function CategoryModal({
   const [slugTouched, setSlugTouched]       = useState(false);
   const [image, setImage]                   = useState("");
   const [parentId, setParentId]             = useState<string>("");
-  const [showInMenu, setShowInMenu]         = useState(true);
-  const [showInFooter, setShowInFooter]     = useState(true);
+  const [showInMenu, setShowInMenu]         = useState(false);
+  const [showInFooter, setShowInFooter]     = useState(false);
   const [seoTitle, setSeoTitle]             = useState("");
   const [seoDescription, setSeoDescription] = useState("");
   const [uploading, setUploading]           = useState(false);
@@ -257,8 +276,8 @@ function CategoryModal({
       setSlugTouched(Boolean(cat?.slug));
       setImage(cat?.image || "");
       setParentId(cat?.parentId || "");
-      setShowInMenu(cat?.showInMenu ?? true);
-      setShowInFooter(cat?.showInFooter ?? true);
+      setShowInMenu(cat ? cat.showInMenu : false);
+      setShowInFooter(cat ? cat.showInFooter : false);
       setSeoTitle(cat?.seoTitle || "");
       setSeoDescription(cat?.seoDescription || "");
       setSaved(false);
@@ -583,10 +602,11 @@ export default function AdminCategoriesPage() {
   };
 
   const handleCreate = async (data: Partial<Category> & { image?: string | null }) => {
+    const hiddenOnCreate = data.showInMenu === false && data.showInFooter === false;
     const res = await fetch("/api/admin/categories", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, sortOrder: visibleCats.length + 1 }),
+      body: JSON.stringify({ ...data, sortOrder: hiddenOnCreate ? HIDDEN_ORDER : visibleCats.length + 1 }),
     });
     const created = await readApi<Category>(res, "Не удалось создать категорию");
     setCategories((prev) => [...prev, created]);

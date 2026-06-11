@@ -1,6 +1,7 @@
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 export type StoreStoryKind = "IMAGE" | "VIDEO" | "LIVE";
 
@@ -162,6 +163,7 @@ export async function getPublicStoreStories({
 }: StoryQuery = {}): Promise<PublicStoreStory[]> {
   const safeTake = Math.min(Math.max(Number(take) || 16, 1), 80);
   const now = new Date();
+  const tenantId = getCurrentTenantId();
   const relatedType = cleanToken(entityType);
   const relatedId = cleanToken(entityId);
   const orderBy = [
@@ -171,7 +173,7 @@ export async function getPublicStoreStories({
   ];
 
   const baseStoriesPromise = prisma.storeStory.findMany({
-    where: scheduleWhere(now),
+    where: { tenantId, ...scheduleWhere(now) },
     select: storySelect(),
     orderBy,
     take: Math.max(safeTake, 80),
@@ -180,6 +182,7 @@ export async function getPublicStoreStories({
   const relatedStoriesPromise = relatedType && relatedId
     ? prisma.storeStory.findMany({
         where: {
+          tenantId,
           ...scheduleWhere(now),
           OR: [
             { relations: { some: { entityType: relatedType, entityId: relatedId } } },
@@ -215,8 +218,9 @@ export async function getPublicStoreStories({
 
 export async function bumpStoryView(id: string) {
   if (!id) return;
+  const tenantId = getCurrentTenantId();
   await prisma.storeStory.update({
-    where: { id },
+    where: { id, tenantId },
     data: { views: { increment: 1 } },
   }).catch(() => null);
 }

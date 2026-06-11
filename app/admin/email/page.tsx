@@ -1,5 +1,6 @@
 "use client";
 
+import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -366,6 +367,7 @@ function sourceLabel(source: string) {
 }
 
 export default function EmailPage() {
+  const confirmAction = useAdminConfirm();
   const [tab, setTab] = useState<Tab>("send");
 
   // Subscribers state
@@ -525,6 +527,7 @@ export default function EmailPage() {
   // Send test email
   const handleTestSend = async () => {
     if (!testEmail.trim() || !html.trim()) return;
+    if (!(await confirmAction("Отправить тестовое письмо на указанный адрес?"))) return;
     setTestSending(true);
     setTestSent(false);
     try {
@@ -538,6 +541,8 @@ export default function EmailPage() {
             html +
             `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;text-align:center;font-size:11px;color:#aaa">⚡ Тестовое письмо — отправлено из ПилоРус Admin</div>`,
           recipients: [testEmail.trim()],
+          test: true,
+          confirm: true,
         }),
       });
       const data = await res.json();
@@ -578,12 +583,13 @@ export default function EmailPage() {
       setSendError("Нет получателей в выбранном сегменте");
       return;
     }
+    if (!(await confirmAction(`Отправить рассылку ${recipients.length} получателям?`))) return;
     setSending(true);
     try {
       const res = await fetch("/api/admin/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "send", subject, html, recipients }),
+        body: JSON.stringify({ action: "send", subject, html, recipients, confirm: true }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Ошибка отправки");
@@ -600,6 +606,7 @@ export default function EmailPage() {
 
   // Save SMTP
   const handleSaveSmtp = async () => {
+    if (!(await confirmAction("Сохранить SMTP-настройки отправки почты?"))) return;
     setSmtpSaving(true);
     setSmtpSaved(false);
     setSmtpTestResult(null);
@@ -607,7 +614,7 @@ export default function EmailPage() {
       const res = await fetch("/api/admin/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "save_smtp", ...smtp }),
+        body: JSON.stringify({ action: "save_smtp", ...smtp, confirm: true }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok)
@@ -677,6 +684,7 @@ export default function EmailPage() {
 
   const handleAddScanned = async () => {
     if (selectedEmails.size === 0) return;
+    if (!(await confirmAction(`Добавить выбранные email в базу текущего сайта: ${selectedEmails.size}?`))) return;
     setAddingScanned(true);
     setScanError("");
     setScanAdded("");
@@ -688,6 +696,7 @@ export default function EmailPage() {
           action: "import_emails",
           emails: [...selectedEmails],
           source: "scanner",
+          confirm: true,
         }),
       });
       const data = await res.json();
@@ -714,13 +723,14 @@ export default function EmailPage() {
       .map((e) => e.trim())
       .filter((e) => e.includes("@"));
     if (!emails.length) return;
+    if (!(await confirmAction(`Импортировать email в базу текущего сайта: ${emails.length}?`))) return;
     setImportLoading(true);
     setImportResult(null);
     try {
       const res = await fetch("/api/admin/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "import_emails", emails }),
+        body: JSON.stringify({ action: "import_emails", emails, confirm: true }),
       });
       const data = await res.json();
       if (!res.ok || !data.ok)
@@ -1640,13 +1650,14 @@ export default function EmailPage() {
                   .split("\n")
                   .filter((l) => l.includes("@"));
                 if (!lines.length) return;
+                if (!(await confirmAction(`Создать клиентские аккаунты: ${lines.length}?`))) return;
                 setImportLoading(true);
                 setImportResult(null);
                 try {
                   const res = await fetch("/api/admin/email", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ action: "register_clients", lines }),
+                    body: JSON.stringify({ action: "register_clients", lines, confirm: true }),
                   });
                   const data = await res.json();
                   if (res.ok && data.ok) {

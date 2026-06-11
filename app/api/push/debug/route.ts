@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { canAccess } from "@/lib/permissions";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 export async function GET() {
   const session = await auth();
@@ -11,10 +12,13 @@ export async function GET() {
   if (!session || !canAccess(role, "notifications")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+  const tenantId = getCurrentTenantId();
+  const tenantWhere = { OR: [{ userId: null }, { user: { is: { tenantId } } }] };
 
-  const count = await prisma.pushSubscription.count();
-  const withUser = await prisma.pushSubscription.count({ where: { userId: { not: null } } });
+  const count = await prisma.pushSubscription.count({ where: tenantWhere });
+  const withUser = await prisma.pushSubscription.count({ where: { user: { is: { tenantId } } } });
   const recent = await prisma.pushSubscription.findMany({
+    where: tenantWhere,
     orderBy: { createdAt: "desc" },
     take: 3,
     select: { createdAt: true, userId: true, endpoint: true },

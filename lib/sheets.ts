@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const getSheets = () => {
   const auth = new google.auth.GoogleAuth({
@@ -45,6 +46,7 @@ export async function syncFromGoogleSheets(): Promise<{
   const rows = response.data.values || [];
   const errors: string[] = [];
   let synced = 0;
+  const tenantId = getCurrentTenantId();
 
   for (const row of rows) {
     try {
@@ -69,9 +71,9 @@ export async function syncFromGoogleSheets(): Promise<{
 
       // Upsert category
       const category = await prisma.category.upsert({
-        where: { slug: catSlug },
+        where: { tenantId_slug: { tenantId, slug: catSlug } },
         update: { name: categoryName || catSlug },
-        create: { name: categoryName || catSlug, slug: catSlug },
+        create: { tenantId, name: categoryName || catSlug, slug: catSlug },
       });
 
       // Upsert product
@@ -80,7 +82,7 @@ export async function syncFromGoogleSheets(): Promise<{
         : "BOTH") as "CUBE" | "PIECE" | "BOTH";
 
       const product = await prisma.product.upsert({
-        where: { slug: productSlug },
+        where: { tenantId_slug: { tenantId, slug: productSlug } },
         update: {
           name,
           description: description || null,
@@ -88,6 +90,7 @@ export async function syncFromGoogleSheets(): Promise<{
           saleUnit,
         },
         create: {
+          tenantId,
           slug: productSlug,
           name,
           description: description || null,

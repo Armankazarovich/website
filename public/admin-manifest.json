@@ -12,48 +12,48 @@
   "prefer_related_applications": false,
   "icons": [
     {
-      "src": "/api/pwa/icon?s=72&v=aray-production-20260508",
+      "src": "/api/pwa/icon?s=72&v=pilorus-brand-header-20260526",
       "sizes": "72x72",
       "type": "image/png"
     },
     {
-      "src": "/api/pwa/icon?s=96&v=aray-production-20260508",
+      "src": "/api/pwa/icon?s=96&v=pilorus-brand-header-20260526",
       "sizes": "96x96",
       "type": "image/png"
     },
     {
-      "src": "/api/pwa/icon?s=128&v=aray-production-20260508",
+      "src": "/api/pwa/icon?s=128&v=pilorus-brand-header-20260526",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "/api/pwa/icon?s=144&v=aray-production-20260508",
+      "src": "/api/pwa/icon?s=144&v=pilorus-brand-header-20260526",
       "sizes": "144x144",
       "type": "image/png"
     },
     {
-      "src": "/api/pwa/icon?s=152&v=aray-production-20260508",
+      "src": "/api/pwa/icon?s=152&v=pilorus-brand-header-20260526",
       "sizes": "152x152",
       "type": "image/png"
     },
     {
-      "src": "/api/pwa/icon?s=180&v=aray-production-20260508",
+      "src": "/api/pwa/icon?s=180&v=pilorus-brand-header-20260526",
       "sizes": "180x180",
       "type": "image/png"
     },
     {
-      "src": "/api/pwa/icon?s=192&v=aray-production-20260508",
+      "src": "/api/pwa/icon?s=192&v=pilorus-brand-header-20260526",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable any"
     },
     {
-      "src": "/api/pwa/icon?s=384&v=aray-production-20260508",
+      "src": "/api/pwa/icon?s=384&v=pilorus-brand-header-20260526",
       "sizes": "384x384",
       "type": "image/png"
     },
     {
-      "src": "/api/pwa/icon?s=512&v=aray-production-20260508",
+      "src": "/api/pwa/icon?s=512&v=pilorus-brand-header-20260526",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable any"
@@ -68,14 +68,14 @@
       "short_name": "Orders",
       "description": "Active orders",
       "url": "/admin/orders",
-      "icons": [{ "src": "/api/pwa/icon?s=96&v=aray-production-20260508", "sizes": "96x96", "type": "image/png" }]
+      "icons": [{ "src": "/api/pwa/icon?s=96&v=pilorus-brand-header-20260526", "sizes": "96x96", "type": "image/png" }]
     },
     {
       "name": "Workspace",
       "short_name": "Workspace",
       "description": "Admin workspace",
       "url": "/admin",
-      "icons": [{ "src": "/api/pwa/icon?s=96&v=aray-production-20260508", "sizes": "96x96", "type": "image/png" }]
+      "icons": [{ "src": "/api/pwa/icon?s=96&v=pilorus-brand-header-20260526", "sizes": "96x96", "type": "image/png" }]
     }
   ]
 }

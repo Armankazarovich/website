@@ -46,6 +46,16 @@ type ModuleConnectorRow = {
   missingCount: number;
 };
 
+type ConnectorNotice = {
+  tone: "success" | "warning";
+  title: string;
+  body: string;
+};
+
+type ArayConnectorsPageProps = {
+  searchParams?: Record<string, string | string[] | undefined>;
+};
+
 function buildModuleConnectorRows(modules: ArayModuleControlItem[]): ModuleConnectorRow[] {
   const rows = new Map<string, ModuleConnectorRow>();
 
@@ -91,7 +101,62 @@ function priorityClass(priority: ArayProviderRuntimeStatus["priority"]) {
   return "border-border bg-muted/30 text-muted-foreground";
 }
 
-export default async function ArayConnectorsPage() {
+function readSearchParam(searchParams: ArayConnectorsPageProps["searchParams"], key: string) {
+  const value = searchParams?.[key];
+  return Array.isArray(value) ? value[0] || "" : value || "";
+}
+
+function buildConnectorNotice(searchParams: ArayConnectorsPageProps["searchParams"]): ConnectorNotice | null {
+  const yandex = readSearchParam(searchParams, "yandex");
+  const yandexOauth = readSearchParam(searchParams, "yandex_oauth");
+  const google = readSearchParam(searchParams, "google");
+  const googleOauth = readSearchParam(searchParams, "google_oauth");
+  const message = readSearchParam(searchParams, "message");
+
+  if (yandexOauth === "missing_app") {
+    return {
+      tone: "warning",
+      title: "Яндекс пока не подключен",
+      body: message || "Добавьте OAuth ID и секрет Яндекса в настройки окружения, потом повторите подключение.",
+    };
+  }
+
+  if (googleOauth === "missing_app") {
+    return {
+      tone: "warning",
+      title: "Google пока не подключен",
+      body: message || "Добавьте OAuth ID и секрет Google в настройки окружения, потом повторите подключение.",
+    };
+  }
+
+  if (yandex === "connected" || yandexOauth === "connected") {
+    return {
+      tone: "success",
+      title: "Яндекс подключен",
+      body: message || "Доступ сохранен. Можно проверить пакет и подготовить цели Метрики.",
+    };
+  }
+
+  if (google === "connected" || googleOauth === "connected") {
+    return {
+      tone: "success",
+      title: "Google подключен",
+      body: message || "Доступ сохранен. Можно проверить пакет и продолжить настройку аналитики.",
+    };
+  }
+
+  if (yandex === "error" || google === "error" || yandexOauth === "error" || googleOauth === "error") {
+    return {
+      tone: "warning",
+      title: "Подключение не завершилось",
+      body: message || "Проверьте настройки OAuth и попробуйте еще раз.",
+    };
+  }
+
+  return null;
+}
+
+export default async function ArayConnectorsPage({ searchParams }: ArayConnectorsPageProps) {
   const auth = await getSessionRole();
   if (!auth) redirect("/login?callbackUrl=/admin/aray/connectors");
   if (!ADMIN_ROLES.includes(auth.role as any)) redirect("/admin");
@@ -124,9 +189,10 @@ export default async function ArayConnectorsPage() {
   const missingModuleConnections = moduleConnectorRows.reduce((sum, row) => sum + row.missingCount, 0);
   const p0 = providers.filter((provider) => provider.priority === "P0");
   const later = providers.filter((provider) => provider.priority !== "P0");
+  const connectorNotice = buildConnectorNotice(searchParams);
 
   return (
-    <div className="admin-page-frame admin-page-frame-readable space-y-5">
+    <div className="admin-page-frame admin-page-frame-aray-workspace space-y-5">
       <section className="rounded-2xl border border-border bg-card p-5 md:p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
@@ -150,23 +216,129 @@ export default async function ArayConnectorsPage() {
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-        <Metric label="Всего контуров" value={summary.total} />
-        <Metric label="Подключено" value={summary.ready} tone="ready" />
-        <Metric label="Частично" value={summary.partial} tone="partial" />
-        <Metric label="P0 сейчас" value={summary.byPriority.P0} tone="primary" />
-        <Metric label="Связей модулей" value={missingModuleConnections} tone={missingModuleConnections > 0 ? "partial" : "ready"} />
-      </section>
+      {connectorNotice ? <ConnectorNoticeBanner notice={connectorNotice} /> : null}
 
-      <OneClickBundleSection bundles={bundles} />
-      <YandexGrowthConnectorPanel />
-      <GoogleGrowthConnectorPanel />
+      <LiveConnectorPath missingModuleConnections={missingModuleConnections} />
+      <div id="yandex-growth">
+        <YandexGrowthConnectorPanel />
+      </div>
+      <div id="google-growth">
+        <GoogleGrowthConnectorPanel />
+      </div>
       <ModuleConnectorSection rows={moduleConnectorRows} moduleCount={modulesWithConnectors.length} />
-      <DatabaseConnectorSection connectors={dbConnectors} />
 
-      <ConnectorSection title="Сначала делаем это" subtitle="Фундамент: ARAY, биржа, голос, SEO, реклама, inbox." providers={p0} />
-      <ConnectorSection title="Следующий слой" subtitle="Не теряем, но не мешаем запуску P0." providers={later} />
+      <details className="rounded-2xl border border-dashed border-border bg-card/60 p-4 md:p-5">
+        <summary className="cursor-pointer list-none">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Служебная карта</div>
+              <h2 className="mt-1 text-lg font-semibold">Провайдеры, пакеты и база подключений</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Это карта для команды: она не мешает рабочему запуску и не выглядит как обещание готового подключения.
+              </p>
+            </div>
+            <span className="inline-flex w-fit items-center rounded-full border border-border bg-background/60 px-3 py-1 text-xs font-semibold text-muted-foreground">
+              скрыто от первого шага
+            </span>
+          </div>
+        </summary>
+
+        <div className="mt-5 space-y-5">
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <Metric label="Всего контуров" value={summary.total} />
+            <Metric label="Подключено" value={summary.ready} tone="ready" />
+            <Metric label="Частично" value={summary.partial} tone="partial" />
+            <Metric label="P0 сейчас" value={summary.byPriority.P0} tone="primary" />
+            <Metric label="Связей модулей" value={missingModuleConnections} tone={missingModuleConnections > 0 ? "partial" : "ready"} />
+          </section>
+
+          <OneClickBundleSection bundles={bundles} />
+          <DatabaseConnectorSection connectors={dbConnectors} />
+          <ConnectorSection title="Сначала делаем это" subtitle="Фундамент: ARAY, биржа, голос, SEO, реклама, inbox." providers={p0} />
+          <ConnectorSection title="Следующий слой" subtitle="Не теряем, но не мешаем запуску P0." providers={later} />
+        </div>
+      </details>
     </div>
+  );
+}
+
+function LiveConnectorPath({ missingModuleConnections }: { missingModuleConnections: number }) {
+  const steps = [
+    {
+      title: "Яндекс",
+      text: "OAuth, Direct, Метрика, счетчик и цели. Если доступа нет, показываем причину и следующий шаг.",
+      href: "#yandex-growth",
+      label: "Проверить Яндекс",
+    },
+    {
+      title: "Google",
+      text: "Ads, Analytics и Search Console проверяются отдельно, без обещаний запуска рекламы без доступа.",
+      href: "#google-growth",
+      label: "Проверить Google",
+    },
+    {
+      title: "Модули ARAY",
+      text:
+        missingModuleConnections > 0
+          ? "Есть связи, которые нужно довести до готовности перед боевым включением."
+          : "Связи модулей не мешают запуску: можно идти дальше по рабочему пути.",
+      href: "#module-connectors",
+      label: "Связи модулей",
+    },
+  ];
+
+  return (
+    <section className="rounded-2xl border border-primary/20 bg-primary/[0.035] p-4 md:p-5">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Рабочий путь</div>
+          <h2 className="mt-1 text-lg font-semibold">Сначала живые подключения, потом служебная карта</h2>
+          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+            Здесь нет декоративных кнопок: проверяем доступ, показываем реальный статус и не пишем “готово”, пока контур не отвечает.
+          </p>
+        </div>
+        <span className="inline-flex w-fit items-center rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300">
+          честный статус
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        {steps.map((step, index) => (
+          <article key={step.title} className="rounded-xl border border-border bg-card p-3">
+            <div className="flex items-start gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-sm font-bold text-primary">
+                {index + 1}
+              </span>
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold">{step.title}</h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.text}</p>
+                <Link
+                  href={step.href}
+                  className="mt-3 inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-border bg-background/60 px-3 text-xs font-semibold transition-colors hover:border-primary/40 hover:text-primary"
+                >
+                  {step.label}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ConnectorNoticeBanner({ notice }: { notice: ConnectorNotice }) {
+  const toneClass =
+    notice.tone === "success"
+      ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-200"
+      : "border-amber-500/25 bg-amber-500/10 text-amber-100";
+
+  return (
+    <section className={`rounded-2xl border px-4 py-3 text-sm leading-relaxed ${toneClass}`}>
+      <div className="font-semibold text-foreground">{notice.title}</div>
+      <div className="mt-1 text-muted-foreground">{notice.body}</div>
+    </section>
   );
 }
 
@@ -193,14 +365,14 @@ function OneClickBundleSection({ bundles }: { bundles: ArayConnectorBundleRuntim
     <section className="space-y-3">
       <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Подключить в один клик</h2>
+          <h2 className="text-lg font-semibold">Пакеты подключений</h2>
           <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
-            Пакеты показывают простую цепочку: владелец дает официальный доступ, ARAY собирает данные, готовит безопасные
-            действия и просит подтверждение там, где есть деньги, публичность или юридический риск.
+            Это служебная карта возможностей. В рабочем запуске используем живые панели выше: они проверяют доступ,
+            показывают причину остановки и не обещают готовность без официального подключения.
           </p>
         </div>
         <span className="inline-flex w-fit items-center rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-          OAuth отдельно от входа
+          карта, не мастер запуска
         </span>
       </div>
 
@@ -261,7 +433,7 @@ function OneClickBundleSection({ bundles }: { bundles: ArayConnectorBundleRuntim
 
 function ModuleConnectorSection({ rows, moduleCount }: { rows: ModuleConnectorRow[]; moduleCount: number }) {
   return (
-    <section className="rounded-2xl border border-border bg-card p-4 md:p-5">
+    <section id="module-connectors" className="rounded-2xl border border-border bg-card p-4 md:p-5">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold">Зависимости модулей</h2>

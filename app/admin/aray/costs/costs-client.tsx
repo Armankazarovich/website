@@ -559,14 +559,20 @@ export function CostsClient() {
                   onEdit={() => { setEditingSub(sub); setShowSubForm(true); }}
                   onDelete={async () => {
                     if (!confirm(`Удалить подписку "${sub.name}"?`)) return;
-                    await fetch(`/api/admin/aray/subscriptions?id=${sub.id}`, { method: "DELETE" });
+                    await fetch(`/api/admin/aray/subscriptions?id=${sub.id}`, {
+                      method: "DELETE",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ confirm: true }),
+                    });
                     fetchData(true);
                   }}
                   onToggle={async () => {
+                    const action = sub.active ? "Деактивировать" : "Активировать";
+                    if (!confirm(`${action} подписку "${sub.name}"?`)) return;
                     await fetch(`/api/admin/aray/subscriptions?id=${sub.id}`, {
                       method: "PATCH",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ active: !sub.active }),
+                      body: JSON.stringify({ active: !sub.active, confirm: true }),
                     });
                     fetchData(true);
                   }}
@@ -874,18 +880,21 @@ function SubscriptionForm({
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const nextName = name.trim();
+    if (!confirm(sub ? `Сохранить изменения подписки "${nextName}"?` : `Создать подписку "${nextName}"?`)) return;
     setSaving(true);
     setErr(null);
     try {
       const payload = {
         provider: provider.trim().toLowerCase(),
-        name: name.trim(),
+        name: nextName,
         costUsd: costUsd ? Number(costUsd) : null,
         costRub: costRub ? Number(costRub) : null,
         billingDay: billingDay ? Number(billingDay) : null,
         billingType,
         notes: notes.trim() || null,
         active: sub?.active ?? true,
+        confirm: true,
       };
       const res = sub
         ? await fetch(`/api/admin/aray/subscriptions?id=${sub.id}`, {

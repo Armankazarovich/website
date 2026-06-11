@@ -1,5 +1,6 @@
 "use client";
 
+import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -23,18 +24,20 @@ export function DeliveryStatusSelect({
   currentStatus: string;
 }) {
   const router = useRouter();
+  const confirmAction = useAdminConfirm();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const handleChange = async (newStatus: string) => {
     if (newStatus === currentStatus) return;
+    if (!(await confirmAction("Изменить статус доставки? Клиент и команда могут получить уведомление."))) return;
     setSaving(true);
     setError("");
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: newStatus, confirm: true }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));

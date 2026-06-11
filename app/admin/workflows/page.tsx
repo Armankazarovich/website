@@ -400,6 +400,7 @@ export default function WorkflowsPage() {
   const [seeding, setSeeding] = useState(false);
   const [seedDone, setSeedDone] = useState(false);
   const [confirmSeed, setConfirmSeed] = useState(false);
+  const [toggleTarget, setToggleTarget] = useState<Workflow | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [mutatingId, setMutatingId] = useState<string | null>(null);
   const seedPreview = [
@@ -484,6 +485,7 @@ export default function WorkflowsPage() {
   };
 
   const activeCount = workflows.filter(w => w.active).length;
+  const toggleTargetName = toggleTarget ? cleanWorkflowText(toggleTarget.name) || toggleTarget.name : "";
 
   return (
     <div className="admin-page-frame admin-page-frame-readable">
@@ -538,8 +540,8 @@ export default function WorkflowsPage() {
                 <CheckCircle2 className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-bold text-emerald-700 dark:text-emerald-400">6 сценариев установлены и активны!</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Теперь при каждом заказе задачи создаются автоматически</p>
+                <p className="font-bold text-emerald-700 dark:text-emerald-400">Готовые сценарии установлены выключенными.</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Включите нужные правила вручную после проверки.</p>
               </div>
             </div>
           ) : (
@@ -549,7 +551,7 @@ export default function WorkflowsPage() {
                   <Zap className="w-4 h-4 text-primary" />
                   Готовые сценарии для магазина пиломатериалов
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Одна кнопка — и 6 сценариев сразу активны:</p>
+                <p className="text-xs text-muted-foreground mt-1">Одна кнопка добавит 6 выключенных сценариев для проверки:</p>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {seedPreview.map(({ label, icon: Icon }) => (
                     <span key={label} className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
@@ -594,7 +596,7 @@ export default function WorkflowsPage() {
             <WorkflowCard
               key={wf.id}
               wf={wf}
-              onToggle={() => toggle(wf)}
+              onToggle={() => setToggleTarget(wf)}
               onDelete={() => deleteWf(wf.id)}
               busy={mutatingId === wf.id}
             />
@@ -615,10 +617,29 @@ export default function WorkflowsPage() {
         onClose={() => setConfirmSeed(false)}
         onConfirm={() => { setConfirmSeed(false); installDefaults(); }}
         title="Установить готовые сценарии?"
-        description="Установить 6 готовых сценариев для магазина пиломатериалов? Они будут сразу активны."
+        description="Будут добавлены только отсутствующие сценарии. Все новые правила останутся выключенными, пока вы не включите их отдельно."
         confirmLabel="Установить"
         variant="default"
         loading={seeding}
+      />
+      <ConfirmDialog
+        open={Boolean(toggleTarget)}
+        onClose={() => setToggleTarget(null)}
+        onConfirm={() => {
+          if (!toggleTarget) return;
+          const target = toggleTarget;
+          setToggleTarget(null);
+          toggle(target);
+        }}
+        title={toggleTarget?.active ? "Выключить сценарий?" : "Включить сценарий?"}
+        description={
+          toggleTarget?.active
+            ? `Сценарий «${toggleTargetName}» перестанет создавать задачи автоматически.`
+            : `Сценарий «${toggleTargetName}» начнет создавать задачи автоматически при совпадении условий.`
+        }
+        confirmLabel={toggleTarget?.active ? "Выключить" : "Включить"}
+        variant={toggleTarget?.active ? "danger" : "default"}
+        loading={Boolean(toggleTarget && mutatingId === toggleTarget.id)}
       />
     </div>
   );

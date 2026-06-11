@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_SETTINGS } from "@/lib/site-settings";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { parseJsonRecord, requireWriteConfirmation } from "@/lib/admin-content-guard";
 
 async function checkAdmin() {
   const session = await auth();
@@ -12,11 +14,16 @@ async function checkAdmin() {
 
 export async function POST(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const { action } = await req.json();
+  const tenantId = getCurrentTenantId();
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+
+  const action = String(body.action || "");
 
   // Ping Yandex and Google with sitemap
   if (action === "ping_sitemap") {
-    const siteUrlRow = await prisma.siteSettings.findUnique({ where: { key: "site_url" } });
+    const siteUrlRow = await prisma.siteSettings.findFirst({ where: { key: "site_url", tenantId } });
     const siteUrl = siteUrlRow?.value || "https://pilo-rus.ru";
     const sitemapUrl = encodeURIComponent(`${siteUrl}/sitemap.xml`);
 
@@ -44,7 +51,7 @@ export async function POST(req: Request) {
   // Generate meta for all products missing description
   if (action === "auto_meta") {
     const products = await prisma.product.findMany({
-      where: { OR: [{ description: null }, { description: "" }] },
+      where: { tenantId, OR: [{ description: null }, { description: "" }] },
       select: { id: true, name: true, category: { select: { name: true } } },
       take: 50,
     });

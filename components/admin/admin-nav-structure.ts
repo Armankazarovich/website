@@ -6,18 +6,20 @@ export const ADMIN_NAV_GROUP_ORDER = [
   "products",
   "marketing",
   "finance",
+  "arayCms",
   "settings",
   "help",
   "personal",
 ];
 
 export const ADMIN_NAV_GROUP_DESCRIPTIONS: Record<string, string> = {
-  main: "сводка дня, роли, риски и быстрые действия",
+  main: "рабочий стол, сводка дня, риски и быстрые действия",
   sales: "заказы, терминал, клиенты, доставка, CRM и задачи",
   products: "каталог, карточки, цены, склад, медиа и импорт",
   marketing: "Direct, SEO, акции, сторис, отзывы, контент и аналитика",
   finance: "деньги, расходы, платежи и финансовая картина",
-  settings: "бизнес, сайт, команда, ARAY, рабочие места и здоровье",
+  arayCms: "создание сайтов, проекты, брифы, превью и служебная CMS",
+  settings: "готовый сайт, бизнес, команда и системные настройки",
   help: "гайды, обучение, база знаний и быстрые подсказки",
   personal: "профиль клиента, заказы, история и подписки",
 };
@@ -25,7 +27,6 @@ export const ADMIN_NAV_GROUP_DESCRIPTIONS: Record<string, string> = {
 const ADMIN_NAV_SECTIONS: Record<string, Array<{ label: string; hrefs: string[] }>> = {
   main: [
     { label: "Рабочий день", hrefs: ["/admin"] },
-    { label: "Роли и система", hrefs: ["/admin/director"] },
   ],
   sales: [
     { label: "Заказы", hrefs: ["/admin/orders", "/admin/orders/new"] },
@@ -50,10 +51,14 @@ const ADMIN_NAV_SECTIONS: Record<string, Array<{ label: string; hrefs: string[] 
   finance: [
     { label: "Финансы", hrefs: ["/admin/finance"] },
   ],
+  arayCms: [
+    { label: "Создать проект", hrefs: ["/admin/aray/orders", "/admin/aray/briefs", "/admin/aray/builder"] },
+    { label: "Сайты и проекты", hrefs: ["/admin/site/benchmarks", "/admin/site/releases"] },
+    { label: "Служебное CMS", hrefs: ["/admin/aray", "/admin/aray/partners", "/admin/aray/requisites", "/admin/aray/brand-kit", "/admin/aray/arc"] },
+  ],
   settings: [
-    { label: "Бизнес и роли", hrefs: ["/admin/business/settings", "/admin/staff"] },
-    { label: "Сайт и оформление", hrefs: ["/admin/site", "/admin/site/constructor", "/admin/appearance"] },
-    { label: "ARAY и модули", hrefs: ["/admin/aray"] },
+    { label: "Готовый сайт", hrefs: ["/admin/site", "/admin/site/constructor", "/admin/appearance"] },
+    { label: "Группы и бизнес", hrefs: ["/admin/director", "/admin/business/settings", "/admin/staff"] },
     { label: "Рабочие места", hrefs: ["/admin/terminals"] },
     { label: "Система", hrefs: ["/admin/settings", "/admin/health"] },
     { label: "Личный кабинет", hrefs: ["/cabinet/notifications", "/cabinet/appearance"] },
@@ -88,7 +93,7 @@ export function buildAdminNavSections(group: string, items: NavItem[]): AdminNav
   const rest = items.filter((item) => !used.has(item.href));
   if (rest.length > 0) {
     sections.push({
-      label: sections.length > 0 ? "Другое" : "Разделы",
+      label: sections.length > 0 ? "Еще" : "Разделы",
       items: rest,
     });
   }

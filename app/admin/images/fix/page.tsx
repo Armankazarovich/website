@@ -27,7 +27,10 @@ type ProductReport = {
   hasBroken: boolean;
   duplicates: string[];
   broken: string[];
+  wmDuplicates: string[];
   suggestedImage?: string | null;
+  wmDuplicatesCount?: number;
+  hasWmDuplicates?: boolean;
 };
 type Summary = {
   totalProducts: number;
@@ -35,8 +38,10 @@ type Summary = {
   withBroken: number;
   withNoImages: number;
   withRestorableNoImages?: number;
+  withWmDuplicates?: number;
   totalDuplicateEntries: number;
   totalBrokenRefs: number;
+  totalWmDuplicateRefs?: number;
 };
 export default function ImageFixPage() {
   const [loading, setLoading] = useState(false);
@@ -100,7 +105,7 @@ export default function ImageFixPage() {
       if (filter === "duplicates") return p.hasDuplicates;
       if (filter === "broken") return p.hasBroken;
       if (filter === "noimage") return p.total === 0;
-      return p.hasDuplicates || p.hasBroken || p.total === 0;
+      return p.hasDuplicates || p.hasBroken || p.total === 0 || Boolean(p.hasWmDuplicates);
     }) ?? [];
   const s = data?.summary;
   return (
@@ -210,7 +215,8 @@ export default function ImageFixPage() {
       {s &&
         (s.withDuplicates > 0 ||
           s.withBroken > 0 ||
-          (s.withRestorableNoImages ?? 0) > 0) && (
+          (s.withRestorableNoImages ?? 0) > 0 ||
+          (s.withWmDuplicates ?? 0) > 0) && (
           <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
             {" "}
             <h2 className="font-semibold flex items-center gap-2">
@@ -315,11 +321,12 @@ export default function ImageFixPage() {
                   </div>{" "}
                 </button>
               )}{" "}
+              {(s.withWmDuplicates ?? 0) > 0 && (
               <button
                 onClick={() =>
                   fixAction(
                     "remove_wm_duplicates",
-                    "Удалить водяные знаки-дубли (оставить оригиналы там где они есть)",
+                    `Удалить ${s.totalWmDuplicateRefs ?? 0} wm-дублей у ${s.withWmDuplicates ?? 0} товаров, только если рядом есть точный оригинал`,
                   )
                 }
                 disabled={!!fixing}
@@ -339,10 +346,11 @@ export default function ImageFixPage() {
                   <p className="font-semibold text-sm">Убрать wm-дубли</p>{" "}
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {" "}
-                    Удалить wm-версии там где есть оригиналы{" "}
+                    {s.totalWmDuplicateRefs ?? 0} точных wm-дублей{" "}
                   </p>{" "}
                 </div>{" "}
-              </button>{" "}
+              </button>
+              )}{" "}
             </div>{" "}
           </div>
         )}{" "}
@@ -457,6 +465,12 @@ export default function ImageFixPage() {
                   <span className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-medium">
                     {" "}
                     <XCircle className="w-3 h-3" /> {p.brokenCount} битых{" "}
+                  </span>
+                )}{" "}
+                {p.hasWmDuplicates && (
+                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-xl bg-muted text-muted-foreground text-xs font-medium">
+                    {" "}
+                    <ImageOff className="w-3 h-3" /> {p.wmDuplicatesCount ?? 0} wm-дубл{" "}
                   </span>
                 )}{" "}
                 <Link

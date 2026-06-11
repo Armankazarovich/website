@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 async function checkAdmin() {
   const session = await auth();
@@ -149,6 +150,7 @@ export async function GET(req: Request) {
 // ── POST: download photo → save to /images/products/ ─────────────────────────
 export async function POST(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const { photoUrl, productId } = await req.json();
   if (!photoUrl || !productId) return NextResponse.json({ error: "photoUrl and productId required" }, { status: 400 });
@@ -176,8 +178,8 @@ export async function POST(req: Request) {
 
     // Add to product images
     const { prisma } = await import("@/lib/prisma");
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
+    const product = await prisma.product.findFirst({
+      where: { id: productId, tenantId },
       select: { images: true },
     });
 

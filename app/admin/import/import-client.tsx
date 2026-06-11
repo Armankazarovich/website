@@ -7,7 +7,7 @@ import {
   ChevronDown, ChevronUp, Copy, ExternalLink, Settings,
   Globe, RefreshCw, ShoppingBag, Package, Zap, Clock,
   Building2, BarChart3, Link as LinkIcon,
-  Search, FolderOpen, ImageIcon,
+  Search, FolderOpen, ImageIcon, FileCheck,
 } from "lucide-react";
 
 // ─── Copy button ─────────────────────────────────────────────────────────────
@@ -25,6 +25,7 @@ function CopyBtn({ text }: { text: string }) {
 }
 
 type GSResult = { ok?: boolean; rows?: number; updated?: number; created?: number; errors?: string[]; error?: string; url?: string; email?: string };
+type ImportResult = { updated: number; created: number; errors: string[]; rows?: number; preview?: boolean };
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export function ImportClient() {
@@ -46,7 +47,9 @@ export function ImportClient() {
   // ── Excel state ──────────────────────────────────────────────────────────
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ updated: number; created: number; errors: string[] } | null>(null);
+  const [result, setResult] = useState<ImportResult | null>(null);
+  const [previewResult, setPreviewResult] = useState<ImportResult | null>(null);
+  const [confirmImport, setConfirmImport] = useState(false);
   const [xlError, setXlError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -129,25 +132,51 @@ export function ImportClient() {
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const f = e.dataTransfer.files[0];
-    if (f && (f.name.endsWith(".xlsx") || f.name.endsWith(".csv"))) { setFile(f); setResult(null); setXlError(null); }
+    if (f && (f.name.endsWith(".xlsx") || f.name.endsWith(".csv"))) {
+      setFile(f);
+      setResult(null);
+      setPreviewResult(null);
+      setConfirmImport(false);
+      setXlError(null);
+    }
   };
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
-    if (f) { setFile(f); setResult(null); setXlError(null); }
+    if (f) {
+      setFile(f);
+      setResult(null);
+      setPreviewResult(null);
+      setConfirmImport(false);
+      setXlError(null);
+    }
   };
-  const handleImport = async () => {
+  const submitImport = async (preview: boolean) => {
     if (!file) return;
-    setImporting(true); setResult(null); setXlError(null);
+    setImporting(true); setXlError(null);
+    if (preview) {
+      setResult(null);
+      setPreviewResult(null);
+      setConfirmImport(false);
+    }
     try {
       const formData = new FormData();
       formData.append("file", file);
+      if (preview) formData.append("preview", "1");
       const res = await fetch("/api/admin/products/import", { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) setXlError(data.error || `Ошибка ${res.status}`);
-      else setResult(data);
+      else if (preview) setPreviewResult(data);
+      else {
+        setResult(data);
+        setPreviewResult(null);
+        setConfirmImport(false);
+      }
     } catch { setXlError("Не удалось подключиться к серверу"); }
     finally { setImporting(false); }
   };
+  const handlePreview = () => submitImport(true);
+  const handleImport = () => submitImport(false);
+  const previewHasChanges = !!previewResult && previewResult.updated + previewResult.created > 0;
 
   // ─────────────────────────────────────────────────────────────────────────
   return (
@@ -404,6 +433,32 @@ export function ImportClient() {
           </div>
         )}
 
+        {previewResult && !result && (
+          <div className="p-4 rounded-xl bg-primary/10 border border-primary/25 space-y-2">
+            <div className="flex items-center gap-2 font-semibold text-foreground">
+              <FileCheck className="w-4 h-4 text-primary" /> Предпросмотр импорта
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Строк: <strong className="text-foreground">{previewResult.rows ?? "—"}</strong>
+              &nbsp;·&nbsp; Будет обновлено: <strong className="text-foreground">{previewResult.updated}</strong>
+              &nbsp;·&nbsp; Будет создано: <strong className="text-foreground">{previewResult.created}</strong>
+            </p>
+            {previewResult.errors.length > 0 && (
+              <div className="mt-2 text-xs text-amber-600 dark:text-amber-400 space-y-0.5">
+                {previewResult.errors.map((e, i) => <p key={i} className="flex items-start gap-1"><AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" /> {e}</p>)}
+              </div>
+            )}
+            {!previewHasChanges && (
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                Нет изменений для применения: проверьте файл или выберите другой.
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              База ещё не изменена. Проверьте цифры и только потом подтвердите применение.
+            </p>
+          </div>
+        )}
+
         {xlError && (
           <div className="flex items-start gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-sm text-destructive">
             <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
@@ -411,14 +466,44 @@ export function ImportClient() {
           </div>
         )}
 
-        <button
-          onClick={handleImport}
-          disabled={!file || importing}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors"
-        >
-          {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-          {importing ? "Импортируем..." : "Применить импорт"}
-        </button>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <button
+            onClick={handlePreview}
+            disabled={!file || importing}
+            className="inline-flex w-full items-center justify-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card text-sm font-semibold hover:bg-accent disabled:opacity-50 transition-colors sm:w-auto"
+          >
+            {importing && !previewResult ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileCheck className="w-4 h-4" />}
+            Проверить файл
+          </button>
+          {!confirmImport ? (
+            <button
+              onClick={() => setConfirmImport(true)}
+              disabled={!file || importing || !previewHasChanges}
+              className="inline-flex w-full items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors sm:w-auto"
+            >
+              <Upload className="w-4 h-4" />
+              Применить импорт
+            </button>
+          ) : (
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+              <button
+                onClick={() => setConfirmImport(false)}
+                disabled={importing}
+                className="w-full px-5 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-accent disabled:opacity-50 transition-colors sm:w-auto"
+              >
+                Отмена
+              </button>
+              <button
+                onClick={handleImport}
+                disabled={!file || importing || !previewHasChanges}
+                className="inline-flex w-full items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 disabled:opacity-50 transition-colors sm:w-auto"
+              >
+                {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {importing ? "Импортируем..." : "Да, применить"}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Info */}

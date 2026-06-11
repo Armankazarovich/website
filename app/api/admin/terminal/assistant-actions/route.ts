@@ -9,9 +9,12 @@ import {
   type TerminalCapabilityKey,
 } from "@/lib/terminal-capabilities";
 import { prisma } from "@/lib/prisma";
+import { upsertSiteSetting } from "@/lib/tenant-settings";
 import { TERMINAL_ADMIN_ROLES, requireTerminalStaff } from "@/lib/terminal-auth";
 import { resolveTerminalProfile } from "@/lib/terminal-profiles";
 import { enqueueTerminalSyncJob } from "@/lib/terminal-sync";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { parseJsonRecord, requireWriteConfirmation } from "@/lib/admin-content-guard";
 
 function canAdmin(role?: string) {
   return Boolean(role && TERMINAL_ADMIN_ROLES.includes(role));
@@ -27,10 +30,11 @@ function normalizeModules(value: unknown): TerminalCapabilityKey[] {
 export async function GET() {
   const auth = await requireTerminalStaff();
   if (!auth.authorized) return auth.response;
+  const tenantId = getCurrentTenantId();
 
-  const config = await buildTerminalAutoconfig();
+  const config = await buildTerminalAutoconfig(tenantId);
   const settings = await prisma.siteSettings.findMany({
-    where: { key: { in: ["terminal_enabled_modules", "terminal_profile", "business_type"] } },
+    where: { tenantId, key: { in: ["terminal_enabled_modules", "terminal_profile", "business_type"] } },
     select: { key: true, value: true },
   });
   const map = Object.fromEntries(settings.map((row) => [row.key, row.value]));
@@ -50,11 +54,12 @@ export async function POST(req: NextRequest) {
   const auth = await requireTerminalStaff();
   if (!auth.authorized) return auth.response;
 
-  const body = await req.json().catch(() => ({}));
+  const body = await parseJsonRecord(req);
   const action = String(body.action || "read_context");
+  const tenantId = getCurrentTenantId();
 
   if (action === "read_context" || action === "prepare_steps") {
-    const config = await buildTerminalAutoconfig();
+    const config = await buildTerminalAutoconfig(tenantId);
     return NextResponse.json({
       ok: true,
       action,
@@ -67,8 +72,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Для применения настроек нужен администратор" }, { status: 403 });
   }
 
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+
   if (action === "apply_autoconfig") {
-    const config = await applyTerminalAutoconfig();
+    const config = await applyTerminalAutoconfig(tenantId);
     return NextResponse.json({
       ok: true,
       action,
@@ -83,24 +91,13 @@ export async function POST(req: NextRequest) {
     const enabledModules = Array.from(new Set([...ALWAYS_ON_TERMINAL_CAPABILITIES, ...modules]));
 
     await Promise.all([
-      prisma.siteSettings.upsert({
-        where: { key: "terminal_profile" },
-        create: { id: "terminal_profile", key: "terminal_profile", value: profile.key },
-        update: { value: profile.key },
-      }),
-      prisma.siteSettings.upsert({
-        where: { key: "business_type" },
-        create: { id: "business_type", key: "business_type", value: profile.key },
-        update: { value: profile.key },
-      }),
-      prisma.siteSettings.upsert({
-        where: { key: "terminal_enabled_modules" },
-        create: { id: "terminal_enabled_modules", key: "terminal_enabled_modules", value: JSON.stringify(enabledModules) },
-        update: { value: JSON.stringify(enabledModules) },
-      }),
+      upsertSiteSetting("terminal_profile", profile.key, tenantId),
+      upsertSiteSetting("business_type", profile.key, tenantId),
+      upsertSiteSetting("terminal_enabled_modules", JSON.stringify(enabledModules), tenantId),
     ]);
 
     await enqueueTerminalSyncJob({
+      tenantId,
       channel: "ai",
       event: "aray.terminal.modules_applied",
       entityType: "terminal",

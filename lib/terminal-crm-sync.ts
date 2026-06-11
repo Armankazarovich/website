@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { resolveTerminalProfile } from "@/lib/terminal-profiles";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 type SyncOrderInput = {
   id: string;
@@ -12,9 +13,11 @@ type SyncOrderInput = {
   terminalProfile?: string | null;
   contactMethod?: string | null;
   contactUsername?: string | null;
+  tenantId?: string | null;
 };
 
 export async function syncTerminalOrderToCrm(order: SyncOrderInput) {
+  const tenantId = order.tenantId || getCurrentTenantId();
   const profile = resolveTerminalProfile(order.terminalProfile);
   const stage = profile.pipeline.crmStageMap[order.status] || "NEW";
   const phone = order.guestPhone?.trim();
@@ -22,6 +25,7 @@ export async function syncTerminalOrderToCrm(order: SyncOrderInput) {
 
   const existingLead = await prisma.lead.findFirst({
     where: {
+      tenantId,
       convertedOrderId: order.id,
       deletedAt: null,
     },
@@ -29,6 +33,7 @@ export async function syncTerminalOrderToCrm(order: SyncOrderInput) {
   });
 
   const data = {
+    tenantId,
     name: order.guestName || phone || email || `Заказ #${order.orderNumber}`,
     phone,
     email,

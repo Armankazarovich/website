@@ -60,6 +60,7 @@ const ARAY_PHONE_HOME_OPEN_KEY = "aray-phone-home-open-v1";
 const ARAY_PHONE_HOME_DEFAULT_VERSION_KEY = "aray-phone-home-default-version-v1";
 const ARAY_PHONE_HOME_DEFAULT_VERSION = "2026-05-25-ar-phone-open";
 const ARAY_PHONE_OWNER_ID_KEY = "aray-phone-owner-id-v1";
+const ARAY_COMMUNICATIONS_ENABLED = false;
 const ARAY_VIDEO_MEETING_BASE_URL =
   process.env.NEXT_PUBLIC_ARAY_VIDEO_MEETING_BASE_URL ||
   process.env.NEXT_PUBLIC_ARAY_MEETING_BASE_URL ||
@@ -140,7 +141,12 @@ type ArayLiveAction = {
   kind: "open" | "show" | "write" | "confirm" | "voice" | "file";
 };
 
-const SILENT_LIVE_ACTION_LABELS = new Set(["ARAY открыт", "AR Phone открыт"]);
+const SILENT_LIVE_ACTION_LABELS = new Set([
+  "ARAY открыт",
+  "AR Phone открыт",
+  "Пишу запрос",
+  "Принял задачу",
+]);
 
 type Message = {
   id: string;
@@ -322,7 +328,7 @@ function sanitizeArayUrl(url: string): string {
   try {
     const parsed = new URL(
       target,
-      typeof window !== "undefined" ? window.location.origin : "https://pilo-rus.ru",
+      typeof window !== "undefined" ? window.location.origin : "https://aray-cms.local",
     );
     if (!["http:", "https:", "tel:", "mailto:"].includes(parsed.protocol)) return "";
     const path = parsed.pathname.replace(/\/+$/, "");
@@ -333,7 +339,7 @@ function sanitizeArayUrl(url: string): string {
       !parsed.searchParams.has("id");
 
     if (isBareMetrikaGoals) return "https://metrika.yandex.ru/list";
-    if (parsed.origin === (typeof window !== "undefined" ? window.location.origin : "https://pilo-rus.ru")) {
+    if (parsed.origin === (typeof window !== "undefined" ? window.location.origin : "https://aray-cms.local")) {
       return `${parsed.pathname}${parsed.search}${parsed.hash}`;
     }
     return parsed.href;
@@ -895,6 +901,7 @@ function ActionIcon({ icon }: { icon?: string }) {
     case "phone":   return <Phone className={cls} />;
     case "settings": return <Settings2 className={cls} />;
     case "target": return <Target className={cls} />;
+    case "tasks": return <CheckCircle2 className={cls} />;
     case "check": return <CheckCircle2 className={cls} />;
     case "voice": return <Mic className={cls} />;
     case "direct": return <Megaphone className={cls} />;
@@ -910,8 +917,8 @@ function ActionIcon({ icon }: { icon?: string }) {
   }
 }
 
-const ARAY_PHONE_CHAT_ACTION: ArayAction = { type: "navigate", url: "/admin/messenger", label: "Чаты", icon: "chat" };
-const ARAY_PHONE_CONTACT_ACTION: ArayAction = { type: "navigate", url: "/admin/messenger?add=contact", label: "Контакт", icon: "contact" };
+const ARAY_PHONE_CHAT_ACTION: ArayAction = { type: "navigate", url: "/admin/tasks", label: "Задачи", icon: "tasks" };
+const ARAY_PHONE_CONTACT_ACTION: ArayAction = { type: "navigate", url: "/admin/clients", label: "Клиенты", icon: "contact" };
 const ARAY_PHONE_ACCOUNT_ACTION: ArayAction = { type: "navigate", url: "/admin/settings", label: "Аккаунт", icon: "settings" };
 
 function ArayPhoneShortcutPad({
@@ -1610,7 +1617,6 @@ const INSTANT_ADMIN_NAV_RULES: Array<{ href: string; keywords: string[] }> = [
   { href: "/admin/site", keywords: ["настройки сайта", "сайт", "витрин", "контент сайта", "страниц"] },
   { href: "/admin/orders/new", keywords: ["терминал", "касс", "новый заказ", "оформить заказ"] },
   { href: "/admin/orders", keywords: ["заказ"] },
-  { href: "/admin/messenger", keywords: ["мессендж", "чат", "переписк", "сообщен"] },
   { href: "/admin/clients", keywords: ["клиент", "покупател"] },
   { href: "/admin/crm", keywords: ["crm", "црм", "лид", "сделк"] },
   { href: "/admin/delivery", keywords: ["достав", "маршрут", "курьер"] },
@@ -1632,7 +1638,6 @@ const ADMIN_NAV_ALIASES: Record<string, string[]> = {
   "/admin": ["главная", "дашборд", "рабочий стол", "панель"],
   "/admin/orders/new": ["терминал", "касса", "оформление", "новый заказ", "создать заказ"],
   "/admin/orders": ["заказы", "продажи", "клиентские заказы"],
-  "/admin/messenger": ["мессенджер", "чат", "переписка", "сообщения", "арай чат", "бизнес чат"],
   "/admin/delivery": ["доставка", "курьеры", "маршруты"],
   "/admin/delivery/rates": ["тарифы доставки", "цены доставки", "зоны доставки"],
   "/admin/clients": ["клиенты", "покупатели", "база клиентов"],
@@ -1681,7 +1686,6 @@ const ADMIN_NAV_FALLBACK_META: Record<string, { label: string; group: string; gr
   "/admin": { label: "Рабочий стол", group: "dashboard", groupLabel: "Главное" },
   "/admin/orders": { label: "Заказы", group: "sales", groupLabel: "Продажи" },
   "/admin/orders/new": { label: "Терминал", group: "sales", groupLabel: "Продажи" },
-  "/admin/messenger": { label: "Мессенджер", group: "sales", groupLabel: "Продажи" },
   "/admin/tasks": { label: "Задачи", group: "team", groupLabel: "Команда" },
   "/admin/products": { label: "Каталог", group: "catalog", groupLabel: "Каталог" },
   "/admin/categories": { label: "Категории", group: "catalog", groupLabel: "Каталог" },
@@ -1745,14 +1749,6 @@ function detectArayWorkspaceCommand(text: string): "chat" | "messenger" | null {
   if (/(главн.*чат|чат.*ара|арай.*чат|верни.*ара|назад.*ара|помощник.*арай)/.test(normalized)) {
     return "chat";
   }
-
-  const hasWorkspaceIntent =
-    /\b(открой|открыть|покажи|показать|перейди|перейти|зайди|зайти|выведи|найди|где|хочу|нужн)\b/.test(normalized) ||
-    normalized.split(" ").length <= 4;
-  const wantsMessenger =
-    /\b(диалог|диалоги|мессенджер|месенджер|переписк|сообщен|пользовател|клиент|клиенты|чат|чаты)\b/.test(normalized);
-
-  if (hasWorkspaceIntent && wantsMessenger) return "messenger";
   return null;
 }
 
@@ -1804,6 +1800,104 @@ function extractUrlActionsFromText(text: string): ArayAction[] {
   }
 
   return actions.slice(0, 5);
+}
+
+type AraySiteLaunchCommand = {
+  href: string;
+  reply: string;
+  actions: ArayAction[];
+};
+
+function extractSiteLaunchDomain(raw: string): string | null {
+  const match = raw.match(/(?:https?:\/\/)?(?:www\.)?([a-zа-яё0-9-]+(?:\.[a-zа-яё0-9-]+)+(?:\/[^\s"'<>]*)?)/i);
+  if (!match) return null;
+  return match[0]
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .replace(/[),.;!?]+$/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function buildArayLaunchActions(scanHref: string): ArayAction[] {
+  return [
+    { type: "navigate", url: scanHref, label: "Скан сайта", icon: "target" },
+    { type: "prompt", prompt: "Арай, начни QUIZ для нового сайта без готового домена.", label: "QUIZ", icon: "prompt" },
+    { type: "navigate", url: "/admin/crm", label: "Заявка CRM", icon: "target" },
+    { type: "navigate", url: "/admin/aray/orders#aray-site-factory", label: "Новый сайт", icon: "site" },
+  ];
+}
+
+function detectAraySiteLaunchCommand(raw: string): AraySiteLaunchCommand | null {
+  const normalized = normalizeArayNavText(raw);
+  if (!normalized) return null;
+
+  const domain = extractSiteLaunchDomain(raw);
+  const hasLaunchIntent =
+    /(созда|создай|сдела|собер|собери|запуст|запуск|новый|нового|дублир|копир|перенес|импорт|скан|сканир)/.test(normalized) &&
+    /(сайт|магазин|лендинг|витрин|проект|домен|клиент|бизнес)/.test(normalized);
+  const wantsQuiz = /(quiz|квиз|бриф|опрос|анкета|вопрос|без сайта|нет сайта|с нуля)/.test(normalized) &&
+    /(сайт|проект|клиент|бизнес|запуск)/.test(normalized);
+  const wantsCrm = /(заявк|лид|crm|црм)/.test(normalized) &&
+    /(сайт|запуск|проект|клиент)/.test(normalized);
+  const wantsTemplate = /(шаблон|эталон|с нуля|новая ниша|новый бизнес)/.test(normalized) &&
+    /(сайт|магазин|проект|запуск)/.test(normalized);
+
+  if (!hasLaunchIntent && !wantsQuiz && !wantsCrm && !wantsTemplate) return null;
+
+  const scanHref = domain
+    ? `/admin/aray/orders?domain=${encodeURIComponent(domain)}#aray-site-import`
+    : "/admin/aray/orders#aray-site-import";
+
+  if (wantsQuiz && !domain) {
+    return {
+      href: "/admin/aray/briefs",
+      reply: [
+        "Открыл путь через QUIZ.",
+        "1. Если у клиента нет сайта, я начну с вопросов.",
+        "2. Соберем нишу, услуги, товары, фото, контакты и цель.",
+        "3. После брифа перейдем к сборке черновика.",
+      ].join("\n"),
+      actions: buildArayLaunchActions(scanHref),
+    };
+  }
+
+  if (wantsCrm && !domain) {
+    return {
+      href: "/admin/crm",
+      reply: [
+        "Открыл CRM-заявки.",
+        "1. Выбираем клиента или лид.",
+        "2. Из заявки собираем бриф.",
+        "3. Потом ARAY создает отдельный сайт с нужными разделами, CRM, PWA и настройками клиента.",
+      ].join("\n"),
+      actions: buildArayLaunchActions(scanHref),
+    };
+  }
+
+  if (wantsTemplate && !domain) {
+    return {
+      href: "/admin/aray/orders#aray-site-factory",
+      reply: [
+        "Открыл создание нового сайта в ARAY CMS.",
+        "1. ARAY создает отдельный проект с чистыми данными.",
+        "2. Внутри будут каталог, заявки, CRM, PWA, админка, уведомления, модули и роли.",
+        "3. Brief задает сферу, контент, стиль, домен, цены, услуги/товары и настройки клиента.",
+      ].join("\n"),
+      actions: buildArayLaunchActions(scanHref),
+    };
+  }
+
+  return {
+    href: scanHref,
+    reply: [
+      domain ? `Открыл запуск сайта и подставил домен: ${domain}.` : "Открыл запуск сайта.",
+      "1. Сначала сканируем домен или выбираем другой способ старта.",
+      "2. Затем собираем бриф и создаем отдельный сайт в ARAY CMS.",
+      "3. Домен, публикация и опасные действия только после подтверждения.",
+    ].join("\n"),
+    actions: buildArayLaunchActions(scanHref),
+  };
 }
 
 function wantsLinkFollowUp(text: string) {
@@ -2871,7 +2965,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const [userAccountReady, setUserAccountReady] = useState(false);
   const [showMessages, setShowMessages] = useState(false); // voice-first: сообщения скрыты по умолчанию
   const [historyExpanded, setHistoryExpanded] = useState(false);
-  const [arayPhoneOpen, setArayPhoneOpen] = useState(true);
+  const [arayPhoneOpen, setArayPhoneOpen] = useState(ARAY_COMMUNICATIONS_ENABLED);
   const [arayPhoneOwnerId, setArayPhoneOwnerId] = useState("");
   const [clockNow, setClockNow] = useState<Date | null>(null);
   // Встроенный браузер
@@ -2933,10 +3027,13 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     if (SILENT_LIVE_ACTION_LABELS.has(label)) return;
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const href = resolveLiveActionHref(detail);
-    setLiveActions((current) => [...current.slice(-2), { id, label, detail, href, kind }]);
+    setLiveActions((current) => [
+      ...current.filter((item) => item.label !== label || item.detail !== detail).slice(-1),
+      { id, label, detail, href, kind },
+    ]);
     window.setTimeout(() => {
       setLiveActions((current) => current.filter((item) => item.id !== id));
-    }, 6500);
+    }, 4200);
   }, []);
 
   const handleLiveActionClick = useCallback((item: ArayLiveAction) => {
@@ -3171,6 +3268,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   }, []);
 
   useEffect(() => {
+    if (!ARAY_COMMUNICATIONS_ENABLED) {
+      localStorage.setItem(ARAY_PHONE_HOME_OPEN_KEY, "closed");
+      setArayPhoneOpen(false);
+      return;
+    }
     const version = localStorage.getItem(ARAY_PHONE_HOME_DEFAULT_VERSION_KEY);
     if (version !== ARAY_PHONE_HOME_DEFAULT_VERSION) {
       localStorage.setItem(ARAY_PHONE_HOME_OPEN_KEY, "open");
@@ -3207,6 +3309,13 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   }, []);
 
   const openArayPhoneHome = useCallback(() => {
+    if (!ARAY_COMMUNICATIONS_ENABLED) {
+      setArayPhoneOpen(false);
+      try {
+        localStorage.setItem(ARAY_PHONE_HOME_OPEN_KEY, "closed");
+      } catch {}
+      return;
+    }
     setArayPhoneOpen(true);
     try {
       localStorage.setItem(ARAY_PHONE_HOME_OPEN_KEY, "open");
@@ -3347,7 +3456,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         setArayWorkspaceView("chat");
         setShowMessages(false);
       }
-      pushLiveAction("AR Phone открыт", detail?.reason || "Событие связи", "open");
+      pushLiveAction("ARAY открыт", detail?.reason || "Готов помогать по шагам.", "open");
     }
 
     window.addEventListener("aray:phone-open", handlePhoneOpen as EventListener);
@@ -3358,6 +3467,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   useEffect(() => {
     const handler = (event: Event) => {
       const detail = (event as CustomEvent<{ mode?: "open" | "voice" | "phone" }>).detail;
+      const requestedPhone = ARAY_COMMUNICATIONS_ENABLED && detail?.mode === "phone";
       delete (window as ArayPendingPromptWindow).__arayPendingOpen;
       setVisible(true);
       openArayPanel();
@@ -3368,9 +3478,9 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       setShowMessages(false);
       startChat();
       pushLiveAction(
-        detail?.mode === "phone" ? "AR Phone открыт" : "ARAY открыт",
-        detail?.mode === "phone" ? "Номер, чаты, звонок и видео рядом." : "Готов слушать, писать и вести по шагам.",
-        detail?.mode === "phone" ? "open" : "voice",
+        requestedPhone ? "AR Phone открыт" : "ARAY открыт",
+        requestedPhone ? "Номер, чаты, звонок и видео рядом." : "Готов слушать, писать и вести по шагам.",
+        requestedPhone ? "open" : "voice",
       );
     };
     window.addEventListener("aray:open", handler);
@@ -3607,6 +3717,16 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   };
 
   const openEmbeddedMessenger = useCallback((query?: string) => {
+    if (!ARAY_COMMUNICATIONS_ENABLED) {
+      setArayWorkspaceView("chat");
+      setVisible(true);
+      openArayPanel();
+      setHasNew(false);
+      setProactiveBubble(null);
+      startChat();
+      haptic("light");
+      return;
+    }
     const cleanQuery = query?.trim() || "";
     setEmbeddedMessengerQuery((current) => {
       if (cleanQuery && current === cleanQuery) {
@@ -3625,6 +3745,12 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   }, [openArayPanel, startChat]);
 
   const handleArayPhoneDial = useCallback((value: string) => {
+    if (!ARAY_COMMUNICATIONS_ENABLED) {
+      setArayWorkspaceView("chat");
+      setShowMessages(true);
+      pushLiveAction("ARAY открыт", "Связь пока скрыта. Работаем через помощника.", "open");
+      return;
+    }
     const clean = value.trim().toUpperCase();
     if (!clean) {
       openEmbeddedMessenger();
@@ -4150,6 +4276,35 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     }
     setInput("");
     setAttachments([]);
+    const siteLaunchCommand = !effectiveOptions && isAdmin && messageAttachments.length === 0
+      ? detectAraySiteLaunchCommand(userIntentText)
+      : null;
+    if (siteLaunchCommand) {
+      const userMsg: Message = {
+        id: Date.now().toString(),
+        role: "user",
+        content: visibleMsg || msg,
+        timestamp: new Date(),
+      };
+      const openKind = openArayTarget(siteLaunchCommand.href);
+      const assistantText = openKind
+        ? siteLaunchCommand.reply
+        : `${siteLaunchCommand.reply}\n\nЕсли раздел не открылся, нажми кнопку «Скан сайта» ниже.`;
+      const assistantMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: assistantText,
+        timestamp: new Date(),
+        actions: mergeArayActions(siteLaunchCommand.actions, contextualActionFallback),
+      };
+      setMessages(prev => [...prev, userMsg, assistantMsg]);
+      saveMessageToDB("user", userMsg.content);
+      saveMessageToDB("assistant", assistantText);
+      continueVoiceDialogue(assistantText, { languageHint: speechLanguageHint });
+      if (isMobile) stopAraySpeech();
+      setShowMessages(true);
+      return;
+    }
     const latestExternalActions = !effectiveOptions && messageAttachments.length === 0 && wantsLinkFollowUp(userIntentText)
       ? getLatestExternalActions(messages)
       : [];
@@ -4570,6 +4725,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     if (action.type === "navigate" && action.url) {
       const internalPath = toInternalAppPath(action.url);
       if (internalPath?.startsWith("/admin/messenger")) {
+        if (!ARAY_COMMUNICATIONS_ENABLED) {
+          openArayTarget("/admin");
+          return;
+        }
         const wantsContact = internalPath.includes("add=contact") || action.label.toLowerCase().includes("контакт");
         openEmbeddedMessenger(wantsContact ? "__add_contact__" : undefined);
         return;
@@ -4639,19 +4798,19 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
   const startScreenActions: ArayStartAction[] = isAdmin
     ? [
         {
-          id: "admin-messenger",
-          label: "Мессенджер",
-          hint: "чаты, почта, клиенты",
-          icon: <MessageSquare className="h-4 w-4" />,
-          onSelect: () => openStartAction({ type: "navigate", url: "/admin/messenger", label: "Мессенджер", icon: "messenger" }),
+          id: "admin-aray-launch",
+          label: "Запуск сайта",
+          hint: "домен, QUIZ или CRM",
+          icon: <Bot className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/admin/aray/orders#aray-site-import", label: "Запуск сайта", icon: "site" }),
           primary: true,
         },
         {
-          id: "admin-client",
-          label: "Клиент",
-          hint: "найти или создать",
-          icon: <UserPlus className="h-4 w-4" />,
-          onSelect: () => openStartAction({ type: "navigate", url: "/admin/messenger?add=contact", label: "Клиент", icon: "client" }),
+          id: "admin-dashboard",
+          label: "Рабочий стол",
+          hint: "сводка и быстрые действия",
+          icon: <LayoutGrid className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/admin", label: "Рабочий стол", icon: "dashboard" }),
         },
         {
           id: "admin-orders",
@@ -4659,6 +4818,13 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
           hint: "открыть и проверить",
           icon: <Package className="h-4 w-4" />,
           onSelect: () => openStartAction({ type: "navigate", url: "/admin/orders", label: "Заказы", icon: "orders" }),
+        },
+        {
+          id: "admin-products",
+          label: "Каталог",
+          hint: "товары и цены",
+          icon: <ShoppingCart className="h-4 w-4" />,
+          onSelect: () => openStartAction({ type: "navigate", url: "/admin/products", label: "Каталог", icon: "catalog" }),
         },
         {
           id: "admin-site",
@@ -4676,10 +4842,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
         },
         {
           id: "admin-connectors",
-          label: "Связи",
-          hint: "мессенджеры и почта",
+          label: "Подключения",
+          hint: "ключи и сервисы",
           icon: <Settings2 className="h-4 w-4" />,
-          onSelect: () => openStartAction({ type: "navigate", url: "/admin/aray/connectors", label: "Связи", icon: "settings" }),
+          onSelect: () => openStartAction({ type: "navigate", url: "/admin/aray/connectors", label: "Подключения", icon: "settings" }),
         },
       ]
     : [
@@ -4906,7 +5072,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
       <AnimatePresence>
         {open && liveActions.length > 0 && (
           <motion.div
-            className="pointer-events-none fixed left-3 right-3 top-[38svh] z-[400] space-y-2 lg:left-auto lg:right-4 lg:top-[calc(64px+0.75rem)] lg:w-[300px]"
+            className="pointer-events-none fixed bottom-24 left-1/2 z-[400] w-[calc(100vw-2rem)] max-w-[22rem] -translate-x-1/2 space-y-2"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 8 }}
@@ -4922,11 +5088,11 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                 exit={{ opacity: 0, x: 12 }}
                 disabled={!item.href}
                 onClick={() => handleLiveActionClick(item)}
-                className="pointer-events-auto w-full rounded-2xl border border-border bg-card/95 px-3 py-2 text-left transition-colors enabled:cursor-pointer enabled:hover:border-primary/45 enabled:hover:bg-muted/35 disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="pointer-events-auto w-full rounded-xl border border-border bg-card/95 px-3 py-2 text-left  shadow-black/10  transition-colors enabled:cursor-pointer enabled:hover:border-primary/45 enabled:hover:bg-muted/35 disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 aria-label={item.href ? `Открыть: ${item.label}` : item.label}
               >
                 <div className="flex min-w-0 items-start gap-2">
-                  <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                     <MousePointer2 className="h-3.5 w-3.5" />
                   </span>
                   <span className="min-w-0 flex-1">
@@ -5021,7 +5187,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                 </div>
                 <div className="flex gap-1 items-center">
                   {!isAdmin && cartCount > 0 && (
-                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg mr-1"
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-xl mr-1"
                       style={{ background: "hsl(var(--primary)/0.1)" }}>
                       <ShoppingCart className="w-3 h-3" style={{ color: "hsl(var(--primary))" }} />
                       <span className="text-[10px] font-semibold" style={{ color: "hsl(var(--primary))" }}>
@@ -5040,7 +5206,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       {speaking ? <VolumeX className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
                     </button>
                   )}
-                  {isAdmin && (
+                  {isAdmin && ARAY_COMMUNICATIONS_ENABLED && (
                     <button
                       onClick={() => openEmbeddedMessenger()}
                       className="w-7 h-7 rounded-xl flex items-center justify-center transition-colors hover:bg-muted/60"
@@ -5123,7 +5289,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       />
                     )}
 
-                    {isAdmin && (
+                    {isAdmin && ARAY_COMMUNICATIONS_ENABLED && (
                       <div className="flex w-full flex-col items-center gap-2">
                         {arayPhoneOpen ? (
                           <ArayPhoneShortcutPad
@@ -5234,7 +5400,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                 {/* Сообщения (текстовый режим или по кнопке) */}
                 {arayWorkspaceView !== "messenger" && showMessages && (
                   <div className="flex-1 overflow-y-auto px-4 py-3 overscroll-contain">
-                    {isAdmin && (
+                    {isAdmin && ARAY_COMMUNICATIONS_ENABLED && (
                       <div className="mb-3 flex flex-col items-center gap-2">
                         {arayPhoneOpen ? (
                           <ArayPhoneShortcutPad
@@ -5471,7 +5637,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                 </div>
                 <div className="flex gap-1 items-center">
                   {!isAdmin && cartCount > 0 && (
-                    <div className="flex items-center gap-1 px-2 py-1 rounded-lg mr-1"
+                    <div className="flex items-center gap-1 px-2 py-1 rounded-xl mr-1"
                       style={{ background: "hsl(var(--primary)/0.1)" }}>
                       <ShoppingCart className="w-3 h-3" style={{ color: "hsl(var(--primary))" }} />
                       <span className="text-[10px] font-semibold" style={{ color: "hsl(var(--primary))" }}>{formatPrice(cartPrice)}</span>
@@ -5487,7 +5653,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       {speaking ? <VolumeX className="w-3.5 h-3.5" /> : <MicOff className="w-3.5 h-3.5" />}
                     </button>
                   )}
-                  {isAdmin && (
+                  {isAdmin && ARAY_COMMUNICATIONS_ENABLED && (
                     <button
                       onClick={() => openEmbeddedMessenger()}
                       className="w-7 h-7 rounded-xl flex items-center justify-center"
@@ -5501,10 +5667,10 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                     </button>
                   )}
                   <button onClick={resetArayChat}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ color: txtMuted }}>
+                    className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ color: txtMuted }}>
                     <RotateCcw className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={closeArayPanel} aria-label="Свернуть ARAY" className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ color: txtMuted }}>
+                  <button onClick={closeArayPanel} aria-label="Свернуть ARAY" className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ color: txtMuted }}>
                     <ChevronDown className="w-4 h-4" />
                   </button>
                 </div>
@@ -5567,7 +5733,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                       />
                     )}
 
-                    {isAdmin && (
+                    {isAdmin && ARAY_COMMUNICATIONS_ENABLED && (
                       <div className="flex w-full flex-col items-center gap-2">
                         {arayPhoneOpen ? (
                           <ArayPhoneShortcutPad
@@ -5678,7 +5844,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                 {/* Сообщения */}
                 {arayWorkspaceView !== "messenger" && showMessages && (
                   <div className="flex-1 overflow-y-auto px-4 py-3 overscroll-contain">
-                    {isAdmin && (
+                    {isAdmin && ARAY_COMMUNICATIONS_ENABLED && (
                       <div className="mb-3 flex flex-col items-center gap-2">
                         {arayPhoneOpen ? (
                           <ArayPhoneShortcutPad

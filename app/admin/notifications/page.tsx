@@ -27,6 +27,7 @@ import {
   Megaphone,
 } from "lucide-react";
 import { InfoBadge } from "@/components/admin/info-popup";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { NotificationCenterPanel } from "@/components/admin/notification-center-panel";
 import { requestPushPermission } from "@/components/push-subscription";
 
@@ -85,6 +86,9 @@ export default function NotificationsPage() {
   );
   const [cleaning, setCleaning] = useState(false);
   const [cleanResult, setCleanResult] = useState<string | null>(null);
+  const [confirmCleanup, setConfirmCleanup] = useState(false);
+  const [confirmSend, setConfirmSend] = useState(false);
+  const [confirmTelegramSetup, setConfirmTelegramSetup] = useState(false);
 
   // ── Telegram webhook state ───────────────────────────────────────────────
   type TgStatus = {
@@ -244,20 +248,30 @@ export default function NotificationsPage() {
 
   const setField = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  const handleSend = async (e: React.FormEvent) => {
+  const requestSend = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setResult(null);
-    if (!form.title || !form.body) {
+    if (!form.title.trim() || !form.body.trim()) {
       setError("Заполните заголовок и текст");
       return;
     }
+    setConfirmSend(true);
+  };
+
+  const handleSend = async () => {
+    setConfirmSend(false);
     setLoading(true);
     try {
       const res = await fetch("/api/push/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, segment }),
+        body: JSON.stringify({
+          title: form.title.trim(),
+          body: form.body.trim(),
+          url: form.url.trim(),
+          segment,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Ошибка");
@@ -411,7 +425,7 @@ export default function NotificationsPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleCleanup}
+                  onClick={() => setConfirmCleanup(true)}
                   disabled={cleaning}
                   className="flex min-h-11 items-center gap-1.5 rounded-lg bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive transition-colors hover:bg-destructive/20 disabled:opacity-50"
                 >
@@ -516,7 +530,7 @@ export default function NotificationsPage() {
           </div>
 
           <form
-            onSubmit={handleSend}
+            onSubmit={requestSend}
             className="bg-card border border-border rounded-2xl p-6 space-y-4"
           >
             <h2 className="font-semibold">Отправить уведомление</h2>
@@ -807,7 +821,7 @@ export default function NotificationsPage() {
           {/* Action buttons */}
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={setupTelegram}
+              onClick={() => setConfirmTelegramSetup(true)}
               disabled={tgSetting}
               className="flex min-h-11 items-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
@@ -899,6 +913,43 @@ export default function NotificationsPage() {
           </details>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={confirmSend}
+        onClose={() => setConfirmSend(false)}
+        onConfirm={handleSend}
+        title="Отправить push-рассылку?"
+        description={`Сообщение уйдет сегменту «${SEGMENTS.find((s) => s.key === segment)?.label ?? segment}». Проверьте заголовок, текст и ссылку перед отправкой.`}
+        confirmLabel="Отправить"
+        variant="default"
+        loading={loading}
+      />
+      <ConfirmDialog
+        open={confirmCleanup}
+        onClose={() => setConfirmCleanup(false)}
+        onConfirm={() => {
+          setConfirmCleanup(false);
+          handleCleanup();
+        }}
+        title="Очистить дубли подписок?"
+        description="Будут удалены старые лишние подписки зарегистрированных пользователей. Гостевые подписки не трогаем."
+        confirmLabel="Очистить"
+        variant="danger"
+        loading={cleaning}
+      />
+      <ConfirmDialog
+        open={confirmTelegramSetup}
+        onClose={() => setConfirmTelegramSetup(false)}
+        onConfirm={() => {
+          setConfirmTelegramSetup(false);
+          setupTelegram();
+        }}
+        title={tgStatus?.correct ? "Переустановить Telegram webhook?" : "Настроить Telegram webhook?"}
+        description="Это изменит webhook у Telegram-бота на URL текущего сайта. Делайте это только для рабочего бота ПилоРус."
+        confirmLabel={tgStatus?.correct ? "Переустановить" : "Настроить"}
+        variant="default"
+        loading={tgSetting}
+      />
     </div>
   );
 }

@@ -3,8 +3,9 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { DEFAULT_TENANT_ID, getCurrentTenantId } from "@/lib/tenant-context";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import { mergeTenantSettings, settingsRecord } from "@/lib/tenant-settings";
+import { parseJsonRecord, requireWriteConfirmation } from "@/lib/admin-content-guard";
 
 const GOAL_SETTING_KEYS = {
   order: "yandex_metrika_goal_order_id",
@@ -101,15 +102,13 @@ function buildPayload(settings: Record<string, string>, tenant?: { domain?: stri
 
 async function saveSetting(tenantId: string, key: string, value: string) {
   await prisma.siteSettings.upsert({
-    where: { key },
+    where: { tenantId_key: { tenantId, key } },
     create: {
-      id: key,
       tenantId,
       key,
       value,
     },
     update: {
-      tenantId,
       value,
     },
   });
@@ -146,7 +145,10 @@ export async function PATCH(req: Request) {
   const auth = await requireAdmin();
   if (!auth.authorized) return auth.response;
 
-  const body = await req.json().catch(() => ({}));
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+
   const { tenantId } = await readSettings();
   const publicBaseUrl = normalizeOrigin(body?.publicBaseUrl);
   const directRegionIds = normalizeRegionIds(body?.directRegionIds);
@@ -194,21 +196,8 @@ export async function PATCH(req: Request) {
     }
   }
 
-  if (tenantId === DEFAULT_TENANT_ID) {
-    if (publicBaseUrl) {
-      await saveSetting(tenantId, "site_url", publicBaseUrl);
-      await saveSetting(tenantId, "direct_public_url", publicBaseUrl);
-      await saveSetting(tenantId, "yandex_direct_public_url", publicBaseUrl);
-    }
-    if (directRegionIds) {
-      await saveSetting(tenantId, "direct_region_ids", directRegionIds);
-      await saveSetting(tenantId, "yandex_direct_region_ids", directRegionIds);
-    }
-    await saveSetting(tenantId, "yandex_metrika_id", counterId);
-    await saveSetting(tenantId, "yandex_business_id", businessProfileId);
-    for (const [goal, key] of Object.entries(GOAL_SETTING_KEYS)) {
-      await saveSetting(tenantId, key, digitsOnly(goals[goal]));
-    }
+  for (const [key, value] of Object.entries(tenantPatch)) {
+    await saveSetting(tenantId, key, value);
   }
 
   const { settings, tenant } = await readSettings();

@@ -5,13 +5,15 @@ import { prisma } from "@/lib/prisma";
 import { requireTerminalStaff } from "@/lib/terminal-auth";
 import { resolveTerminalCapabilities } from "@/lib/terminal-capabilities";
 import { resolveTerminalProfile } from "@/lib/terminal-profiles";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 export async function GET() {
   const access = await requireTerminalStaff();
   if (!access.authorized) return access.response;
+  const tenantId = getCurrentTenantId();
 
   const rows = await prisma.siteSettings.findMany({
-    where: { key: { in: ["terminal_profile", "business_type", "terminal_enabled_modules"] } },
+    where: { tenantId, key: { in: ["terminal_profile", "business_type", "terminal_enabled_modules"] } },
     select: { key: true, value: true },
   });
   const settings = Object.fromEntries(rows.map((row) => [row.key, row.value]));

@@ -23,6 +23,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { formatPrice } from "@/lib/utils";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import {
   ARAY_ADMIN_GAPS,
   ARAY_ADMIN_ORCHESTRATION_LAYERS,
@@ -103,6 +104,7 @@ export default async function DirectorCabinetPage() {
   const canSeeFinance = profile.canSeeFinance;
   const canSeePeople = profile.canSeePeople;
   const canSeeStrategy = profile.canSeeStrategy;
+  const tenantId = getCurrentTenantId();
 
   const now = new Date();
   const today = startOfDay(now);
@@ -127,45 +129,46 @@ export default async function DirectorCabinetPage() {
     monthExpenses,
     activeConnectors,
   ] = await Promise.all([
-    prisma.order.count({ where: { status: "NEW", deletedAt: null } }),
-    prisma.order.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
+    prisma.order.count({ where: { tenantId, status: "NEW", deletedAt: null } }),
+    prisma.order.count({ where: { tenantId, createdAt: { gte: today }, deletedAt: null } }),
     prisma.order.count({
       where: {
+        tenantId,
         deletedAt: null,
         status: { in: ["NEW", "CONFIRMED", "PROCESSING", "IN_DELIVERY", "READY_PICKUP"] },
       },
     }),
     prisma.order.aggregate({
       _sum: { totalAmount: true, deliveryCost: true },
-      where: { status: { not: "CANCELLED" }, createdAt: { gte: monthStart }, deletedAt: null },
+      where: { tenantId, status: { not: "CANCELLED" }, createdAt: { gte: monthStart }, deletedAt: null },
     }),
-    prisma.lead.count({ where: { stage: "NEW", deletedAt: null } }),
+    prisma.lead.count({ where: { tenantId, stage: "NEW", deletedAt: null } }),
     prisma.lead.count({
-      where: { stage: { in: ["NEW", "CONTACTED", "QUALIFIED", "MEETING", "PROPOSAL", "NEGOTIATION"] }, deletedAt: null },
+      where: { tenantId, stage: { in: ["NEW", "CONTACTED", "QUALIFIED", "MEETING", "PROPOSAL", "NEGOTIATION"] }, deletedAt: null },
     }),
-    prisma.review.count({ where: { approved: false } }),
+    prisma.review.count({ where: { tenantId, approved: false } }),
     prisma.task.count({
-      where: { status: { not: "DONE" }, dueDate: { lt: now } },
+      where: { tenantId, status: { not: "DONE" }, dueDate: { lt: now } },
     }),
     prisma.task.count({
-      where: { status: { not: "DONE" }, priority: { in: ["HIGH", "URGENT"] } },
+      where: { tenantId, status: { not: "DONE" }, priority: { in: ["HIGH", "URGENT"] } },
     }),
-    prisma.productVariant.count({ where: { stockQty: { lte: 3 } } }),
-    prisma.productVariant.count({ where: { stockQty: 0, inStock: true } }),
-    prisma.user.count({ where: { role: { not: "USER" } } }),
-    prisma.user.count({ where: { staffStatus: "PENDING" } }),
+    prisma.productVariant.count({ where: { stockQty: { lte: 3 }, product: { tenantId } } }),
+    prisma.productVariant.count({ where: { stockQty: 0, inStock: true, product: { tenantId } } }),
+    prisma.user.count({ where: { tenantId, role: { not: "USER" } } }),
+    prisma.user.count({ where: { tenantId, staffStatus: "PENDING" } }),
     prisma.user.count({
-      where: { role: { not: "USER" }, lastActiveAt: { gte: new Date(now.getTime() - 30 * 60 * 1000) } },
+      where: { tenantId, role: { not: "USER" }, lastActiveAt: { gte: new Date(now.getTime() - 30 * 60 * 1000) } },
     }),
     prisma.expense.aggregate({
       _sum: { amount: true },
-      where: { date: { gte: monthStart }, category: { contains: "Зарплата" } },
+      where: { tenantId, date: { gte: monthStart }, category: { contains: "Зарплата" } },
     }),
     prisma.expense.aggregate({
       _sum: { amount: true },
-      where: { date: { gte: monthStart } },
+      where: { tenantId, date: { gte: monthStart } },
     }),
-    prisma.terminalConnector.count({ where: { status: { in: ["ACTIVE", "INTERNAL", "VENDOR_READY"] } } }).catch(() => 0),
+    prisma.terminalConnector.count({ where: { tenantId, status: { in: ["ACTIVE", "INTERNAL", "VENDOR_READY"] } } }).catch(() => 0),
   ]);
 
   const revenue = Number(monthRevenue._sum.totalAmount || 0) + Number(monthRevenue._sum.deliveryCost || 0);

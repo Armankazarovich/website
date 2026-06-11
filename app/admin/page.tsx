@@ -20,6 +20,7 @@ import {
   ARAY_ICON_TONE_WARNING,
   ARAY_ICON_TONE_SUCCESS,
 } from "@/lib/aray-design-tokens";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 // DashboardArayRail убран — Арай теперь fixed справа в AdminShell на ВСЕЙ админке
 // (сессия 40 hotfix: видение Армана для сенсорных мониторов/телевизоров)
 
@@ -195,6 +196,7 @@ export default async function AdminDashboard() {
   const canCreateOrder = isOwner || roleGroup === "manager" || roleGroup === "seller";
   const canOpenInventory = isOwner || roleGroup === "manager" || roleGroup === "warehouse";
   const quickActions = QUICK_ACTIONS[roleGroup] || QUICK_ACTIONS.manager;
+  const tenantId = getCurrentTenantId();
 
   if ((!session?.user?.name || session.user.name.trim().length === 0) && userId) {
     const freshUser = await prisma.user.findUnique({
@@ -214,23 +216,23 @@ export default async function AdminDashboard() {
     pendingReviews, recentOrders, revenue30, revenue7, revenueToday,
     allOrdersForChart, pendingStaff, zeroStockVariants, zeroStockMarkedInStock,
   ] = await Promise.all([
-    prisma.order.count({ where: { deletedAt: null } }),
-    prisma.order.count({ where: { status: "NEW", deletedAt: null } }),
-    prisma.order.count({ where: { createdAt: { gte: today }, deletedAt: null } }),
-    prisma.review.count({ where: { approved: false } }),
+    prisma.order.count({ where: { tenantId, deletedAt: null } }),
+    prisma.order.count({ where: { tenantId, status: "NEW", deletedAt: null } }),
+    prisma.order.count({ where: { tenantId, createdAt: { gte: today }, deletedAt: null } }),
+    prisma.review.count({ where: { tenantId, approved: false } }),
     prisma.order.findMany({
-      where: { deletedAt: null },
+      where: { tenantId, deletedAt: null },
       orderBy: { createdAt: "desc" },
       take: 5,
       select: { id: true, orderNumber: true, guestName: true, totalAmount: true, status: true, createdAt: true },
     }),
-    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } }),
-    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: days7ago }, deletedAt: null } }),
-    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { status: { not: "CANCELLED" }, createdAt: { gte: today }, deletedAt: null } }),
-    prisma.order.findMany({ where: { createdAt: { gte: days7ago }, status: { not: "CANCELLED" }, deletedAt: null }, select: { createdAt: true, totalAmount: true, deliveryCost: true }, orderBy: { createdAt: "asc" } }),
-    prisma.user.count({ where: { staffStatus: "PENDING" } }).catch(() => 0),
-    prisma.productVariant.count({ where: { stockQty: 0 } }),
-    prisma.productVariant.count({ where: { stockQty: 0, inStock: true } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { tenantId, status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { tenantId, status: { not: "CANCELLED" }, createdAt: { gte: days7ago }, deletedAt: null } }),
+    prisma.order.aggregate({ _sum: { totalAmount: true, deliveryCost: true }, where: { tenantId, status: { not: "CANCELLED" }, createdAt: { gte: today }, deletedAt: null } }),
+    prisma.order.findMany({ where: { tenantId, createdAt: { gte: days7ago }, status: { not: "CANCELLED" }, deletedAt: null }, select: { createdAt: true, totalAmount: true, deliveryCost: true }, orderBy: { createdAt: "asc" } }),
+    prisma.user.count({ where: { tenantId, staffStatus: "PENDING" } }).catch(() => 0),
+    prisma.productVariant.count({ where: { stockQty: 0, product: { tenantId } } }),
+    prisma.productVariant.count({ where: { stockQty: 0, inStock: true, product: { tenantId } } }),
   ]);
 
   // Chart data за последние 7 дней
@@ -245,7 +247,7 @@ export default async function AdminDashboard() {
     if (slot) slot.amount += Number(o.totalAmount) + Number(o.deliveryCost || 0);
   }
 
-  const orders30count = await prisma.order.count({ where: { status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } });
+  const orders30count = await prisma.order.count({ where: { tenantId, status: { not: "CANCELLED" }, createdAt: { gte: days30ago }, deletedAt: null } });
   const revenue30total = Number(revenue30._sum.totalAmount || 0) + Number(revenue30._sum.deliveryCost || 0);
   const revenue7total = Number(revenue7._sum.totalAmount || 0) + Number(revenue7._sum.deliveryCost || 0);
   const revenueTodayTotal = Number(revenueToday._sum.totalAmount || 0) + Number(revenueToday._sum.deliveryCost || 0);

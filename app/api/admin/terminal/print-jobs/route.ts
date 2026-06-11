@@ -4,13 +4,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireTerminalStaff } from "@/lib/terminal-auth";
 import { enqueueTerminalSyncJob } from "@/lib/terminal-sync";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { parseJsonRecord, requireWriteConfirmation } from "@/lib/admin-content-guard";
 
 export async function GET(req: NextRequest) {
   const auth = await requireTerminalStaff();
   if (!auth.authorized) return auth.response;
+  const tenantId = getCurrentTenantId();
 
   const status = req.nextUrl.searchParams.get("status");
-  const where = status ? { status } : {};
+  const where = status ? { tenantId, status } : { tenantId };
   const jobs = await prisma.printJob.findMany({
     where,
     orderBy: { createdAt: "desc" },
@@ -24,16 +27,46 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const auth = await requireTerminalStaff();
   if (!auth.authorized) return auth.response;
+  const tenantId = getCurrentTenantId();
 
-  const body = await req.json().catch(() => ({}));
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+
   const title = String(body.title || "").trim();
   if (!title) return NextResponse.json({ error: "Укажите название печати" }, { status: 400 });
+  const orderId = body.orderId ? String(body.orderId) : null;
+  const shiftId = body.shiftId ? String(body.shiftId) : null;
+  const workstationId = body.workstationId ? String(body.workstationId) : null;
+
+  if (orderId) {
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!order) return NextResponse.json({ error: "Заказ не найден" }, { status: 400 });
+  }
+  if (shiftId) {
+    const shift = await prisma.cashShift.findFirst({
+      where: { id: shiftId, tenantId },
+      select: { id: true },
+    });
+    if (!shift) return NextResponse.json({ error: "Смена не найдена" }, { status: 400 });
+  }
+  if (workstationId) {
+    const workstation = await prisma.terminalWorkstation.findFirst({
+      where: { id: workstationId, tenantId },
+      select: { id: true },
+    });
+    if (!workstation) return NextResponse.json({ error: "Рабочее место не найдено" }, { status: 400 });
+  }
 
   const job = await prisma.printJob.create({
     data: {
-      orderId: body.orderId ? String(body.orderId) : null,
-      shiftId: body.shiftId ? String(body.shiftId) : null,
-      workstationId: body.workstationId ? String(body.workstationId) : null,
+      tenantId,
+      orderId,
+      shiftId,
+      workstationId,
       route: String(body.route || "receipt"),
       type: String(body.type || "RECEIPT"),
       status: String(body.status || "QUEUED"),
@@ -44,6 +77,7 @@ export async function POST(req: NextRequest) {
   });
 
   await enqueueTerminalSyncJob({
+    tenantId,
     channel: "printing",
     event: "print.job.queued",
     entityType: job.orderId ? "order" : "terminal",

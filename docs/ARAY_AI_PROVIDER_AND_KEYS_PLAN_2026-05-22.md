@@ -38,8 +38,10 @@ ChatGPT Pro and OpenAI API are separate products/billing. `OPENAI_API_KEY` is us
 ```env
 OPENAI_API_KEY="..."
 ARAY_PRIMARY_AI_PROVIDER="openai"
-ARAY_PRIMARY_AI_MODEL="..."
+ARAY_PRIMARY_AI_MODEL="gpt-5.5"
 ```
+
+На первом этапе OpenAI подключается как премиум-мозг для сложных задач ARAY, а не как единственный слой для каждой мелкой команды. Модель должна оставаться настройкой, чтобы при необходимости заменить `gpt-5.5` на другую актуальную модель без переделки всей системы.
 
 ## Launch Priority Keys
 

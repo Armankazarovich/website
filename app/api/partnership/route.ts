@@ -3,10 +3,32 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_SETTINGS } from "@/lib/site-settings";
+import {
+  ARAY_PARTNER_LEAD_TAGS,
+  buildArayPartnerActivityText,
+} from "@/lib/aray-crm-automation";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function clean(value: unknown, maxLength = 300): string {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 async function sendPartnershipTelegram(data: {
   name: string;
@@ -46,6 +68,12 @@ async function sendPartnershipEmail(data: {
   if (!adminEmail) return;
 
   const nodemailer = await import("nodemailer");
+  const safe = {
+    name: escapeHtml(data.name),
+    company: data.company ? escapeHtml(data.company) : "",
+    phone: escapeHtml(data.phone),
+    message: data.message ? escapeHtml(data.message) : "",
+  };
   const transporter = nodemailer.default.createTransport({
     host: process.env.SMTP_HOST || "smtp.beget.com",
     port: SMTP_PORT,
@@ -60,20 +88,20 @@ async function sendPartnershipEmail(data: {
     to: adminEmail,
     subject: `🤝 Заявка на сотрудничество — ${data.name}`,
     html: `
-      <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-        <div style="background:#5C3317;padding:24px 32px;">
-          <h1 style="margin:0;color:#fff;font-size:20px;">🤝 Новая заявка на сотрудничество</h1>
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;border-radius:12px;overflow:hidden;">
+        <div style="padding:24px 32px;">
+          <h1 style="margin:0;font-size:20px;">🤝 Новая заявка на сотрудничество</h1>
         </div>
         <div style="padding:28px 32px;">
           <table style="width:100%;border-collapse:collapse;">
-            <tr><td style="padding:8px 0;color:#888;width:120px;">Имя</td><td style="padding:8px 0;font-weight:600;">${data.name}</td></tr>
-            ${data.company ? `<tr><td style="padding:8px 0;color:#888;">Компания</td><td style="padding:8px 0;font-weight:600;">${data.company}</td></tr>` : ""}
-            <tr><td style="padding:8px 0;color:#888;">Телефон</td><td style="padding:8px 0;font-weight:600;"><a href="tel:${data.phone}" style="color:#E8700A;">${data.phone}</a></td></tr>
-            ${data.message ? `<tr><td style="padding:8px 0;color:#888;vertical-align:top;">Сообщение</td><td style="padding:8px 0;">${data.message}</td></tr>` : ""}
+            <tr><td style="padding:8px 0;width:120px;">Имя</td><td style="padding:8px 0;font-weight:600;">${safe.name}</td></tr>
+            ${safe.company ? `<tr><td style="padding:8px 0;">Компания</td><td style="padding:8px 0;font-weight:600;">${safe.company}</td></tr>` : ""}
+            <tr><td style="padding:8px 0;">Телефон</td><td style="padding:8px 0;font-weight:600;"><a href="tel:${safe.phone}">${safe.phone}</a></td></tr>
+            ${safe.message ? `<tr><td style="padding:8px 0;vertical-align:top;">Сообщение</td><td style="padding:8px 0;">${safe.message}</td></tr>` : ""}
           </table>
         </div>
-        <div style="background:#f9f9f9;padding:16px 32px;border-top:1px solid #eee;">
-          <p style="margin:0;color:#aaa;font-size:12px;">ПилоРус · pilo-rus.ru · ${DEFAULT_SETTINGS.phone}</p>
+        <div style="padding:16px 32px;border-top:1px solid currentColor;">
+          <p style="margin:0;font-size:12px;">ПилоРус · pilo-rus.ru · ${DEFAULT_SETTINGS.phone}</p>
         </div>
       </div>
     `,
@@ -82,27 +110,40 @@ async function sendPartnershipEmail(data: {
 
 export async function POST(req: Request) {
   try {
-    const { name, company, phone, message } = await req.json();
-    if (!name || !phone) {
+    const body = asRecord(await req.json().catch(() => null));
+    const tenantId = getCurrentTenantId();
+    const name = clean(body.name, 120);
+    const company = clean(body.company, 160);
+    const phone = clean(body.phone, 80);
+    const message = clean(body.message, 1200);
+
+    if (name.length < 2 || phone.replace(/\D/g, "").length < 10) {
       return NextResponse.json({ error: "Имя и телефон обязательны" }, { status: 400 });
     }
 
-    await prisma.partnershipLead.create({
-      data: { name, company: company || null, phone, message: message || null },
-    });
-
-    // 🎯 Авто-создание лида в CRM при заявке на сотрудничество
-    prisma.lead.create({
-      data: {
-        name,
-        company: company || null,
-        phone,
-        source: "PARTNER",
-        stage: "NEW",
-        comment: message || null,
-        tags: ["Партнёрство"],
-      },
-    }).catch(console.error);
+    await prisma.$transaction([
+      prisma.partnershipLead.create({
+        data: { tenantId, name, company: company || null, phone, message: message || null },
+      }),
+      prisma.lead.create({
+        data: {
+          tenantId,
+          name,
+          company: company || null,
+          phone,
+          source: "PARTNER",
+          stage: "NEW",
+          comment: message || null,
+          tags: ARAY_PARTNER_LEAD_TAGS,
+          activities: {
+            create: {
+              type: "SYSTEM",
+              text: buildArayPartnerActivityText(),
+            },
+          },
+        },
+      }),
+    ]);
 
     // Уведомления — не блокируем ответ
     sendPartnershipTelegram({ name, company, phone, message }).catch(console.error);

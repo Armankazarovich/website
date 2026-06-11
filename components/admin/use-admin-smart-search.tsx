@@ -154,18 +154,17 @@ const DEFAULT_ADMIN_QUICK: QuickDescriptor[] = [
 const SEARCH_CONTEXTS: SearchContext[] = [
   {
     match: "/admin/aray",
-    label: "ARAY",
-    placeholder: "Помощник, голос, агент, лимит или раздел...",
-    nextStep: "Открыть нужное действие ARAY",
+    label: "Капсула ARAY",
+    placeholder: "Домен клиента, запуск, бриф, превью или служебный раздел...",
+    nextStep: "Открыть капсулу запуска или нужную служебную настройку ARAY",
     quick: [
-      { href: "/admin/aray", title: "ARAY", subtitle: "Чат, голос и действия", icon: ArayIcon, roles: SALES_ROLES },
+      { href: "/admin/aray/orders", title: "Запуск сайта", subtitle: "Скан, заявка и превью", icon: ArayIcon, roles: SALES_ROLES },
+      { href: "/admin/aray/briefs", title: "Бриф и материалы", subtitle: "Товары, фото и доступы", icon: ArayIcon, roles: SALES_ROLES },
+      { href: "/admin/aray/builder", title: "Собрать сайт", subtitle: "Блоки и черновик", icon: ArayIcon, roles: SALES_ROLES },
       { href: "/admin/aray/modules", title: "Модули ARAY", subtitle: "Паспорта и зависимости", icon: ArayIcon, roles: ADMIN_ROLES },
-      { href: "/admin/aray/agents", title: "Агенты ARAY", subtitle: "Роли, отделы и качество", icon: ArayIcon, roles: ADMIN_ROLES },
-      { href: "/admin/aray/costs", title: "Лимиты ARAY", subtitle: "Токены, подписки и расходы", icon: ArayIcon, roles: ADMIN_ROLES },
-      { href: "/admin/help", title: "База знаний", subtitle: "Подсказки и правила", icon: BookOpen, roles: STAFF_ROLES },
       { href: "/admin/settings", title: "Настройки", subtitle: "Бизнес, сайт и система", icon: Settings, roles: ADMIN_ROLES },
     ],
-    hints: ["модули", "агенты", "качество", "бюджет", "лимиты"],
+    hints: ["запуск", "скан", "бриф", "превью", "модули"],
   },
   {
     match: "/admin/appearance",
@@ -307,6 +306,7 @@ const GROUP_CONTEXT_MATCH: Record<string, string> = {
   sales: "/admin/orders",
   products: "/admin/products",
   marketing: "/admin/promotions",
+  arayCms: "/admin/aray/orders",
   settings: "/admin/settings",
   finance: "/admin/finance",
   aray: "/admin/aray",

@@ -1,0 +1,42 @@
+ARAY Brandbook + Mockup Library Blueprint
+Updated: 2026-06-03
+
+Goal:
+Create one approved brand system for ARAY / Yuva partners, managers and bloggers.
+
+Logo system:
+- Official ARAY A Mark: original Corel colors for documents, print and partner materials.
+- Live ARAY A Mark: adaptive palette version for ARAY admin, apps and digital themes.
+- Mono Light: white/silver version for dark surfaces.
+- Mono Dark: black/graphite version for light surfaces and simple print.
+
+Brandbook sections:
+- Logo usage and clear space
+- Official colors and live palette logic
+- Typography rules
+- Background rules
+- Do / do not examples
+- Partner wording
+- Advertising rules
+- Document style
+- Print style
+- Social media style
+
+Required mockups:
+- Client presentation
+- Commercial proposal
+- A4 / A5 flyer
+- Business card
+- Partner badge
+- Website banner desktop
+- Website banner mobile
+- Social post 1080x1080
+- Story 1080x1920
+- Telegram / VK post image
+- QR lead card
+- Invoice / act / contract visual cover
+
+Production rule:
+Only approved files from the ARAY brand kit can be used by partners.
+Draft layouts must be reviewed before printing, publishing or sending to clients.
+

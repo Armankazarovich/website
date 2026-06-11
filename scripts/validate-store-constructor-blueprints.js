@@ -51,8 +51,13 @@ console.log("\n[ARAY] Store constructor blueprint validation");
 
 const requiredFiles = [
   "lib/store-constructor-blueprints.ts",
+  "components/site-constructor/smart-store-launcher.tsx",
   "app/admin/site/constructor/page.tsx",
+  "app/(store)/aray-production/page.tsx",
+  "app/(store)/aray-production/preview/page.tsx",
   "app/api/admin/site-constructor/blueprints/route.ts",
+  "app/api/admin/site-constructor/sites/route.ts",
+  "app/api/site-constructor/applications/route.ts",
   "lib/aray-module-registry.ts",
   "lib/store-capability-registry.ts",
   "components/admin/admin-navigation-registry.ts",
@@ -79,6 +84,10 @@ includesAll("lib/store-constructor-blueprints.ts", [
   "ONE_CLICK_STORE_REQUIRED_DATA_OBJECTS",
   "ONE_CLICK_STORE_PUBLIC_SURFACES",
   "ONE_CLICK_STORE_QUALITY_GATES",
+  "ONE_CLICK_STORE_ONBOARDING_STEPS",
+  "ONE_CLICK_STORE_DOMAIN_STEPS",
+  "ONE_CLICK_STORE_QUESTIONNAIRE",
+  "ONE_CLICK_STORE_IMPORT_COLUMNS",
   "ONE_CLICK_STORE_LAUNCH_STEPS",
   "constructor.store-builder",
   "business.aray-messenger",
@@ -99,6 +108,10 @@ for (const route of [
   "/compare",
   "/wishlist",
   "/stories",
+  "/aray-production",
+  "/aray-production/preview",
+  "/api/admin/site-constructor/sites",
+  "/api/site-constructor/applications",
 ]) {
   includesAll("lib/store-constructor-blueprints.ts", [route]);
 }
@@ -111,6 +124,8 @@ const routeFiles = [
   "app/(store)/compare/page.tsx",
   "app/(store)/wishlist/page.tsx",
   "app/(store)/stories/page.tsx",
+  "app/(store)/aray-production/page.tsx",
+  "app/(store)/aray-production/preview/page.tsx",
   "app/admin/site/constructor/page.tsx",
   "app/admin/business/settings/page.tsx",
   "app/admin/products/page.tsx",
@@ -122,6 +137,8 @@ const routeFiles = [
   "app/api/pwa/manifest/route.ts",
   "app/api/pwa/site-icon/route.ts",
   "app/api/admin/site-constructor/blueprints/route.ts",
+  "app/api/admin/site-constructor/sites/route.ts",
+  "app/api/site-constructor/applications/route.ts",
 ];
 
 routeFiles.forEach(assertFile);
@@ -154,20 +171,81 @@ includesAll("components/admin/admin-navigation-registry.ts", [
 
 includesAll("components/admin/admin-navigation-model.ts", [
   '"/admin/site/constructor"',
-  "Конструктор магазина",
+  "Редактор сайта",
 ]);
 
 includesAll("app/admin/business/settings/page.tsx", [
   'href: "/admin/site/constructor"',
-  "Конструктор магазина",
+  "Редактор сайта",
 ]);
 
 includesAll("app/admin/site/constructor/page.tsx", [
   "data-store-constructor-page",
   "data-one-click-store-contract",
+  "LaunchControlPanel",
+  "data-store-constructor-onboarding-checklist",
+  "data-store-constructor-domain-plan",
+  "data-store-constructor-questionnaire",
   "data-store-constructor-blueprint-grid",
   "data-store-constructor-quality-gates",
   "getOneClickStoreLaunchContract",
+]);
+
+includesAll("app/admin/site/constructor/launch-control-panel.tsx", [
+  "SmartStoreLauncher",
+  "referralSource=\"PiloRus\"",
+]);
+
+includesAll("components/site-constructor/smart-store-launcher.tsx", [
+  "data-store-constructor-launch-control",
+  "data-store-constructor-smart-form",
+  "data-store-constructor-preview",
+  "data-store-constructor-my-sites",
+  "data-store-constructor-multisite",
+  "data-store-constructor-tenant-isolation",
+  "data-store-constructor-referral-sales",
+  "data-store-constructor-aray-operator",
+  "data-store-constructor-ai-business-os",
+  "data-store-constructor-aray-guide",
+  "store-constructor-smart-application-v1",
+  "applyArayConstructionPreset",
+  "askArayOperator",
+  "Собрать превью",
+  "Открыть живое превью",
+  "Опубликовать",
+  "Мои сайты",
+]);
+
+includesAll("app/(store)/aray-production/page.tsx", [
+  "data-aray-production-landing",
+  "ARAY Production",
+  "Запустить заявку",
+  "SmartStoreLauncher",
+  "referralSource=\"PiloRus\"",
+]);
+
+includesAll("app/(store)/aray-production/preview/page.tsx", [
+  "data-aray-production-live-preview",
+  "tenantId",
+  "networkId",
+  "getStoreConstructorBlueprint",
+  "Вернуться к анкете",
+]);
+
+includesAll("app/api/admin/site-constructor/sites/route.ts", [
+  "prisma.tenant",
+  "storeConstructor",
+  "referralCode",
+  "rewardPlan",
+  "networkId",
+]);
+
+includesAll("app/api/site-constructor/applications/route.ts", [
+  "prisma.lead.create",
+  "REFERRAL",
+  "referralCode",
+  "rewardPlan",
+  "aray-production",
 ]);
 
 includesAll("app/api/admin/site-constructor/blueprints/route.ts", [

@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getSiteSetting, upsertSiteSetting } from "@/lib/tenant-settings";
 
 export async function GET(req: NextRequest) {
   const secret = req.nextUrl.searchParams.get("secret");
@@ -110,12 +111,12 @@ export async function GET(req: NextRequest) {
       { key: "working_hours", value: "Ежедневно: 09:00–18:00" },
     ];
     for (const s of settingsToFix) {
-      const existing = await prisma.siteSettings.findUnique({ where: { key: s.key } });
+      const existing = await getSiteSetting(s.key);
       if (existing) {
-        await prisma.siteSettings.update({ where: { key: s.key }, data: { value: s.value } });
+        await upsertSiteSetting(s.key, s.value);
         results.push(`✅ Setting ${s.key} updated to: ${s.value}`);
       } else {
-        await prisma.siteSettings.create({ data: { id: s.key, key: s.key, value: s.value } });
+        await upsertSiteSetting(s.key, s.value);
         results.push(`✅ Setting ${s.key} created: ${s.value}`);
       }
     }

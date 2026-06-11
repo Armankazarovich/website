@@ -10,6 +10,7 @@ import {
   rebuildTerminalSearchIndex,
 } from "@/lib/terminal-sync";
 import { getCurrentTenantId } from "@/lib/tenant-context";
+import { parseJsonRecord, requireWriteConfirmation } from "@/lib/admin-content-guard";
 
 function countsBy<T extends Record<string, any>>(rows: T[], key: keyof T) {
   return rows.reduce<Record<string, number>>((acc, row) => {
@@ -72,7 +73,10 @@ export async function POST(req: NextRequest) {
   if (!auth.authorized) return auth.response;
   const tenantId = getCurrentTenantId();
 
-  const body = await req.json().catch(() => ({}));
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+
   const action = String(body.action || "seed");
 
   if (action === "seed") {

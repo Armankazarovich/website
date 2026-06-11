@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
 import { rateLimit } from "@/lib/rate-limit";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const limiter = rateLimit("reset-password", 5, 15 * 60 * 1000); // 5 per 15 min
 
@@ -20,14 +21,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (!session || (role !== "SUPER_ADMIN" && role !== "ADMIN")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+  const tenantId = getCurrentTenantId();
 
   // Rate limit by admin user ID
   if (!limiter.check(session.user.id || "unknown")) {
     return NextResponse.json({ error: "Слишком много запросов. Подождите 15 минут." }, { status: 429 });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: params.id, role: "USER" },
+  const user = await prisma.user.findFirst({
+    where: { id: params.id, tenantId, role: "USER" },
     select: { id: true, name: true, email: true },
   });
 
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const hash = await bcrypt.hash(newPassword, 12);
 
   await prisma.user.update({
-    where: { id: params.id },
+    where: { id: user.id },
     data: { passwordHash: hash },
   });
 

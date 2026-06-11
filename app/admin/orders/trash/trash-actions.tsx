@@ -9,7 +9,8 @@ import { toast } from "@/components/ui/use-toast";
 export function TrashActions({ orderId }: { orderId: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState<"restore" | "delete" | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmRestoreOpen, setConfirmRestoreOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const isRestoring = loading === "restore";
   const isDeleting = loading === "delete";
 
@@ -19,6 +20,7 @@ export function TrashActions({ orderId }: { orderId: string }) {
     try {
       const res = await fetch(`/api/admin/orders/${orderId}`, { method: "PUT" });
       if (!res.ok) throw new Error(`Restore failed: ${res.status}`);
+      setConfirmRestoreOpen(false);
       router.refresh();
     } catch {
       toast({
@@ -37,7 +39,7 @@ export function TrashActions({ orderId }: { orderId: string }) {
     try {
       const res = await fetch(`/api/admin/orders/${orderId}?permanent=true`, { method: "DELETE" });
       if (!res.ok) throw new Error(`Permanent delete failed: ${res.status}`);
-      setConfirmOpen(false);
+      setConfirmDeleteOpen(false);
       router.refresh();
     } catch {
       toast({
@@ -55,7 +57,7 @@ export function TrashActions({ orderId }: { orderId: string }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
         <button
           type="button"
-          onClick={restore}
+          onClick={() => setConfirmRestoreOpen(true)}
           disabled={loading !== null}
           aria-busy={isRestoring}
           title="Восстановить"
@@ -66,7 +68,7 @@ export function TrashActions({ orderId }: { orderId: string }) {
         </button>
         <button
           type="button"
-          onClick={() => setConfirmOpen(true)}
+          onClick={() => setConfirmDeleteOpen(true)}
           disabled={loading !== null}
           aria-busy={isDeleting}
           title="Удалить навсегда"
@@ -78,9 +80,21 @@ export function TrashActions({ orderId }: { orderId: string }) {
       </div>
 
       <ConfirmDialog
-        open={confirmOpen}
+        open={confirmRestoreOpen}
         onClose={() => {
-          if (!loading) setConfirmOpen(false);
+          if (!loading) setConfirmRestoreOpen(false);
+        }}
+        onConfirm={restore}
+        title="Восстановить заказ?"
+        description="Заказ вернётся в рабочий список и снова станет доступен менеджерам."
+        confirmLabel="Восстановить"
+        loading={isRestoring}
+      />
+
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onClose={() => {
+          if (!loading) setConfirmDeleteOpen(false);
         }}
         onConfirm={deletePermanent}
         title="Удалить заказ навсегда?"

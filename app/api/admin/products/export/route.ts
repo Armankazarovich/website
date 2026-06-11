@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 async function checkAuth() {
   const session = await auth();
@@ -14,10 +15,12 @@ export async function GET(req: NextRequest) {
   if (!(await checkAuth())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const tenantId = getCurrentTenantId();
 
   const format = req.nextUrl.searchParams.get("format") || "xlsx";
 
   const products = await prisma.product.findMany({
+    where: { tenantId },
     include: {
       category: true,
       variants: { orderBy: { size: "asc" } },

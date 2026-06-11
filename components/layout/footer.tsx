@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Mail, MapPin, Clock } from "lucide-react";
+import { Mail, MapPin, Clock, MessageCircle } from "lucide-react";
 import { FooterPartnershipButton } from "@/components/store/footer-partnership-button";
 import { PwaFooterBadges } from "@/components/store/pwa-footer-badges";
 import { getSetting, getPhones } from "@/lib/site-settings-public";
@@ -35,7 +35,7 @@ export function Footer({ settings = {}, categories = [] }: FooterProps) {
               </div>
             </Link>
             <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-4">
-              ООО «ПИТИ» — производитель пиломатериалов в Подмосковье.
+              {s("company_name") || "ПилоРус"} — производитель пиломатериалов в Подмосковье.
               Работаем без посредников напрямую с производства.
             </p>
 
@@ -185,6 +185,19 @@ export function Footer({ settings = {}, categories = [] }: FooterProps) {
                   {s("email")}
                 </a>
               </li>
+              {s("social_max") && (
+                <li className="flex items-center gap-3">
+                  <MessageCircle className="w-4 h-4 text-brand-orange shrink-0" />
+                  <a
+                    href={s("social_max")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-brand-orange transition-colors"
+                  >
+                    Написать в MAX
+                  </a>
+                </li>
+              )}
               <li className="flex items-center gap-3">
                 <Clock className="w-4 h-4 text-brand-orange shrink-0" />
                 <span>{s("working_hours") || "Пн–Сб: 09:00–20:00, Вс: 09:00–18:00"}</span>
@@ -198,7 +211,7 @@ export function Footer({ settings = {}, categories = [] }: FooterProps) {
         <div className="container py-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-zinc-500 dark:text-zinc-600">
           <p>{s("footer_copyright") || `© ${new Date().getFullYear()} ООО «ПИТИ» (ПилоРус). Все права защищены.`}</p>
           <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-end">
-            <span>ИНН {s("inn") || "5047121641"} / ОГРН {s("ogrn") || "1235000042474"}</span>
+            <span>ИНН {s("inn") || "7733291699"} / ОГРН {s("ogrn") || "1167746624902"}</span>
             <Link href="/privacy" className="hover:text-zinc-800 dark:hover:text-zinc-400 transition-colors underline underline-offset-2">
               Политика конфиденциальности
             </Link>

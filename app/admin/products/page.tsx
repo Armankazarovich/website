@@ -16,6 +16,7 @@ type ApiProduct = {
   description?: string | null;
   category?: { name?: string | null } | null;
   variants?: {
+    size?: string | null;
     pricePerCube?: number | string | null;
     pricePerPiece?: number | string | null;
     inStock?: boolean;
@@ -39,6 +40,7 @@ function normalizeProducts(products: ApiProduct[]) {
     description: product.description ?? null,
     category: { name: product.category?.name ?? "Без категории" },
     variants: (product.variants ?? []).map((variant) => ({
+      size: variant.size ?? null,
       pricePerCube: variant.pricePerCube ?? null,
       pricePerPiece: variant.pricePerPiece ?? null,
       inStock: variant.inStock,

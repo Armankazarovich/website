@@ -3,8 +3,9 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
-import { DEFAULT_TENANT_ID, getCurrentTenantId } from "@/lib/tenant-context";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import { mergeTenantSettings, settingsRecord } from "@/lib/tenant-settings";
+import { parseJsonRecord, requireWriteConfirmation } from "@/lib/admin-content-guard";
 import {
   ARAY_METRIKA_GOAL_SPECS,
   ensureArayMetrikaGoals,
@@ -13,9 +14,9 @@ import {
 
 async function saveSetting(tenantId: string, key: string, value: string) {
   await prisma.siteSettings.upsert({
-    where: { key },
-    create: { id: key, key, value, tenantId },
-    update: { value, tenantId },
+    where: { tenantId_key: { tenantId, key } },
+    create: { tenantId, key, value },
+    update: { value },
   });
 }
 
@@ -43,7 +44,10 @@ export async function POST(req: Request) {
     prisma.tenant.findUnique({ where: { slug: tenantId } }).catch(() => null),
   ]);
   const settings = mergeTenantSettings(tenant, settingsRows);
-  const body = (await req.json().catch(() => ({}))) as { counterId?: string | number };
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+
   const requestedCounterId = Number(String(body.counterId || "").replace(/[^\d]/g, ""));
   const counterId = requestedCounterId || getStoredMetrikaCounterId(settings);
 
@@ -64,10 +68,8 @@ export async function POST(req: Request) {
       if (goalId) patch[spec.settingKey] = goalId;
     }
     await saveTenantSettings(tenantId, patch);
-    if (tenantId === DEFAULT_TENANT_ID) {
-      for (const [key, value] of Object.entries(patch)) {
-        await saveSetting(tenantId, key, value);
-      }
+    for (const [key, value] of Object.entries(patch)) {
+      await saveSetting(tenantId, key, value);
     }
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {

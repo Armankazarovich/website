@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
+const DEFAULT_TENANT_ID = "pilorus";
 
 async function main() {
   console.log("🌱 Seeding database...");
@@ -23,29 +24,29 @@ async function main() {
   // Create categories
   const categories = await Promise.all([
     prisma.category.upsert({
-      where: { slug: "doska-obreznaya" },
+      where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "doska-obreznaya" } },
       update: {},
-      create: { name: "Доска обрезная", slug: "doska-obreznaya", sortOrder: 1 },
+      create: { tenantId: DEFAULT_TENANT_ID, name: "Доска обрезная", slug: "doska-obreznaya", sortOrder: 1 },
     }),
     prisma.category.upsert({
-      where: { slug: "brus" },
+      where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "brus" } },
       update: {},
-      create: { name: "Брус строительный", slug: "brus", sortOrder: 2 },
+      create: { tenantId: DEFAULT_TENANT_ID, name: "Брус строительный", slug: "brus", sortOrder: 2 },
     }),
     prisma.category.upsert({
-      where: { slug: "vagonka" },
+      where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "vagonka" } },
       update: {},
-      create: { name: "Вагонка", slug: "vagonka", sortOrder: 3 },
+      create: { tenantId: DEFAULT_TENANT_ID, name: "Вагонка", slug: "vagonka", sortOrder: 3 },
     }),
     prisma.category.upsert({
-      where: { slug: "blok-haus" },
+      where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "blok-haus" } },
       update: {},
-      create: { name: "Блок-хаус", slug: "blok-haus", sortOrder: 4 },
+      create: { tenantId: DEFAULT_TENANT_ID, name: "Блок-хаус", slug: "blok-haus", sortOrder: 4 },
     }),
     prisma.category.upsert({
-      where: { slug: "pogonazh" },
+      where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "pogonazh" } },
       update: {},
-      create: { name: "Погонаж", slug: "pogonazh", sortOrder: 5 },
+      create: { tenantId: DEFAULT_TENANT_ID, name: "Погонаж", slug: "pogonazh", sortOrder: 5 },
     }),
   ]);
   console.log("✅ Categories created:", categories.length);
@@ -54,9 +55,10 @@ async function main() {
   const [doskaCategory, brusCategory, vagonkaCategory, blokHausCategory] = categories;
 
   const doska = await prisma.product.upsert({
-    where: { slug: "doska-obreznaya-hvoynaya" },
+    where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "doska-obreznaya-hvoynaya" } },
     update: {},
     create: {
+      tenantId: DEFAULT_TENANT_ID,
       slug: "doska-obreznaya-hvoynaya",
       name: "Доска обрезная хвойная",
       description: "Обрезная доска из хвойных пород дерева (ель, сосна). Применяется в строительстве, при отделочных работах, изготовлении опалубки и заборов.",
@@ -82,9 +84,10 @@ async function main() {
   });
 
   const brus = await prisma.product.upsert({
-    where: { slug: "brus-stroitelnyy" },
+    where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "brus-stroitelnyy" } },
     update: {},
     create: {
+      tenantId: DEFAULT_TENANT_ID,
       slug: "brus-stroitelnyy",
       name: "Брус строительный",
       description: "Строительный брус из хвойной древесины. Используется в каркасном строительстве, при возведении перекрытий и кровельных конструкций.",
@@ -108,9 +111,10 @@ async function main() {
   });
 
   const vagonka = await prisma.product.upsert({
-    where: { slug: "vagonka-hvoynaya" },
+    where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "vagonka-hvoynaya" } },
     update: {},
     create: {
+      tenantId: DEFAULT_TENANT_ID,
       slug: "vagonka-hvoynaya",
       name: "Вагонка хвойная",
       description: "Вагонка из хвойных пород дерева для внутренней и наружной отделки. Тип «евровагонка», профиль «классик».",
@@ -131,9 +135,10 @@ async function main() {
   });
 
   const blokHaus = await prisma.product.upsert({
-    where: { slug: "blok-haus-hvoyny" },
+    where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "blok-haus-hvoyny" } },
     update: {},
     create: {
+      tenantId: DEFAULT_TENANT_ID,
       slug: "blok-haus-hvoyny",
       name: "Блок-хаус хвойный",
       description: "Блок-хаус — имитация бревна для фасадной и внутренней отделки. Придаёт зданию вид деревянного сруба.",

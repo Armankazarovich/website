@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { formatPrice } from "@/lib/utils";
 import { TrashActions } from "./trash-actions";
 import { ClearTrashButton } from "./clear-trash-button";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const formatDeletedAt = (value: Date | null) =>
   value
@@ -23,9 +24,10 @@ export default async function OrdersTrashPage() {
   const session = await auth();
   const role = session?.user?.role;
   if (role !== "ADMIN" && role !== "SUPER_ADMIN") redirect("/admin/orders");
+  const tenantId = getCurrentTenantId();
 
   const deleted = await prisma.order.findMany({
-    where: { deletedAt: { not: null } },
+    where: { tenantId, deletedAt: { not: null } },
     orderBy: { deletedAt: "desc" },
     include: { items: { select: { id: true } } },
   });

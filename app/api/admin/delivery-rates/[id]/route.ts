@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const WRITE_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
 
@@ -28,9 +29,13 @@ export async function PATCH(
   if (!role || !WRITE_ROLES.includes(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+  const tenantId = getCurrentTenantId();
   const body = await readJson(req);
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
+  }
+  if ((body as Record<string, unknown>).confirm !== true) {
+    return NextResponse.json({ error: "Confirmation required" }, { status: 400 });
   }
   const { vehicleName, payload, maxVolume, basePrice } = body;
   const data: {
@@ -79,8 +84,8 @@ export async function PATCH(
     data.basePrice = price;
   }
 
-  const exists = await prisma.deliveryRate.findUnique({
-    where: { id: params.id },
+  const exists = await prisma.deliveryRate.findFirst({
+    where: { id: params.id, tenantId },
     select: { id: true },
   });
   if (!exists) {

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Check, Loader2, Monitor, Play, Printer, RefreshCw, Square } from "lucide-react";
+import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 
 type Workstation = {
   id: string;
@@ -19,6 +20,7 @@ type Shift = {
 };
 
 export function TerminalOpsActions() {
+  const confirmAction = useAdminConfirm();
   const [workstations, setWorkstations] = useState<Workstation[]>([]);
   const [openShifts, setOpenShifts] = useState<Shift[]>([]);
   const [selectedWorkstation, setSelectedWorkstation] = useState("");
@@ -74,14 +76,89 @@ export function TerminalOpsActions() {
       }
       setMessage("Готово");
       await load();
-    } catch {
+    } catch (err) {
+      if (err instanceof Error && err.message === "cancelled") return;
       setMessage("Ошибка сети при выполнении действия");
     } finally {
       setBusy("");
     }
   };
 
-  const createWorkstation = () => run("workstation", () =>
+  const createWorkstation = async () => {
+    if (!(await confirmAction("Создать рабочее место терминала?"))) return;
+    await run("workstation", () =>
+      fetch("/api/admin/terminal/workstations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "Мобильный терминал",
+          type: "MOBILE",
+          profile: profileKey,
+          paymentMode: "manual_qr",
+          printerMode: "electronic",
+          scannerMode: "usb_hid",
+          confirm: true,
+        }),
+      }),
+    );
+  };
+
+  const openShift = async () => {
+    if (!(await confirmAction("Открыть кассовую смену?"))) return;
+    await run("open", () =>
+      fetch("/api/admin/terminal/shifts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "open",
+          workstationId: selectedWorkstation || null,
+          openingCash,
+          confirm: true,
+        }),
+      }),
+    );
+  };
+
+  const closeShift = async () => {
+    const shift = openShifts[0];
+    if (!shift) {
+      setMessage("Нет открытой смены");
+      return;
+    }
+    if (!(await confirmAction("Закрыть кассовую смену?"))) return;
+    run("close", () =>
+      fetch("/api/admin/terminal/shifts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "close",
+          shiftId: shift.id,
+          actualCash,
+          confirm: true,
+        }),
+      })
+    );
+  };
+
+  const testPrint = async () => {
+    if (!(await confirmAction("Создать тестовое задание печати?"))) return;
+    await run("print", () =>
+      fetch("/api/admin/terminal/print-jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Тест печати терминала",
+          type: "TEST",
+          route: "receipt",
+          workstationId: selectedWorkstation || null,
+          payload: { text: "ARAY terminal print test" },
+          confirm: true,
+        }),
+      }),
+    );
+  };
+
+  /*
     fetch("/api/admin/terminal/workstations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -140,6 +217,8 @@ export function TerminalOpsActions() {
       }),
     })
   );
+
+  */
 
   return (
     <section className="rounded-2xl border border-border bg-card p-4 sm:p-5">

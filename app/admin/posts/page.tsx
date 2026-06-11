@@ -581,6 +581,7 @@ export default function AdminPostsPage() {
   const [actionError, setActionError] = useState("");
 
   const handleCreateBlank = async () => {
+    if (!confirm("Создать черновик статьи?")) return;
     setCreating(true);
     setActionError("");
     try {
@@ -595,6 +596,7 @@ export default function AdminPostsPage() {
           topic: "",
           readTime: 3,
           published: false,
+          confirm: true,
         }),
       });
       const created = await res.json().catch(() => ({}));
@@ -631,7 +633,7 @@ export default function AdminPostsPage() {
     const res = await fetch(`/api/admin/posts/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, confirm: true }),
     });
     const updated = await res.json().catch(() => ({}));
     if (!res.ok)
@@ -648,7 +650,7 @@ export default function AdminPostsPage() {
     setDeletingIds(new Set(next));
     setActionError("");
     try {
-      const res = await fetch(`/api/admin/posts/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/posts/${id}?confirm=true`, { method: "DELETE" });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Не удалось удалить статью");
       setPosts((prev) => prev.filter((p) => p.id !== id));
@@ -672,7 +674,7 @@ export default function AdminPostsPage() {
     const res = await fetch("/api/admin/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...data, aiGenerated: true, published: false }),
+    body: JSON.stringify({ ...data, aiGenerated: true, published: false, confirm: true }),
     });
     const created = await res.json().catch(() => ({}));
     if (!res.ok)
@@ -684,11 +686,16 @@ export default function AdminPostsPage() {
   };
 
   const handleSeed = async () => {
+    if (!confirm("Создать стартовые статьи и услуги?")) return;
     setSeeding(true);
     setSeedMsg("");
     setActionError("");
     try {
-      const res = await fetch("/api/admin/posts/seed", { method: "POST" });
+      const res = await fetch("/api/admin/posts/seed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirm: true }),
+      });
       const data = await res.json();
       if (!res.ok || !data.ok)
         throw new Error(data.error || "Не удалось загрузить стартовые данные");

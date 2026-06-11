@@ -46,10 +46,12 @@ export interface WorkflowAction {
 }
 
 export async function runWorkflows(trigger: WorkflowTrigger, payload: Record<string, any>) {
+  const tenantId = typeof payload.tenantId === "string" && payload.tenantId.trim() ? payload.tenantId : "pilorus";
+  const scopedPayload = { ...payload, tenantId };
   let workflows;
   try {
     workflows = await prisma.workflow.findMany({
-      where: { active: true, trigger },
+      where: { active: true, trigger, tenantId },
     });
   } catch {
     return; // Таблица ещё не создана — ничего страшного
@@ -61,7 +63,7 @@ export async function runWorkflows(trigger: WorkflowTrigger, payload: Record<str
     try {
       // Check conditions
       const conditions = wf.conditions as Record<string, any>;
-      if (!matchConditions(conditions, payload)) continue;
+      if (!matchConditions(conditions, scopedPayload)) continue;
 
       // Delay support (for tunnel automations)
       const wfAny = wf as any;
@@ -72,7 +74,7 @@ export async function runWorkflows(trigger: WorkflowTrigger, payload: Record<str
           data: {
             workflowId: wf.id,
             trigger,
-            payload,
+            payload: scopedPayload,
             result: "delayed",
             error: `Отложено на ${wfAny.delayMinutes} мин`,
           },
@@ -83,7 +85,7 @@ export async function runWorkflows(trigger: WorkflowTrigger, payload: Record<str
       // Execute actions
       const actions = wf.actions as WorkflowAction[];
       for (const action of actions) {
-        await executeAction(action, payload);
+        await executeAction(action, scopedPayload);
       }
 
       // Update execution stats
@@ -100,7 +102,7 @@ export async function runWorkflows(trigger: WorkflowTrigger, payload: Record<str
         data: {
           workflowId: wf.id,
           trigger,
-          payload,
+          payload: scopedPayload,
           result: "ok",
         },
       });
@@ -111,7 +113,7 @@ export async function runWorkflows(trigger: WorkflowTrigger, payload: Record<str
         data: {
           workflowId: wf.id,
           trigger,
-          payload,
+          payload: scopedPayload,
           result: "error",
           error: err.message,
         },
@@ -156,6 +158,7 @@ function matchConditions(conditions: Record<string, any>, payload: Record<string
 // ─── Action Execution ────────────────────────────────────────────────────────
 
 async function executeAction(action: WorkflowAction, payload: Record<string, any>) {
+  const tenantId = typeof payload.tenantId === "string" && payload.tenantId.trim() ? payload.tenantId : "pilorus";
   switch (action.type) {
 
     // ── Создать задачу ──
@@ -166,7 +169,14 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
       let assigneeId = action.assigneeId || null;
       if (!assigneeId && action.assigneeRole) {
         const user = await prisma.user.findFirst({
-          where: { role: action.assigneeRole, staffStatus: "ACTIVE" },
+          where: { tenantId, role: action.assigneeRole, staffStatus: "ACTIVE" },
+        });
+        assigneeId = user?.id || null;
+      }
+      if (assigneeId) {
+        const user = await prisma.user.findFirst({
+          where: { id: assigneeId, tenantId, staffStatus: "ACTIVE" },
+          select: { id: true },
         });
         assigneeId = user?.id || null;
       }
@@ -175,6 +185,7 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
       await prisma.$transaction(async (tx) => {
         const existing = await tx.task.findFirst({
           where: {
+            tenantId,
             orderId: payload.orderId || null,
             title,
             createdAt: { gte: sixtySecondsAgo },
@@ -184,6 +195,7 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
 
         await tx.task.create({
           data: {
+            tenantId,
             title,
             description,
             status: action.status || "TODO",
@@ -259,16 +271,21 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
     case "update_lead_stage": {
       const leadId = payload.leadId;
       if (!leadId) break;
+      const lead = await prisma.lead.findFirst({
+        where: { id: leadId, tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!lead) break;
 
       await prisma.lead.update({
-        where: { id: leadId },
+        where: { id: lead.id },
         data: { stage: action.stage },
       });
 
       // Создать activity запись
       await prisma.leadActivity.create({
         data: {
-          leadId,
+          leadId: lead.id,
           type: "STAGE_CHANGE",
           text: `Автоматически переведён в "${action.stage}" роботом`,
         },
@@ -287,9 +304,14 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
     case "update_order_status": {
       const orderId = payload.orderId;
       if (!orderId) break;
+      const order = await prisma.order.findFirst({
+        where: { id: orderId, tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!order) break;
 
       await prisma.order.update({
-        where: { id: orderId },
+        where: { id: order.id },
         data: { status: action.status },
       });
 
@@ -306,19 +328,32 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
     case "assign_lead": {
       const leadId = payload.leadId;
       if (!leadId) break;
+      const lead = await prisma.lead.findFirst({
+        where: { id: leadId, tenantId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!lead) break;
 
       let assigneeId = action.assigneeId;
+      if (assigneeId) {
+        const assignee = await prisma.user.findFirst({
+          where: { id: assigneeId, tenantId, staffStatus: "ACTIVE" },
+          select: { id: true },
+        });
+        assigneeId = assignee?.id || null;
+      }
 
       // Автоназначение: найти менеджера с наименьшим кол-вом активных лидов
       if (!assigneeId && action.autoAssign) {
         const managers = await prisma.user.findMany({
           where: {
+            tenantId,
             role: { in: ["ADMIN", "MANAGER"] },
             staffStatus: "ACTIVE",
           },
           include: {
             assignedLeads: {
-              where: { stage: { notIn: ["WON", "LOST"] }, deletedAt: null },
+              where: { tenantId, stage: { notIn: ["WON", "LOST"] }, deletedAt: null },
             },
           },
         });
@@ -331,13 +366,13 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
 
       if (assigneeId) {
         await prisma.lead.update({
-          where: { id: leadId },
+          where: { id: lead.id },
           data: { assigneeId },
         });
 
         await prisma.leadActivity.create({
           data: {
-            leadId,
+            leadId: lead.id,
             type: "SYSTEM",
             text: `Автоматически назначен на менеджера`,
             userId: assigneeId,
@@ -359,7 +394,7 @@ async function executeAction(action: WorkflowAction, payload: Record<string, any
       const templateId = action.templateId;
       if (!templateId) break;
 
-      const template = await (prisma as any).documentTemplate.findUnique({ where: { id: templateId } });
+      const template = await (prisma as any).documentTemplate.findFirst({ where: { id: templateId, tenantId } });
       if (!template || !template.active) break;
 
       const html = resolveTemplate(template.content, payload);

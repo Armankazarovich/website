@@ -19,6 +19,7 @@ import {
 import { DeliveryStatusSelect } from "./delivery-status-select";
 import { AutoRefresh } from "@/components/admin/auto-refresh";
 import { DeliveryActions } from "./delivery-actions";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 const ACTIVE_STATUSES = ["CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY"];
 const PICKUP_STATUS = "READY_PICKUP";
 const ARCHIVE_STATUSES = ["DELIVERED", "COMPLETED", "CANCELLED"];
@@ -50,9 +51,11 @@ export default async function DeliveryPage({
   const session = await auth();
   const role = (session?.user as any)?.role;
   if (!session || !role || role === "USER") redirect("/login"); // Фильтр из Smart Command Bar (чипсы: Подтверждён / В пути / Самовывоз)
+  const tenantId = getCurrentTenantId();
   const statusFilter = searchParams.status || null;
   const activeAndPickupOrders = await prisma.order.findMany({
     where: {
+      tenantId,
       status: {
         in: [...ACTIVE_STATUSES, PICKUP_STATUS] as any,
       },
@@ -63,6 +66,7 @@ export default async function DeliveryPage({
   });
   const archiveOrders = await prisma.order.findMany({
     where: {
+      tenantId,
       status: { in: ARCHIVE_STATUSES as any },
       deletedAt: null,
     },

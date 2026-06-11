@@ -8,6 +8,7 @@ import { existsSync } from "fs";
 import { createHash } from "crypto";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 async function checkAdmin() {
   const session = await auth();
@@ -15,11 +16,53 @@ async function checkAdmin() {
   return role === "SUPER_ADMIN" || role === "ADMIN";
 }
 
+const WATERMARK_POSITIONS = new Set(["bottom-right", "bottom-left", "top-right", "top-left", "center"]);
+const WATERMARK_TYPES = new Set(["logo", "text"]);
+const WATERMARK_LOGO_MIME = new Set(["image/png", "image/webp", "image/svg+xml"]);
+const WATERMARK_LOGO_MAX_SIZE = 5 * 1024 * 1024;
+const DEFAULT_TEXT_COLOR = `#${"ffffff"}`;
+
+function clampNumber(value: unknown, min: number, max: number, fallback: number) {
+  const next = Number(value);
+  if (!Number.isFinite(next)) return fallback;
+  return Math.min(max, Math.max(min, next));
+}
+
+function normalizeWatermarkOptions(body: Record<string, unknown>) {
+  const position = typeof body.position === "string" && WATERMARK_POSITIONS.has(body.position)
+    ? body.position
+    : "bottom-right";
+  const type = typeof body.type === "string" && WATERMARK_TYPES.has(body.type) ? body.type : "logo";
+  const opacity = clampNumber(body.opacity, 0.05, 1, 0.75);
+  const sizePct = Math.round(clampNumber(body.sizePct, 5, 40, 20));
+  const text = typeof body.text === "string" ? body.text.trim().slice(0, 80) : "";
+  const textColor = typeof body.textColor === "string" && /^#[0-9a-f]{6}$/i.test(body.textColor)
+    ? body.textColor
+    : DEFAULT_TEXT_COLOR;
+
+  return { position, opacity, sizePct, type, text, textColor };
+}
+
+function isSafeWatermarkImageUrl(value: unknown): value is string {
+  if (typeof value !== "string" || !value) return false;
+  if (value.startsWith("http://") || value.startsWith("https://")) return true;
+  return value.startsWith("/images/") && !value.includes("..") && !value.includes("\\") && !value.includes("//");
+}
+
+function saveWatermarkSetting(tenantId: string, key: string, value: string) {
+  return prisma.siteSettings.upsert({
+    where: { tenantId_key: { tenantId, key } },
+    create: { tenantId, key, value },
+    update: { value },
+  });
+}
+
 // GET: return current watermark settings
 export async function GET() {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
   const rows = await prisma.siteSettings.findMany({
-    where: { key: { in: ["watermark_logo_url", "watermark_position", "watermark_opacity", "watermark_size_pct", "watermark_type", "watermark_text", "watermark_text_color", "watermark_backup_date"] } },
+    where: { tenantId, key: { in: ["watermark_logo_url", "watermark_position", "watermark_opacity", "watermark_size_pct", "watermark_type", "watermark_text", "watermark_text_color", "watermark_backup_date"] } },
   });
   const result: Record<string, string> = {};
   for (const r of rows) result[r.key] = r.value;
@@ -29,6 +72,7 @@ export async function GET() {
 // POST — multiple actions
 export async function POST(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const contentType = req.headers.get("content-type") || "";
 
@@ -37,6 +81,9 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     if (!file) return NextResponse.json({ error: "No file" }, { status: 400 });
+    if (!WATERMARK_LOGO_MIME.has(file.type) || file.size > WATERMARK_LOGO_MAX_SIZE) {
+      return NextResponse.json({ error: "Загрузите PNG, WebP или SVG до 5MB" }, { status: 400 });
+    }
 
     const bytes = await file.arrayBuffer();
     const buf = Buffer.from(bytes);
@@ -45,14 +92,14 @@ export async function POST(req: Request) {
     if (!existsSync(uploadsDir)) await mkdir(uploadsDir, { recursive: true });
 
     const filename = `watermark-logo.png`;
-    await writeFile(join(uploadsDir, filename), buf);
+    const png = await sharp(buf, { limitInputPixels: 4096 * 4096 })
+      .resize(1024, 1024, { fit: "inside", withoutEnlargement: true })
+      .png()
+      .toBuffer();
+    await writeFile(join(uploadsDir, filename), png);
     const url = `/images/watermarks/${filename}`;
 
-    await prisma.siteSettings.upsert({
-      where: { key: "watermark_logo_url" },
-      create: { id: "watermark_logo_url", key: "watermark_logo_url", value: url },
-      update: { value: url },
-    });
+    await saveWatermarkSetting(tenantId, "watermark_logo_url", url);
 
     return NextResponse.json({ url });
   }
@@ -62,7 +109,7 @@ export async function POST(req: Request) {
 
   // ── Save settings ──
   if (action === "save_settings") {
-    const { position = "bottom-right", opacity = 0.75, sizePct = 20, type = "logo", text = "", textColor = "#ffffff" } = body;
+    const { position, opacity, sizePct, type, text, textColor } = normalizeWatermarkOptions(body);
     const settingsToSave = [
       { key: "watermark_position",   value: position },
       { key: "watermark_opacity",    value: String(opacity) },
@@ -72,69 +119,54 @@ export async function POST(req: Request) {
       { key: "watermark_text_color", value: textColor },
     ];
     await Promise.all(settingsToSave.map(({ key, value }) =>
-      prisma.siteSettings.upsert({ where: { key }, create: { id: key, key, value }, update: { value } })
+      saveWatermarkSetting(tenantId, key, value)
     ));
     return NextResponse.json({ ok: true });
   }
 
   // ── Apply to single image ──
   if (action === "apply") {
-    const { imageUrl, position = "bottom-right", opacity = 0.75, sizePct = 20, type = "logo", text = "", textColor = "#ffffff" } = body;
-    if (!imageUrl) return NextResponse.json({ error: "imageUrl required" }, { status: 400 });
+    const { imageUrl } = body;
+    const { position, opacity, sizePct, type, text, textColor } = normalizeWatermarkOptions(body);
+    if (!isSafeWatermarkImageUrl(imageUrl)) return NextResponse.json({ error: "imageUrl required" }, { status: 400 });
     const result = await applyWatermark(imageUrl, position, opacity, sizePct, type, text, textColor);
     return NextResponse.json(result);
   }
 
   // ── Backup all product images ──
   if (action === "backup_images") {
-    const products = await prisma.product.findMany({ select: { id: true, images: true } });
+    const products = await prisma.product.findMany({ where: { tenantId }, select: { id: true, images: true } });
     const backup = products.map(p => ({ id: p.id, images: p.images }));
     const backupJson = JSON.stringify(backup);
     // Store in chunks if large — for simplicity store as single SiteSettings entry
-    await prisma.siteSettings.upsert({
-      where: { key: "watermark_backup" },
-      create: { id: "watermark_backup", key: "watermark_backup", value: backupJson },
-      update: { value: backupJson },
-    });
-    await prisma.siteSettings.upsert({
-      where: { key: "watermark_backup_date" },
-      create: { id: "watermark_backup_date", key: "watermark_backup_date", value: new Date().toISOString() },
-      update: { value: new Date().toISOString() },
-    });
+    await saveWatermarkSetting(tenantId, "watermark_backup", backupJson);
+    await saveWatermarkSetting(tenantId, "watermark_backup_date", new Date().toISOString());
     return NextResponse.json({ ok: true, count: products.length });
   }
 
   // ── Restore all product images from backup ──
   if (action === "restore_images") {
-    const backupRow = await prisma.siteSettings.findUnique({ where: { key: "watermark_backup" } });
+    const backupRow = await prisma.siteSettings.findFirst({ where: { key: "watermark_backup", tenantId } });
     if (!backupRow) return NextResponse.json({ error: "Нет резервной копии" }, { status: 400 });
 
     const backup: { id: string; images: string[] }[] = JSON.parse(backupRow.value);
     let restored = 0;
     for (const item of backup) {
-      await prisma.product.update({ where: { id: item.id }, data: { images: item.images } });
-      restored++;
+      const result = await prisma.product.updateMany({ where: { id: item.id, tenantId }, data: { images: item.images } });
+      restored += result.count;
     }
     return NextResponse.json({ ok: true, restored });
   }
 
   // ── Apply to ALL images ──
   if (action === "apply_all") {
-    const { position = "bottom-right", opacity = 0.75, sizePct = 20, type = "logo", text = "", textColor = "#ffffff" } = body;
-    const products = await prisma.product.findMany({ select: { id: true, images: true } });
+    const { position, opacity, sizePct, type, text, textColor } = normalizeWatermarkOptions(body);
+    const products = await prisma.product.findMany({ where: { tenantId }, select: { id: true, images: true } });
 
     // ✅ АВТО-БЭКАП перед применением — всегда, автоматически
     const backup = products.map((p) => ({ id: p.id, images: p.images }));
-    await prisma.siteSettings.upsert({
-      where: { key: "watermark_backup" },
-      create: { id: "watermark_backup", key: "watermark_backup", value: JSON.stringify(backup) },
-      update: { value: JSON.stringify(backup) },
-    });
-    await prisma.siteSettings.upsert({
-      where: { key: "watermark_backup_date" },
-      create: { id: "watermark_backup_date", key: "watermark_backup_date", value: new Date().toISOString() },
-      update: { value: new Date().toISOString() },
-    });
+    await saveWatermarkSetting(tenantId, "watermark_backup", JSON.stringify(backup));
+    await saveWatermarkSetting(tenantId, "watermark_backup_date", new Date().toISOString());
 
     let count = 0;
     for (const product of products) {
@@ -144,8 +176,8 @@ export async function POST(req: Request) {
         const res = await applyWatermark(imgUrl, position, opacity, sizePct, type, text, textColor);
         newImages.push(res.url ?? imgUrl);
       }
-      await prisma.product.update({ where: { id: product.id }, data: { images: newImages } });
-      count++;
+      const result = await prisma.product.updateMany({ where: { id: product.id, tenantId }, data: { images: newImages } });
+      count += result.count;
     }
     return NextResponse.json({ ok: true, count });
   }
@@ -163,7 +195,7 @@ export async function POST(req: Request) {
     } catch { return NextResponse.json({ ok: true, deleted: 0 }); }
 
     // Collect all image URLs referenced by products
-    const products = await prisma.product.findMany({ select: { images: true } });
+    const products = await prisma.product.findMany({ where: { tenantId }, select: { images: true } });
     const usedUrls = new Set<string>();
     for (const p of products) for (const img of p.images) usedUrls.add(img);
 
@@ -191,6 +223,7 @@ async function applyWatermark(
   textColor: string = "#ffffff"
 ): Promise<{ url: string; error?: string }> {
   try {
+    const tenantId = getCurrentTenantId();
     // Fetch product image
     const isExternal = imageUrl.startsWith("http");
     let imageBuffer: Buffer;
@@ -240,7 +273,7 @@ async function applyWatermark(
       watermarkBuf = await sharp(svgBuf).png().toBuffer();
     } else {
       // ── Logo watermark ──
-      const logoSetting = await prisma.siteSettings.findUnique({ where: { key: "watermark_logo_url" } });
+      const logoSetting = await prisma.siteSettings.findFirst({ where: { key: "watermark_logo_url", tenantId } });
       if (!logoSetting) return { url: imageUrl, error: "No watermark logo set" };
 
       const logoRelative = logoSetting.value.replace(/^\/+/, "");

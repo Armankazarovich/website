@@ -29,7 +29,7 @@ type OrderEditable = {
   items: OrderItem[];
 };
 
-type Variant = { id: string; size: string; pricePerCube: number | null; pricePerPiece: number | null };
+type Variant = { id: string; size: string; pricePerCube: number | null; pricePerPiece: number | null; inStock?: boolean };
 type Product = { id: string; name: string; saleUnit: "CUBE" | "PIECE" | "BOTH"; variants: Variant[] };
 
 type NewItem = {
@@ -74,9 +74,14 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
 
   useEffect(() => {
     if (editing && products.length === 0) {
-      fetch("/api/admin/products")
+      fetch("/api/admin/terminal/catalog")
         .then((r) => r.json())
-        .then((data) => setProducts(Array.isArray(data) ? data : []))
+        .then((data) => {
+          const sellableProducts = Array.isArray(data)
+            ? data.filter((product) => Array.isArray(product?.variants) && product.variants.length > 0)
+            : [];
+          setProducts(sellableProducts);
+        })
         .catch(() => {});
     }
   }, [editing, products.length]);

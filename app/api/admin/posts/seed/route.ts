@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth-helpers";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { parseJsonRecord, requireWriteConfirmation } from "@/lib/admin-content-guard";
 
 export const dynamic = "force-dynamic";
 
@@ -296,26 +298,30 @@ const INITIAL_SERVICES = [
   },
 ];
 
-export async function POST() {
+export async function POST(req: Request) {
   const auth = await requireAdmin();
   if (!auth.authorized) return auth.response;
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+  const tenantId = getCurrentTenantId();
 
-  const existingPostsCount = await prisma.post.count();
-  const existingServicesCount = await prisma.service.count();
+  const existingPostsCount = await prisma.post.count({ where: { tenantId } });
+  const existingServicesCount = await prisma.service.count({ where: { tenantId } });
 
   let postsCreated = 0;
   let servicesCreated = 0;
 
   if (existingPostsCount === 0) {
     for (const post of INITIAL_POSTS) {
-      await prisma.post.create({ data: post });
+      await prisma.post.create({ data: { ...post, tenantId } });
       postsCreated++;
     }
   }
 
   if (existingServicesCount === 0) {
     for (const service of INITIAL_SERVICES) {
-      await prisma.service.create({ data: service });
+      await prisma.service.create({ data: { ...service, tenantId } });
       servicesCreated++;
     }
   }

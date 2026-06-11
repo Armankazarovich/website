@@ -1,5 +1,6 @@
 "use client";
 
+import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 import { useCallback, useEffect, useState } from "react";
 import { Bell, Check, Database, Loader2, Plug, RefreshCw, Search, Send } from "lucide-react";
 
@@ -42,6 +43,13 @@ const EMPTY_DATA: IntegrationData = {
   stats: { connectors: {}, jobs: {}, index: {}, queuedJobs: 0, failedJobs: 0 },
 };
 
+const ACTION_CONFIRMATIONS: Record<string, string> = {
+  seed: "Подготовить базовые коннекторы терминала?",
+  reindex: "Пересобрать поисковый индекс терминала?",
+  healthcheck: "Поставить проверку интеграций в очередь?",
+  "qr-notification-check": "Поставить проверку QR и уведомлений в очередь?",
+};
+
 function statusText(status: string) {
   const map: Record<string, string> = {
     ACTIVE: "включено",
@@ -56,6 +64,7 @@ function statusText(status: string) {
 }
 
 export function TerminalIntegrationActions() {
+  const confirmAction = useAdminConfirm();
   const [data, setData] = useState<IntegrationData>(EMPTY_DATA);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
@@ -81,13 +90,16 @@ export function TerminalIntegrationActions() {
 
   const run = async (action: string, success: string) => {
     if (busy) return;
+    const confirmation = ACTION_CONFIRMATIONS[action] || "Выполнить действие терминала?";
+    if (!(await confirmAction(confirmation))) return;
+
     setBusy(action);
     setMessage("");
     try {
       const res = await fetch("/api/admin/terminal/integrations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, confirm: true }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) {

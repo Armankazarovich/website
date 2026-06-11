@@ -55,7 +55,10 @@
 - Обычный рабочий экран: корневой контейнер `admin-page-frame`.
 - Таблицы, каталоги, заказы, склад, аналитика, CRM, продвижение: `admin-page-frame admin-page-frame-fluid`.
 - Читаемые формы, справки, обучение, текстовые настройки: `admin-page-frame admin-page-frame-readable`.
+- Рабочие экраны ARAY CMS рядом с панелью Арая: `admin-page-frame admin-page-frame-aray-workspace`.
 - Внутренние сетки строятся через `admin-page-grid` / `admin-page-grid-wide`, чтобы карточки раскрывались одинаково на mobile, desktop и wide.
+
+**ARAY workspace:** если экран работает как пульт запуска, сборки, подключений или CMS, корень не центрируется узкой инструкцией. Используем `admin-page-frame-aray-workspace`, а главный блок с правым помощником строим через `admin-aray-command-grid`, `admin-aray-command-main`, `admin-aray-command-side`. На desktop помощник остается справа, на mobile уходит ниже, без горизонтального скролла и пустых пропастей.
 
 **Запрещено:**
 

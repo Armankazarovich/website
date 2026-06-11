@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { existsSync } from "fs";
 import { join } from "path";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 async function checkAdmin() {
   const session = await auth();
@@ -26,11 +27,31 @@ function findExactProductImage(slug: string): string | null {
   return null;
 }
 
+function originalCandidatesForWatermarkedImage(imageUrl: string): string[] {
+  const slashIndex = imageUrl.lastIndexOf("/");
+  const dir = slashIndex >= 0 ? imageUrl.slice(0, slashIndex + 1) : "";
+  const filename = slashIndex >= 0 ? imageUrl.slice(slashIndex + 1) : imageUrl;
+  if (!filename.startsWith("wm-")) return [];
+
+  const originalBase = filename
+    .replace(/^wm-/, "")
+    .replace(/-[a-f0-9]{10}\.webp$/i, "");
+
+  if (!originalBase) return [];
+  return PRODUCT_IMAGE_EXTENSIONS.map((ext) => `${dir}${originalBase}.${ext}`);
+}
+
+function hasOriginalForWatermarkedImage(imageUrl: string, imageSet: Set<string>) {
+  return originalCandidatesForWatermarkedImage(imageUrl).some((candidate) => imageSet.has(candidate));
+}
+
 // ── GET: diagnose all product images ─────────────────────────────────────────
 export async function GET() {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const products = await prisma.product.findMany({
+    where: { tenantId },
     select: { id: true, name: true, slug: true, images: true },
     orderBy: { name: "asc" },
   });
@@ -42,6 +63,9 @@ export async function GET() {
     const duplicates: string[] = [];
     const broken: string[] = [];
     const ok: string[] = [];
+
+    const imageSet = new Set(p.images);
+    const wmDuplicates = p.images.filter((img) => hasOriginalForWatermarkedImage(img, imageSet));
 
     for (const img of p.images) {
       // Check duplicate
@@ -83,6 +107,9 @@ export async function GET() {
       duplicates,
       broken,
       suggestedImage,
+      wmDuplicates,
+      wmDuplicatesCount: wmDuplicates.length,
+      hasWmDuplicates: wmDuplicates.length > 0,
     };
   });
 
@@ -92,8 +119,10 @@ export async function GET() {
     withBroken: report.filter((r) => r.hasBroken).length,
     withNoImages: report.filter((r) => r.total === 0).length,
     withRestorableNoImages: report.filter((r) => r.total === 0 && r.suggestedImage).length,
+    withWmDuplicates: report.filter((r) => r.hasWmDuplicates).length,
     totalDuplicateEntries: report.reduce((s, r) => s + r.duplicatesCount, 0),
     totalBrokenRefs: report.reduce((s, r) => s + r.brokenCount, 0),
+    totalWmDuplicateRefs: report.reduce((s, r) => s + r.wmDuplicatesCount, 0),
   };
 
   return NextResponse.json({ summary, products: report });
@@ -102,13 +131,14 @@ export async function GET() {
 // ── POST: fix actions ─────────────────────────────────────────────────────────
 export async function POST(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const body = await req.json();
   const { action, productId } = body;
 
   // ── Remove duplicates from all products (or single product) ──
   if (action === "deduplicate") {
-    const where = productId ? { id: productId } : {};
+    const where = productId ? { id: productId, tenantId } : { tenantId };
     const products = await prisma.product.findMany({
       where,
       select: { id: true, images: true },
@@ -136,6 +166,7 @@ export async function POST(req: Request) {
   if (action === "remove_broken") {
     const publicDir = join(process.cwd(), "public");
     const products = await prisma.product.findMany({
+      where: { tenantId },
       select: { id: true, images: true },
     });
 
@@ -164,6 +195,7 @@ export async function POST(req: Request) {
   // ── Fill missing product images by exact slug filename ──
   if (action === "fill_missing_by_slug") {
     const products = await prisma.product.findMany({
+      where: { tenantId },
       select: { id: true, slug: true, images: true },
     });
 
@@ -185,6 +217,7 @@ export async function POST(req: Request) {
   // ── Remove wm- watermark duplicates (keep originals, remove wm- versions) ──
   if (action === "remove_wm_duplicates") {
     const products = await prisma.product.findMany({
+      where: { tenantId },
       select: { id: true, images: true },
     });
 
@@ -192,17 +225,8 @@ export async function POST(req: Request) {
     let totalRemoved = 0;
 
     for (const p of products) {
-      // Keep only non-wm images. If all are wm, keep all (user hasn't restored)
-      const hasOriginals = p.images.some((img) => !img.includes("/wm-"));
-      let newImages: string[];
-
-      if (hasOriginals) {
-        // Remove wm- versions if originals also exist (true duplicates)
-        newImages = p.images.filter((img) => !img.includes("/wm-"));
-      } else {
-        // All are wm, keep them — just deduplicate
-        newImages = p.images.filter((img, idx, arr) => arr.indexOf(img) === idx);
-      }
+      const imageSet = new Set(p.images);
+      const newImages = p.images.filter((img) => !hasOriginalForWatermarkedImage(img, imageSet));
 
       if (newImages.length < p.images.length) {
         totalRemoved += p.images.length - newImages.length;

@@ -8,6 +8,7 @@ import { generateProductDescription } from "@/lib/product-seo";
 import { makeShortProductDescription, normalizeProductText } from "@/lib/product-descriptions";
 import { normalizeProductCardTags } from "@/lib/product-insights";
 import { slugify } from "@/lib/slug";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
@@ -25,13 +26,13 @@ async function checkProductsAccess() {
   return session && role && PRODUCTS_ROLES.includes(role);
 }
 
-async function makeUniqueProductSlug(base: string, currentProductId: string) {
+async function makeUniqueProductSlug(base: string, currentProductId: string, tenantId: string) {
   const cleanBase = slugify(base) || "product";
   let candidate = cleanBase;
   let suffix = 1;
   while (true) {
     const existing = await prisma.product.findUnique({
-      where: { slug: candidate },
+      where: { tenantId_slug: { tenantId, slug: candidate } },
       select: { id: true },
     });
     if (!existing || existing.id === currentProductId) return candidate;
@@ -42,8 +43,10 @@ async function makeUniqueProductSlug(base: string, currentProductId: string) {
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   if (!(await checkProductsAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
   const product = await prisma.product.findFirst({
     where: {
+      tenantId,
       OR: [{ id: params.id }, { slug: params.id }],
     },
     include: { category: true, variants: { orderBy: { size: "asc" } } },
@@ -54,6 +57,7 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   if (!(await checkProductsAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -86,18 +90,26 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   // Авто-описание: если менеджер явно очистил / оставил слишком короткое описание —
   // подставляем шаблон из полей товара (город, размеры, цена, доставка из settings)
-  const previousProduct = await prisma.product.findUnique({
-    where: { id: params.id },
-    select: { slug: true, name: true, description: true, shortDescription: true },
+  const previousProduct = await prisma.product.findFirst({
+    where: {
+      tenantId,
+      OR: [{ id: params.id }, { slug: params.id }],
+    },
+    select: { id: true, slug: true, name: true, description: true, shortDescription: true },
   });
+  if (!previousProduct) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const productId = previousProduct.id;
   let finalDescription = description;
   const descProvided = description !== undefined;
   const descTooShort = descProvided && (!description || String(description).trim().length < 180);
   if (descTooShort) {
     try {
       const [current, settings] = await Promise.all([
-        prisma.product.findUnique({
-          where: { id: params.id },
+        prisma.product.findFirst({
+          where: {
+            tenantId,
+            OR: [{ id: productId }, { slug: params.id }],
+          },
           include: {
             category: { select: { name: true } },
             variants: {
@@ -114,8 +126,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       ]);
       if (current) {
         const effectiveCategory = categoryId
-          ? await prisma.category.findUnique({
-              where: { id: categoryId },
+          ? await prisma.category.findFirst({
+              where: { id: categoryId, tenantId },
               select: { name: true },
             })
           : current.category;
@@ -151,7 +163,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   // Build update payload explicitly (Prisma-typed)
   const updateData: Record<string, unknown> = {};
   if (name !== undefined) updateData.name = name;
-  if (slug !== undefined) updateData.slug = await makeUniqueProductSlug(slug || name || previousProduct?.name || "product", params.id);
+  if (slug !== undefined) updateData.slug = await makeUniqueProductSlug(slug || name || previousProduct?.name || "product", productId, tenantId);
   if (descProvided) updateData.description = finalDescription;
   if (shortDescription !== undefined) {
     updateData.shortDescription =
@@ -166,7 +178,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       name ?? previousProduct?.name
     );
   }
-  if (categoryId !== undefined) updateData.categoryId = categoryId;
+  if (categoryId !== undefined) {
+    const category = await prisma.category.findFirst({
+      where: { id: categoryId, tenantId },
+      select: { id: true },
+    });
+    if (!category) {
+      return NextResponse.json({ error: "Категория не найдена" }, { status: 400 });
+    }
+    updateData.categoryId = category.id;
+  }
   if (images !== undefined) updateData.images = images as string[];
   if (cardTags !== undefined) updateData.cardTags = normalizeProductCardTags(Array.isArray(cardTags) ? (cardTags as string[]) : []);
   if (saleUnit !== undefined) updateData.saleUnit = saleUnit;
@@ -175,7 +196,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   // Update product
   await prisma.product.update({
-    where: { id: params.id },
+    where: { id: productId },
     data: updateData as never,
   });
 
@@ -240,7 +261,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 
     const existingVariants = await prisma.productVariant.findMany({
-      where: { productId: params.id },
+      where: { productId },
       select: { id: true },
     });
     const existingIds = new Set(existingVariants.map((v: { id: string }) => v.id));
@@ -267,7 +288,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
             })
           : prisma.productVariant.create({
               data: {
-                productId: params.id,
+                productId,
                 size: v.size,
                 pricePerCube: v.pricePerCube,
                 pricePerPiece: v.pricePerPiece,
@@ -280,7 +301,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
     const updated = await prisma.product.findUnique({
-      where: { id: params.id },
+      where: { id: productId },
       include: { category: true, variants: { orderBy: { size: "asc" } } },
     });
     if (updated) {
@@ -313,16 +334,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 export async function DELETE(_: Request, { params }: { params: { id: string } }) {
   if (!(await checkProductsAccess()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   try {
-    const productForCache = await prisma.product.findUnique({
-      where: { id: params.id },
-      select: { slug: true },
+    const productForCache = await prisma.product.findFirst({
+      where: { id: params.id, tenantId },
+      select: { id: true, slug: true },
     });
+    if (!productForCache) return NextResponse.json({ error: "Not found" }, { status: 404 });
     // Check if any OrderItem references this product's variants
     const hasOrders = await prisma.orderItem.findFirst({
       where: {
-        variant: { productId: params.id },
+        variant: { productId: productForCache.id },
       },
       select: { id: true },
     });
@@ -331,11 +354,11 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
       // Soft delete: mark inactive + hide variants instead of destroying history
       await prisma.$transaction([
         prisma.product.update({
-          where: { id: params.id },
+          where: { id: productForCache.id },
           data: { active: false, featured: false },
         }),
         prisma.productVariant.updateMany({
-          where: { productId: params.id },
+          where: { productId: productForCache.id },
           data: { inStock: false },
         }),
       ]);
@@ -349,7 +372,7 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
     }
 
     // No orders → safe to hard-delete (Prisma cascade handles variants)
-    await prisma.product.delete({ where: { id: params.id } });
+    await prisma.product.delete({ where: { id: productForCache.id } });
     revalidateProductPublicPaths(productForCache?.slug);
     return NextResponse.json({ ok: true, softDelete: false });
   } catch (err: unknown) {

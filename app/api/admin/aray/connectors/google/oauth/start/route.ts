@@ -22,19 +22,25 @@ async function authorize() {
   return { authorized: true as const, role: auth.role };
 }
 
+function connectorsReturnUrl(req: Request, params: Record<string, string>) {
+  const url = new URL("/admin/aray/connectors", new URL(googleUnifiedOAuthRedirectUri(req)).origin);
+  for (const [key, value] of Object.entries(params)) {
+    url.searchParams.set(key, value);
+  }
+  return url;
+}
+
 export async function GET(req: Request) {
   const auth = await authorize();
   if (!auth.authorized) return auth.response;
 
   const app = getGoogleUnifiedOAuthApp();
   if (!app) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          "Для единого входа Google нужны GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET или GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET.",
-      },
-      { status: 400 },
+    return NextResponse.redirect(
+      connectorsReturnUrl(req, {
+        google_oauth: "missing_app",
+        message: "Не настроен OAuth Google: добавьте GOOGLE_OAUTH_CLIENT_ID и GOOGLE_OAUTH_CLIENT_SECRET.",
+      }),
     );
   }
 

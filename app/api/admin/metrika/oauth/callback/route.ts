@@ -74,9 +74,9 @@ async function exchangeCode(req: Request, code: string) {
 
 async function saveSetting(key: string, value: string, tenantId: string) {
   await prisma.siteSettings.upsert({
-    where: { key },
-    create: { id: key, key, value, tenantId },
-    update: { value, tenantId },
+    where: { tenantId_key: { tenantId, key } },
+    create: { tenantId, key, value },
+    update: { value },
   });
 }
 

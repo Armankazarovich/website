@@ -7,8 +7,8 @@ self.addEventListener('push', function(event) {
   const isAdmin = targetUrl.startsWith('/admin');
   const options = {
     body: data.body,
-    icon: data.icon || (isAdmin ? '/api/pwa/icon?s=192&v=aray-production-20260508' : '/icons/icon-192x192.png'),
-    badge: isAdmin ? '/api/pwa/icon?s=72&v=aray-production-20260508' : '/icons/icon-72x72.png',
+    icon: data.icon || (isAdmin ? '/api/pwa/icon?s=192&v=pilorus-brand-header-20260526' : '/icons/icon-192x192.png'),
+    badge: isAdmin ? '/api/pwa/icon?s=72&v=pilorus-brand-header-20260526' : '/icons/icon-72x72.png',
     data: { url: targetUrl },
     actions: [
       { action: 'open', title: 'Открыть' },

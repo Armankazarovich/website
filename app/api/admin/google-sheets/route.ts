@@ -9,6 +9,8 @@ import {
   syncFromSheet,
   getAppsScriptCode,
 } from "@/lib/google-sheets";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { getSiteSetting, upsertSiteSetting } from "@/lib/tenant-settings";
 
 async function checkAdmin() {
   const session = await auth();
@@ -19,9 +21,10 @@ async function checkAdmin() {
 // ── GET: current settings ──────────────────────────────────────────────────
 export async function GET() {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const rows = await prisma.siteSettings.findMany({
-    where: { key: { in: ["google_sheet_id", "google_sheet_url", "google_sheet_synced_at", "google_service_account"] } },
+    where: { tenantId, key: { in: ["google_sheet_id", "google_sheet_url", "google_sheet_synced_at", "google_service_account"] } },
   });
   const result: Record<string, string> = {};
   for (const r of rows) {
@@ -50,18 +53,14 @@ export async function POST(req: Request) {
     if (!spreadsheetId) return NextResponse.json({ error: "spreadsheetId required" }, { status: 400 });
 
     // Verify spreadsheetId matches configured one
-    const row = await prisma.siteSettings.findUnique({ where: { key: "google_sheet_id" } });
+    const row = await getSiteSetting("google_sheet_id");
     if (!row || row.value !== spreadsheetId) {
       return NextResponse.json({ error: "Unknown sheet" }, { status: 403 });
     }
 
     try {
       const result = await syncFromSheet(spreadsheetId);
-      await prisma.siteSettings.upsert({
-        where: { key: "google_sheet_synced_at" },
-        create: { id: "google_sheet_synced_at", key: "google_sheet_synced_at", value: new Date().toISOString() },
-        update: { value: new Date().toISOString() },
-      });
+      await upsertSiteSetting("google_sheet_synced_at", new Date().toISOString());
       return NextResponse.json({ ok: true, ...result });
     } catch (err: any) {
       return NextResponse.json({ error: err.message }, { status: 500 });
@@ -80,11 +79,7 @@ export async function POST(req: Request) {
     } catch {
       return NextResponse.json({ error: "Неверный JSON" }, { status: 400 });
     }
-    await prisma.siteSettings.upsert({
-      where: { key: "google_service_account" },
-      create: { id: "google_service_account", key: "google_service_account", value: credentials },
-      update: { value: credentials },
-    });
+    await upsertSiteSetting("google_service_account", credentials);
     return NextResponse.json({ ok: true });
   }
 
@@ -93,16 +88,8 @@ export async function POST(req: Request) {
     const { sheetId, sheetUrl } = body;
     if (!sheetId) return NextResponse.json({ error: "sheetId required" }, { status: 400 });
     await Promise.all([
-      prisma.siteSettings.upsert({
-        where: { key: "google_sheet_id" },
-        create: { id: "google_sheet_id", key: "google_sheet_id", value: sheetId },
-        update: { value: sheetId },
-      }),
-      prisma.siteSettings.upsert({
-        where: { key: "google_sheet_url" },
-        create: { id: "google_sheet_url", key: "google_sheet_url", value: sheetUrl ?? "" },
-        update: { value: sheetUrl ?? "" },
-      }),
+      upsertSiteSetting("google_sheet_id", sheetId),
+      upsertSiteSetting("google_sheet_url", sheetUrl ?? ""),
     ]);
     return NextResponse.json({ ok: true });
   }
@@ -113,16 +100,8 @@ export async function POST(req: Request) {
       const result = await createSheetTemplate("ПилоРус — Товары");
       // Auto-save the sheet ID
       await Promise.all([
-        prisma.siteSettings.upsert({
-          where: { key: "google_sheet_id" },
-          create: { id: "google_sheet_id", key: "google_sheet_id", value: result.id },
-          update: { value: result.id },
-        }),
-        prisma.siteSettings.upsert({
-          where: { key: "google_sheet_url" },
-          create: { id: "google_sheet_url", key: "google_sheet_url", value: result.url },
-          update: { value: result.url },
-        }),
+        upsertSiteSetting("google_sheet_id", result.id),
+        upsertSiteSetting("google_sheet_url", result.url),
       ]);
       return NextResponse.json({ ok: true, ...result });
     } catch (err: any) {
@@ -132,15 +111,11 @@ export async function POST(req: Request) {
 
   // ── Sync DB → Sheet ──
   if (action === "sync_to_sheet") {
-    const row = await prisma.siteSettings.findUnique({ where: { key: "google_sheet_id" } });
+    const row = await getSiteSetting("google_sheet_id");
     if (!row?.value) return NextResponse.json({ error: "Google таблица не настроена" }, { status: 400 });
     try {
       const result = await syncToSheet(row.value);
-      await prisma.siteSettings.upsert({
-        where: { key: "google_sheet_synced_at" },
-        create: { id: "google_sheet_synced_at", key: "google_sheet_synced_at", value: new Date().toISOString() },
-        update: { value: new Date().toISOString() },
-      });
+      await upsertSiteSetting("google_sheet_synced_at", new Date().toISOString());
       return NextResponse.json({ ok: true, ...result });
     } catch (err: any) {
       return NextResponse.json({ error: err.message }, { status: 500 });
@@ -149,15 +124,11 @@ export async function POST(req: Request) {
 
   // ── Sync Sheet → DB ──
   if (action === "sync_from_sheet") {
-    const row = await prisma.siteSettings.findUnique({ where: { key: "google_sheet_id" } });
+    const row = await getSiteSetting("google_sheet_id");
     if (!row?.value) return NextResponse.json({ error: "Google таблица не настроена" }, { status: 400 });
     try {
       const result = await syncFromSheet(row.value);
-      await prisma.siteSettings.upsert({
-        where: { key: "google_sheet_synced_at" },
-        create: { id: "google_sheet_synced_at", key: "google_sheet_synced_at", value: new Date().toISOString() },
-        update: { value: new Date().toISOString() },
-      });
+      await upsertSiteSetting("google_sheet_synced_at", new Date().toISOString());
       return NextResponse.json({ ok: true, ...result });
     } catch (err: any) {
       return NextResponse.json({ error: err.message }, { status: 500 });

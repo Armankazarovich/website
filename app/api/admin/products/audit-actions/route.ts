@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const ALLOWED_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
 
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
     if (!session?.user || !role || !ALLOWED_ROLES.includes(role)) {
       return NextResponse.json({ ok: false, error: "Доступ запрещён" }, { status: 403 });
     }
+    const tenantId = getCurrentTenantId();
 
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object") {
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
     switch (action) {
       case "hide-variants": {
         const res = await prisma.productVariant.updateMany({
-          where: { id: { in: idList } },
+          where: { id: { in: idList }, product: { tenantId } },
           data: { inStock: false },
         });
         updated = res.count;
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
       }
       case "show-variants": {
         const res = await prisma.productVariant.updateMany({
-          where: { id: { in: idList } },
+          where: { id: { in: idList }, product: { tenantId } },
           data: { inStock: true },
         });
         updated = res.count;
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest) {
       }
       case "deactivate-products": {
         const res = await prisma.product.updateMany({
-          where: { id: { in: idList } },
+          where: { id: { in: idList }, tenantId },
           data: { active: false },
         });
         updated = res.count;
@@ -70,7 +72,7 @@ export async function POST(req: NextRequest) {
       }
       case "activate-products": {
         const res = await prisma.product.updateMany({
-          where: { id: { in: idList } },
+          where: { id: { in: idList }, tenantId },
           data: { active: true },
         });
         updated = res.count;

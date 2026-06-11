@@ -52,6 +52,7 @@ const STAFF_ROLES = [
 ];
 
 const FINAL_STATUSES = new Set(["DELIVERED", "COMPLETED", "CANCELLED"]);
+const ARAY_PHONE_UI_ENABLED = false;
 
 const CLIENT_FILTERS = [
   { id: "all", label: "Все", hint: "Полная база" },
@@ -122,8 +123,14 @@ function getClientMeta(client: Client): ClientMeta {
   const isNew = getDaysSince(client.createdAt) <= 30;
   const hasFullContact = Boolean(client.name && client.phone);
   const lastOrder = client.orders[0] ?? null;
-  const missingContact = !hasFullContact;
-  const needsAttention = missingContact || activeOrderCount > 0;
+  const attentionReason = !client.phone
+    ? "Нужен телефон"
+    : !client.name
+      ? "Уточнить имя"
+      : activeOrderCount > 0
+        ? "Есть активный заказ"
+        : null;
+  const needsAttention = Boolean(attentionReason);
   const score = Math.min(
     100,
     Math.round(
@@ -146,7 +153,7 @@ function getClientMeta(client: Client): ClientMeta {
       segmentHint: "Высокая ценность",
       segmentClassName: "border-primary/35 bg-primary/10 text-primary",
       needsAttention,
-      attentionReason: missingContact ? "Дополнить контакт" : activeOrderCount > 0 ? "Есть активный заказ" : null,
+      attentionReason,
       isNew,
     };
   }
@@ -162,7 +169,7 @@ function getClientMeta(client: Client): ClientMeta {
       segmentHint: "Вернулся за покупкой",
       segmentClassName: "border-primary/25 bg-primary/10 text-primary",
       needsAttention,
-      attentionReason: missingContact ? "Дополнить контакт" : activeOrderCount > 0 ? "Есть активный заказ" : null,
+      attentionReason,
       isNew,
     };
   }
@@ -178,7 +185,7 @@ function getClientMeta(client: Client): ClientMeta {
       segmentHint: "Есть первый заказ",
       segmentClassName: "border-border bg-muted/45 text-foreground",
       needsAttention,
-      attentionReason: missingContact ? "Дополнить контакт" : activeOrderCount > 0 ? "Есть активный заказ" : null,
+      attentionReason,
       isNew,
     };
   }
@@ -193,7 +200,7 @@ function getClientMeta(client: Client): ClientMeta {
     segmentHint: isNew ? "Недавно зарегистрирован" : "Пока без заказов",
     segmentClassName: "border-border bg-muted/35 text-muted-foreground",
     needsAttention,
-    attentionReason: missingContact ? "Дополнить контакт" : null,
+    attentionReason,
     isNew,
   };
 }
@@ -234,7 +241,13 @@ async function copyText(value: string) {
   } catch {}
 }
 
-export function ClientsList({ clients: initialClients }: { clients: Client[] }) {
+export function ClientsList({
+  clients: initialClients,
+  canManageSensitiveActions = false,
+}: {
+  clients: Client[];
+  canManageSensitiveActions?: boolean;
+}) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [clients, setClients] = useState(initialClients);
@@ -252,7 +265,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
   const [promoteError, setPromoteError] = useState<string | null>(null);
   const [promotedName, setPromotedName] = useState<string | null>(null);
   const [resetPasswordId, setResetPasswordId] = useState<string | null>(null);
-  const [resetResult, setResetResult] = useState<{ password: string; emailSent: boolean; email: string } | null>(null);
+  const [resetResult, setResetResult] = useState<{ password?: string; emailSent: boolean; email: string } | null>(null);
 
   useEffect(() => {
     setFilter(getInitialFilter(searchParams));
@@ -508,7 +521,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
             <button
               type="button"
               onClick={() => setQuery("")}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               aria-label="Очистить поиск"
             >
               <X className="h-4 w-4" />
@@ -563,7 +576,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
             const avatar = displayName !== "Без имени" ? displayName.charAt(0) : client.email.charAt(0);
             const orderCount = client.orderCount ?? client.orders.length;
             const paidOrderCount = client.paidOrderCount ?? meta.paidOrders.length;
-            const arayNumber = getClientArayNumber(client);
+            const arayNumber = ARAY_PHONE_UI_ENABLED ? getClientArayNumber(client) : "";
             const phoneHref = client.phone ? getTelHref(client.phone) : undefined;
 
             return (
@@ -597,7 +610,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                           <a
                             href={phoneHref}
                             className="inline-flex items-center gap-1 font-semibold text-foreground transition-colors hover:text-primary"
-                            title="Позвонить по живому телефону"
+                            title="Позвонить клиенту"
                           >
                             <PhoneCall className="h-3 w-3" />
                             {client.phone}
@@ -606,9 +619,10 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                           <button
                             type="button"
                             onClick={() => handleEdit(client)}
-                            className="font-semibold text-destructive transition-colors hover:text-primary"
+                            className="inline-flex items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 font-semibold text-amber-700 transition-colors hover:border-primary/35 hover:text-primary dark:text-amber-300"
                           >
-                            нет живого телефона
+                            <AlertCircle className="h-3 w-3" />
+                            Телефон не указан
                           </button>
                         )}
                         {client.address ? <span className="truncate">адрес есть</span> : null}
@@ -618,7 +632,7 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                           <a
                             href={phoneHref}
                             className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2.5 text-[11px] font-bold text-primary transition-colors hover:bg-primary/15"
-                            title="Позвонить по живому телефону"
+                            title="Позвонить клиенту"
                           >
                             <PhoneCall className="h-3 w-3 shrink-0" />
                             <span className="truncate">{client.phone}</span>
@@ -627,35 +641,39 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                           <button
                             type="button"
                             onClick={() => handleEdit(client)}
-                            className="inline-flex min-h-7 items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 text-[10.5px] font-semibold text-destructive transition-colors hover:border-primary/35 hover:text-primary"
+                            className="inline-flex min-h-7 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 text-[10.5px] font-semibold text-primary transition-colors hover:bg-primary/15"
                           >
                             <Pencil className="h-3 w-3" />
                             Добавить телефон
                           </button>
                         )}
-                        <span className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border border-border bg-background/45 px-2.5 text-[10.5px] font-semibold text-muted-foreground">
-                          <PhoneCall className="h-3 w-3 shrink-0" />
-                          <span className="text-[9px] uppercase tracking-wide">AR</span>
-                          <span className="truncate">{arayNumber}</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => dialArayNumber(arayNumber)}
-                          className="inline-flex min-h-7 items-center gap-1 rounded-full border border-border bg-background/45 px-2 text-[10.5px] font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
-                          title="Набрать внутренний номер в AR Phone"
-                        >
-                          <PhoneCall className="h-3 w-3" />
-                          AR Phone
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void copyText(arayNumber)}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background/45 text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
-                          title="Скопировать номер"
-                          aria-label="Скопировать номер"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </button>
+                        {ARAY_PHONE_UI_ENABLED ? (
+                          <>
+                            <span className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border border-border bg-background/45 px-2.5 text-[10.5px] font-semibold text-muted-foreground">
+                              <PhoneCall className="h-3 w-3 shrink-0" />
+                              <span className="text-[9px] uppercase tracking-wide">AR</span>
+                              <span className="truncate">{arayNumber}</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => dialArayNumber(arayNumber)}
+                              className="inline-flex min-h-7 items-center gap-1 rounded-full border border-border bg-background/45 px-2 text-[10.5px] font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                              title="Набрать внутренний номер в AR Phone"
+                            >
+                              <PhoneCall className="h-3 w-3" />
+                              AR Phone
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void copyText(arayNumber)}
+                              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background/45 text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                              title="Скопировать номер"
+                              aria-label="Скопировать номер"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </button>
+                          </>
+                        ) : null}
                       </div>
                       <p className="mt-1 text-[11px] text-muted-foreground">
                         Зарегистрирован {new Date(client.createdAt).toLocaleDateString("ru-RU")} · {meta.segmentHint}
@@ -709,19 +727,23 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                           <Pencil className="mr-2 h-4 w-4" />
                           Редактировать
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="rounded-xl focus:bg-muted focus:text-foreground" onSelect={() => openReset(client.id)}>
-                          <KeyRound className="mr-2 h-4 w-4" />
-                          Сбросить пароль
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="rounded-xl focus:bg-muted focus:text-foreground" onSelect={() => openPromote(client.id)}>
-                          <UserCog className="mr-2 h-4 w-4" />
-                          Назначить сотрудником
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="rounded-xl text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={() => openDelete(client.id)}>
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Удалить
-                        </DropdownMenuItem>
+                        {canManageSensitiveActions && (
+                          <>
+                            <DropdownMenuItem className="rounded-xl focus:bg-muted focus:text-foreground" onSelect={() => openReset(client.id)}>
+                              <KeyRound className="mr-2 h-4 w-4" />
+                              Сбросить пароль
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="rounded-xl focus:bg-muted focus:text-foreground" onSelect={() => openPromote(client.id)}>
+                              <UserCog className="mr-2 h-4 w-4" />
+                              Назначить сотрудником
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem className="rounded-xl text-destructive focus:bg-destructive/10 focus:text-destructive" onSelect={() => openDelete(client.id)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Удалить
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -807,15 +829,17 @@ export function ClientsList({ clients: initialClients }: { clients: Client[] }) 
                           <CheckCircle2 className="h-4 w-4 text-primary" />
                           Пароль сброшен
                         </p>
-                        <div className="flex flex-col gap-3 rounded-xl border border-border bg-background/45 p-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Новый пароль клиента</p>
-                            <p className="font-mono text-lg font-semibold tracking-wide text-foreground">{resetResult.password}</p>
+                        {!resetResult.emailSent && resetResult.password && (
+                          <div className="flex flex-col gap-3 rounded-xl border border-border bg-background/45 p-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                              <p className="text-xs text-muted-foreground">Новый пароль клиента</p>
+                              <p className="font-mono text-lg font-semibold tracking-wide text-foreground">{resetResult.password}</p>
+                            </div>
+                            <Button type="button" size="sm" variant="outline" className="h-9 rounded-xl" onClick={() => navigator.clipboard.writeText(resetResult.password || "")}>
+                              Копировать
+                            </Button>
                           </div>
-                          <Button type="button" size="sm" variant="outline" className="h-9 rounded-xl" onClick={() => navigator.clipboard.writeText(resetResult.password)}>
-                            Копировать
-                          </Button>
-                        </div>
+                        )}
                         <p className="flex items-center gap-2 text-xs text-muted-foreground">
                           {resetResult.emailSent ? <Mail className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
                           {resetResult.emailSent

@@ -51,7 +51,7 @@ const FOLDER_ORDER = [
 type MediaFile = {
   url: string; folder: string; filename: string; kind: MediaKind;
   size: number; mtime: number; alt: string;
-  usedIn: { type: "product" | "category" | "service" | "post" | "story"; id: string; name: string; slug: string }[];
+  usedIn: { type: "product" | "category" | "service" | "post" | "story" | "review" | "promotion" | "settings"; id: string; name: string; slug: string }[];
 };
 
 function fmtSize(bytes: number) {

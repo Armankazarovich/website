@@ -1,5 +1,6 @@
 "use client";
 
+import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
@@ -341,6 +342,7 @@ function formatUpdatedAt(value?: string) {
 }
 
 export default function FinancePage() {
+  const confirmAction = useAdminConfirm();
   const [data, setData] = useState<FinanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -476,6 +478,7 @@ export default function FinancePage() {
   async function addExpense() {
     const amount = Number(newAmount);
     if (!Number.isFinite(amount) || amount <= 0) return;
+    if (!(await confirmAction("Добавить расход в финансовый учет?"))) return;
 
     setSaving(true);
     setError("");
@@ -489,6 +492,7 @@ export default function FinancePage() {
           category: newCategory,
           description: newDesc.trim() || undefined,
           date: newDate,
+          confirm: true,
         }),
       });
 
@@ -514,7 +518,7 @@ export default function FinancePage() {
 
     try {
       const res = await fetch(
-        `/api/admin/finance/expenses?id=${confirmDeleteId}`,
+        `/api/admin/finance/expenses?id=${confirmDeleteId}&confirm=true`,
         {
           method: "DELETE",
         },

@@ -6,14 +6,16 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { ClientsList } from "./clients-list";
 import { formatPrice } from "@/lib/utils";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 export default async function ClientsPage() {
   const session = await auth();
   const role = (session?.user as any)?.role;
   if (role !== "SUPER_ADMIN" && role !== "ADMIN" && role !== "MANAGER") redirect("/admin");
+  const tenantId = getCurrentTenantId();
 
   const clients = await prisma.user.findMany({
-    where: { role: "USER" },
+    where: { tenantId, role: "USER" },
     orderBy: { createdAt: "desc" },
     select: {
       id: true,
@@ -23,7 +25,7 @@ export default async function ClientsPage() {
       address: true,
       createdAt: true,
       orders: {
-        where: { deletedAt: null },
+        where: { tenantId, deletedAt: null },
         select: {
           id: true,
           orderNumber: true,
@@ -40,6 +42,7 @@ export default async function ClientsPage() {
 
   const orderStatsRows = await prisma.order.findMany({
     where: {
+      tenantId,
       deletedAt: null,
       userId: { not: null },
     },
@@ -132,7 +135,7 @@ export default async function ClientsPage() {
           </div>
         }
       >
-        <ClientsList clients={clientRows} />
+        <ClientsList clients={clientRows} canManageSensitiveActions={role === "SUPER_ADMIN" || role === "ADMIN"} />
       </Suspense>
     </div>
   );

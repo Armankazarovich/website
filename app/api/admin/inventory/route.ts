@@ -3,6 +3,9 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { syncLowStockAlerts } from "@/lib/inventory-alerts";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 const INVENTORY_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"];
 
@@ -21,6 +24,7 @@ async function checkAccess() {
 export async function PATCH(req: Request) {
   const access = await checkAccess();
   if (!access.allowed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   let body: Record<string, unknown>;
   try {
@@ -107,9 +111,28 @@ export async function PATCH(req: Request) {
   }
 
   try {
-    const variant = await prisma.productVariant.update({
-      where: { id: variantId },
+    const result = await prisma.productVariant.updateMany({
+      where: { id: variantId, product: { tenantId } },
       data: updateData,
+    });
+    if (result.count === 0) {
+      return NextResponse.json({ error: "Вариант не найден" }, { status: 404 });
+    }
+    const variant = await prisma.productVariant.findFirstOrThrow({
+      where: { id: variantId, product: { tenantId } },
+    });
+
+    revalidateTag("store-shell-data");
+    revalidatePath("/catalog");
+    revalidatePath("/admin/products");
+    revalidatePath("/admin/tasks");
+    revalidatePath("/admin/notifications");
+
+    const alertSync = await syncLowStockAlerts(prisma, {
+      tenantId,
+      variantIds: [variantId],
+      source: "admin.inventory.patch",
+      userId: access.userId,
     });
 
     // Audit log (non-blocking)
@@ -133,6 +156,7 @@ export async function PATCH(req: Request) {
       pricePerCube: variant.pricePerCube,
       pricePerPiece: variant.pricePerPiece,
       lowStockThreshold: variant.lowStockThreshold,
+      lowStockAlerts: alertSync,
     });
   } catch (err: unknown) {
     const code = (err as { code?: string })?.code;

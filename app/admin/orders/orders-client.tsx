@@ -9,7 +9,7 @@ import {
   Trash2, Loader2, Download, Phone, MapPin,
   Package, CreditCard, Truck, MessageSquare, ExternalLink,
   ChevronLeft, ChevronRight, Clock, X, Plus,
-  ListFilter, Inbox, ArrowRight,
+  ListFilter, Inbox, ArrowRight, Search,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { classifySource, humanizeSource, type SourceGroup } from "@/lib/utm";
@@ -328,6 +328,8 @@ export function OrdersClient({
       : "ALL";
   // Источник поддерживаем только как deep-link из аналитики, без отдельной панели на странице заказов.
   const sourceFilter = (searchParams.get("source") || "ALL") as SourceGroup | "ALL";
+  const searchQuery = (searchParams.get("q") || "").trim();
+  const [search, setSearch] = useState(searchQuery);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState(false);
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -338,6 +340,22 @@ export function OrdersClient({
   useEffect(() => {
     setOrders(initialOrders);
   }, [initialOrders]);
+
+  useEffect(() => {
+    setSearch(searchQuery);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    const nextQuery = search.trim();
+    if (nextQuery === searchQuery) return;
+    const timer = window.setTimeout(() => {
+      const sp = new URLSearchParams(searchParams.toString());
+      if (nextQuery) sp.set("q", nextQuery);
+      else sp.delete("q");
+      router.replace(`/admin/orders${sp.toString() ? "?" + sp.toString() : ""}`);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [router, search, searchParams, searchQuery]);
 
   // Автообновление только в активной вкладке, чтобы список не дёргал переходы и фоновые страницы.
   useEffect(() => {
@@ -371,19 +389,35 @@ export function OrdersClient({
   });
 
   const filtered = useMemo(() => {
+    const needle = searchQuery.toLowerCase();
     return orders.filter((o) => {
       const matchStatus = statusFilter === "ALL" || o.status === statusFilter;
       const matchOrderKind =
         orderKindFilter === "ALL" || getOrderKind(o) === orderKindFilter;
       const matchSource =
         sourceFilter === "ALL" || classifySource(o) === sourceFilter;
-      return matchStatus && matchOrderKind && matchSource;
+      const sourceLabel = humanizeSource(classifySource(o)).label;
+      const matchSearch =
+        !needle ||
+        [
+          `#${o.orderNumber}`,
+          String(o.orderNumber),
+          o.guestName || "",
+          o.guestPhone || "",
+          getOrderPlace(o),
+          ORDER_STATUS_LABELS[o.status] || o.status,
+          sourceLabel,
+          o.utmSource || "",
+          o.utmMedium || "",
+          o.utmCampaign || "",
+        ].some((value) => value.toLowerCase().includes(needle));
+      return matchStatus && matchOrderKind && matchSource && matchSearch;
     });
-  }, [orders, statusFilter, orderKindFilter, sourceFilter]);
+  }, [orders, statusFilter, orderKindFilter, sourceFilter, searchQuery]);
 
   useEffect(() => {
     setSelected(new Set());
-  }, [statusFilter, orderKindFilter, sourceFilter]);
+  }, [statusFilter, orderKindFilter, sourceFilter, searchQuery]);
 
   const fulfillmentCounts = useMemo(() => {
     const counts: Record<Exclude<OrderKind, "ALL">, number> = {
@@ -530,7 +564,7 @@ export function OrdersClient({
   const activeStatusLabel = STATUS_FILTERS.find((item) => item.key === statusFilter)?.label || "Все статусы";
   const hasOrders = orders.length > 0;
   const hasActiveFilters =
-    statusFilter !== "ALL" || orderKindFilter !== "ALL" || sourceFilter !== "ALL";
+    statusFilter !== "ALL" || orderKindFilter !== "ALL" || sourceFilter !== "ALL" || searchQuery.length > 0;
   const allVisibleSelected = filtered.length > 0 && filtered.every((order) => selected.has(order.id));
   const hasMoreOrders = orders.length < totalCount;
   const loadedLabel = totalCount > orders.length
@@ -691,6 +725,28 @@ export function OrdersClient({
                 </button>
               );
             })}
+          </div>
+        </div>
+        <div className="mt-4">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Найти заказ, клиента, телефон, адрес..."
+              className="min-h-[44px] w-full rounded-xl border border-border bg-background py-2 pl-9 pr-10 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-primary"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-2 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Очистить поиск"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
       </section>

@@ -7,7 +7,7 @@ import {
   Package, CheckCircle2, XCircle, FileDown,
   Printer, ChevronDown, Pencil, Minus, LayoutList, LayoutGrid,
   Settings2, Check, Bell, Search, Download, Info, AlertTriangle,
-  History, Zap, Upload,
+  History, Zap, Upload, Loader2, RefreshCw,
 } from "lucide-react";
 import { AdminModal } from "@/components/admin/admin-modal";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
@@ -33,6 +33,47 @@ type EditField = "stockQty" | "pricePerCube" | "pricePerPiece";
 
 type ColKey = "category" | "size" | "pricePerCube" | "pricePerPiece" | "stockQty" | "status";
 type StatusFilter = "all" | "in" | "out" | "tracked" | "low";
+
+type InventoryImportVariant = {
+  id: string;
+  inStock: boolean;
+  stockQty: number | null;
+  lowStockThreshold: number;
+  pricePerCube: number | string | null;
+  pricePerPiece: number | string | null;
+};
+
+type InventoryImportResult = {
+  ok?: boolean;
+  preview?: boolean;
+  updated?: number;
+  rows?: number;
+  errors?: string[];
+  error?: string;
+  variants?: InventoryImportVariant[];
+};
+
+type InventoryMovementItem = {
+  variantId: string;
+  productName: string;
+  variantSize: string;
+  unitType: "CUBE" | "PIECE";
+  quantity: number;
+  stockUnits: number;
+  before: number;
+  after: number;
+};
+
+type InventoryMovement = {
+  id: string;
+  action: "apply" | "release";
+  orderId: string | null;
+  orderNumber: number | null;
+  source: string | null;
+  createdAt: string;
+  totalStockUnits: number;
+  items: InventoryMovementItem[];
+};
 
 const ALL_COLS: { key: ColKey; label: string }[] = [
   { key: "category",     label: "Категория" },
@@ -81,6 +122,27 @@ function stockStatusForExport(v: Variant) {
 
 function csvCell(value: unknown) {
   return `"${String(value ?? "").replace(/"/g, '""')}"`;
+}
+
+function formatMovementDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+  return date.toLocaleString("ru-RU", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function movementActionLabel(action: InventoryMovement["action"]) {
+  return action === "release" ? "Возврат" : "Списание";
+}
+
+function movementUnitLabel(item: InventoryMovementItem) {
+  return item.unitType === "CUBE"
+    ? `${item.quantity.toLocaleString("ru-RU")} м³`
+    : `${item.quantity.toLocaleString("ru-RU")} шт.`;
 }
 
 /* ── Stock badge — defined OUTSIDE main component so React doesn't remount it ── */
@@ -164,7 +226,7 @@ function EditCell({
         if (e.key === "Enter") { e.preventDefault(); commit(); }
         if (e.key === "Escape") { e.preventDefault(); committedRef.current = true; onCancel(); }
       }}
-      className="w-24 min-h-[44px] px-2 py-1 text-sm text-right border-2 border-primary rounded-lg focus:outline-none bg-background"
+      className="w-24 min-h-[44px] px-2 py-1 text-sm text-right border-2 border-primary rounded-xl focus:outline-none bg-background"
     />
   );
 
@@ -183,7 +245,7 @@ function EditCell({
 /* ── Toast ── */
 function Toast({ msg, type }: { msg: string; type: "ok" | "err" }) {
   return (
-    <div className={`fixed bottom-28 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white shadow-lg animate-in slide-in-from-bottom-2 fade-in duration-200 sm:bottom-6
+    <div className={`fixed bottom-28 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-foreground  animate-in slide-in-from-bottom-2 fade-in duration-200 sm:bottom-6
       ${type === "ok" ? "bg-primary" : "bg-destructive"}`}>
       {type === "ok" ? <Check className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
       {msg}
@@ -226,6 +288,14 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
   const [isCompact, setIsCompact] = useState(false);
   const deferredSearch = useDeferredValue(search);
   const colMenuRef = useRef<HTMLDivElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [importingStock, setImportingStock] = useState(false);
+  const [inventoryImportFile, setInventoryImportFile] = useState<File | null>(null);
+  const [inventoryImportResult, setInventoryImportResult] = useState<InventoryImportResult | null>(null);
+  const [confirmInventoryImport, setConfirmInventoryImport] = useState(false);
+  const [movements, setMovements] = useState<InventoryMovement[]>([]);
+  const [movementsLoading, setMovementsLoading] = useState(false);
+  const [movementsError, setMovementsError] = useState<string | null>(null);
 
   /* load col visibility from localStorage */
   useEffect(() => {
@@ -261,6 +331,29 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 2500);
   }, []);
+
+  const loadInventoryMovements = useCallback(async (announce = false) => {
+    setMovementsLoading(true);
+    setMovementsError(null);
+    try {
+      const res = await fetch("/api/admin/inventory/movements?limit=8", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.ok) {
+        setMovementsError(data?.error || "Журнал движения недоступен");
+        return;
+      }
+      setMovements(Array.isArray(data.movements) ? data.movements : []);
+      if (announce) showToast("Журнал обновлён", "ok");
+    } catch {
+      setMovementsError("Не удалось загрузить журнал");
+    } finally {
+      setMovementsLoading(false);
+    }
+  }, [showToast]);
+
+  useEffect(() => {
+    void loadInventoryMovements();
+  }, [loadInventoryMovements]);
 
   const cats = useMemo(() => Array.from(new Set(variants.map(v => v.product.category.name))).sort(), [variants]);
 
@@ -504,6 +597,77 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
     showToast(`Экспортировано: ${filtered.length} позиций`, "ok");
   }, [filtered, showToast]);
 
+  const submitInventoryImport = useCallback(async (file: File, preview: boolean) => {
+    setImportingStock(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (preview) formData.append("preview", "1");
+
+      const res = await fetch("/api/admin/inventory/import", { method: "POST", body: formData });
+      const data = await res.json().catch(() => ({})) as InventoryImportResult;
+      setInventoryImportResult(data);
+      if (!res.ok || !data?.ok) {
+        const details = Array.isArray(data?.errors) && data.errors.length > 1
+          ? ` Ещё ошибок: ${data.errors.length - 1}.`
+          : "";
+        showToast(`${data?.error || "Импорт не выполнен"}${details}`, "err");
+        return;
+      }
+
+      if (preview) {
+        setConfirmInventoryImport(false);
+        showToast(`Проверено: ${Number(data.updated || 0)} позиций`, "ok");
+        return;
+      }
+
+      const updated = new Map<string, InventoryImportVariant>(
+        (Array.isArray(data.variants) ? data.variants : []).map((variant: InventoryImportVariant) => [variant.id, variant]),
+      );
+      setVariants((current) => current.map((variant) => {
+        const next = updated.get(variant.id);
+        return next
+          ? {
+              ...variant,
+              inStock: next.inStock,
+              stockQty: next.stockQty,
+              lowStockThreshold: next.lowStockThreshold,
+              pricePerCube: next.pricePerCube,
+              pricePerPiece: next.pricePerPiece,
+            }
+          : variant;
+      }));
+      router.refresh();
+      setInventoryImportFile(null);
+      setInventoryImportResult(null);
+      setConfirmInventoryImport(false);
+      showToast(`Импортировано: ${Number(data.updated || 0)} позиций`, "ok");
+    } catch {
+      showToast(preview ? "Не удалось проверить CSV" : "Не удалось загрузить CSV", "err");
+    } finally {
+      setImportingStock(false);
+    }
+  }, [router, showToast]);
+
+  const handleInventoryImport = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+
+    setInventoryImportFile(file);
+    setInventoryImportResult(null);
+    setConfirmInventoryImport(false);
+    await submitInventoryImport(file, true);
+  }, [submitInventoryImport]);
+
+  const applyInventoryImport = useCallback(() => {
+    if (!inventoryImportFile) {
+      showToast("Сначала выберите CSV", "err");
+      return;
+    }
+    void submitInventoryImport(inventoryImportFile, false);
+  }, [inventoryImportFile, showToast, submitInventoryImport]);
+
   const handlePrint = useCallback(() => {
     setRenderLimit(Number.MAX_SAFE_INTEGER);
     setView("table");
@@ -540,10 +704,10 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
             </p>
           </div>
           <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:flex-wrap sm:justify-end sm:overflow-visible sm:pb-0">
-            <button onClick={exportCsv} className="inline-flex min-h-[44px] shrink-0 items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-primary/5 transition-colors">
+            <button onClick={exportCsv} className="inline-flex min-h-[44px] shrink-0 items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card text-sm font-medium hover:bg-primary/5 transition-colors">
               <Download className="w-4 h-4 text-primary" /> Экспорт CSV
             </button>
-            <button onClick={handlePrint} className="inline-flex min-h-[44px] shrink-0 items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-sm font-medium hover:bg-primary/5 transition-colors">
+            <button onClick={handlePrint} className="inline-flex min-h-[44px] shrink-0 items-center gap-2 px-3 py-2 rounded-xl border border-border bg-card text-sm font-medium hover:bg-primary/5 transition-colors">
               <Printer className="w-4 h-4" /> PDF / Печать
             </button>
           </div>
@@ -559,7 +723,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
             { label: "Ниже порога",      val: lowStock,        color: "text-amber-600",   key: "low" as const },
           ].map(s => (
             <button key={s.key} onClick={() => setStatusFilter(s.key)}
-              className={`min-h-[68px] p-3 rounded-lg border text-left transition-colors ${filterStatus === s.key ? "border-primary/45 bg-primary/10" : "border-border bg-card hover:bg-primary/5"}`}>
+              className={`min-h-[68px] p-3 rounded-xl border text-left transition-colors ${filterStatus === s.key ? "border-primary/45 bg-primary/10" : "border-border bg-card hover:bg-primary/5"}`}>
               <p className={`text-xl font-bold leading-none ${s.color}`}>{s.val}</p>
               <p className="text-xs text-muted-foreground mt-1.5 leading-tight">{s.label}</p>
             </button>
@@ -575,14 +739,14 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Поиск по товару, размеру или категории"
-              className="min-h-[44px] w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="min-h-[44px] w-full rounded-xl border border-border bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
           <div className="flex flex-wrap gap-2">
           <div className="relative">
             <select value={filterCat} onChange={e => setFilterCat(e.target.value)}
-              className="min-h-[44px] max-w-[240px] appearance-none rounded-lg border border-border bg-background py-2.5 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer">
+              className="min-h-[44px] max-w-[240px] appearance-none rounded-xl border border-border bg-background py-2.5 pl-3 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer">
               <option value="all">Все категории</option>
               {cats.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -593,7 +757,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
           <div className="relative" ref={colMenuRef}>
             <button
               onClick={() => setShowColMenu(p => !p)}
-              className={`inline-flex min-h-[44px] items-center gap-2 px-3 py-2.5 rounded-lg border text-sm font-medium transition-colors
+              className={`inline-flex min-h-[44px] items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-colors
                 ${showColMenu ? "border-primary/45 bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:bg-primary/5"}`}
             >
               <Settings2 className="w-4 h-4" /> Колонки
@@ -605,7 +769,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                   <button
                     key={c.key}
                     onClick={() => toggleCol(c.key)}
-                    className="flex min-h-[44px] items-center gap-3 w-full px-2 py-1.5 rounded-lg text-sm hover:bg-primary/5 transition-colors text-left"
+                    className="flex min-h-[44px] items-center gap-3 w-full px-2 py-1.5 rounded-xl text-sm hover:bg-primary/5 transition-colors text-left"
                   >
                     <span className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors
                       ${visibleCols.has(c.key) ? "bg-primary border-primary" : "border-muted-foreground/40"}`}>
@@ -618,15 +782,15 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
             )}
           </div>
 
-          <div className="hidden items-center gap-1 rounded-lg border border-border bg-card p-1 sm:flex">
-            <button title="Таблица" onClick={() => setView("table")} className={`min-h-[44px] min-w-[44px] rounded-lg p-1.5 transition-colors ${view === "table" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-primary/5"}`}><LayoutList className="w-4 h-4" /></button>
-            <button title="Карточки" onClick={() => setView("cards")} className={`min-h-[44px] min-w-[44px] rounded-lg p-1.5 transition-colors ${view === "cards" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-primary/5"}`}><LayoutGrid className="w-4 h-4" /></button>
+          <div className="hidden items-center gap-1 rounded-xl border border-border bg-card p-1 sm:flex">
+            <button title="Таблица" onClick={() => setView("table")} className={`min-h-[44px] min-w-[44px] rounded-xl p-1.5 transition-colors ${view === "table" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-primary/5"}`}><LayoutList className="w-4 h-4" /></button>
+            <button title="Карточки" onClick={() => setView("cards")} className={`min-h-[44px] min-w-[44px] rounded-xl p-1.5 transition-colors ${view === "cards" ? "bg-primary/10 text-primary" : "text-foreground hover:bg-primary/5"}`}><LayoutGrid className="w-4 h-4" /></button>
           </div>
           </div>
         </div>
 
         {(filterStatus !== "all" || filterCat !== "all" || search.trim()) && (
-          <div className="flex flex-wrap items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground no-print">
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-muted-foreground no-print">
             <Info className="h-3.5 w-3.5 text-primary" />
             <span>
               Показано {filtered.length} из {variants.length}: {STATUS_FILTER_LABELS[filterStatus]}
@@ -635,7 +799,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
             </span>
             <button
               onClick={() => { setSearch(""); setFilterCat("all"); setStatusFilter("all"); }}
-              className="ml-auto min-h-[44px] rounded-lg px-2 text-primary hover:bg-primary/10"
+              className="ml-auto min-h-[44px] rounded-xl px-2 text-primary hover:bg-primary/10"
             >
               Сбросить
             </button>
@@ -647,14 +811,14 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
           {/* Print header */}
           <div className="hidden print:block mb-4">
             <h2 className="text-xl font-bold">ПилоРус — Отчёт по остаткам</h2>
-            <p className="text-sm text-gray-500">{new Date().toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" })} · {filtered.length} позиций</p>
+            <p className="text-sm text-muted-foreground">{new Date().toLocaleDateString("ru-RU", { day: "2-digit", month: "long", year: "numeric" })} · {filtered.length} позиций</p>
           </div>
 
           {/* Mobile cards */}
           {isCompact && (
           <div className="space-y-2 no-print">
             {filtered.length === 0 && (
-              <div className="rounded-lg border border-border bg-card py-12 text-center text-muted-foreground">
+              <div className="rounded-xl border border-border bg-card py-12 text-center text-muted-foreground">
                 <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />Ничего не найдено
               </div>
             )}
@@ -662,7 +826,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
               const belowThreshold = isLowStock(v);
               const inStock = isEffectivelyInStock(v);
               return (
-              <div key={v.id} className={`bg-card border rounded-lg p-3 space-y-3 ${!inStock ? "opacity-65" : ""} ${belowThreshold ? "border-amber-500/40 bg-amber-500/[0.06]" : "border-border"}`}>
+              <div key={v.id} className={`bg-card border rounded-xl p-3 space-y-3 ${!inStock ? "opacity-65" : ""} ${belowThreshold ? "border-amber-500/40 bg-amber-500/[0.06]" : "border-border"}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-medium text-sm line-clamp-1">{v.product.name}</p>
@@ -693,7 +857,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                 <div className="grid gap-2">
                   <button
                     onClick={() => setThresholdModal({ variant: v, value: String(v.lowStockThreshold ?? 0) })}
-                    className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                    className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${
                       hasThreshold(v)
                         ? "border-amber-500/40 text-amber-600 bg-amber-500/10"
                         : "border-border text-muted-foreground hover:bg-primary/5"
@@ -713,7 +877,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
           {!isCompact && view === "cards" && (
           <div className="no-print grid grid-cols-2 gap-3 xl:grid-cols-3">
             {filtered.length === 0 && (
-              <div className="col-span-full rounded-lg border border-border bg-card py-12 text-center text-muted-foreground">
+              <div className="col-span-full rounded-xl border border-border bg-card py-12 text-center text-muted-foreground">
                 <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />Ничего не найдено
               </div>
             )}
@@ -721,7 +885,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
               const belowThreshold = isLowStock(v);
               const inStock = isEffectivelyInStock(v);
               return (
-                <div key={v.id} className={`rounded-lg border bg-card p-3 transition-colors ${!inStock ? "opacity-65" : ""} ${belowThreshold ? "border-amber-500/40 bg-amber-500/[0.06]" : "border-border"}`}>
+                <div key={v.id} className={`rounded-xl border bg-card p-3 transition-colors ${!inStock ? "opacity-65" : ""} ${belowThreshold ? "border-amber-500/40 bg-amber-500/[0.06]" : "border-border"}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <Link href={`/admin/products/${v.product.id}`} className="font-medium text-sm hover:text-primary transition-colors line-clamp-1">
@@ -733,15 +897,15 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                   </div>
 
                   <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-                    <div className="rounded-lg bg-muted/35 px-2 py-1.5">
+                    <div className="rounded-xl bg-muted/35 px-2 py-1.5">
                       <p className="text-muted-foreground">Цена м³</p>
                       <EditCell v={v} field="pricePerCube" display={fmt(v.pricePerCube)} placeholder="0" {...editProps} />
                     </div>
-                    <div className="rounded-lg bg-muted/35 px-2 py-1.5">
+                    <div className="rounded-xl bg-muted/35 px-2 py-1.5">
                       <p className="text-muted-foreground">Цена шт</p>
                       <EditCell v={v} field="pricePerPiece" display={fmt(v.pricePerPiece)} placeholder="0" {...editProps} />
                     </div>
-                    <div className="rounded-lg bg-muted/35 px-2 py-1.5">
+                    <div className="rounded-xl bg-muted/35 px-2 py-1.5">
                       <p className="text-muted-foreground">Остаток</p>
                       <EditCell v={v} field="stockQty" display={v.stockQty !== null ? String(v.stockQty) : null} placeholder="шт" {...editProps} />
                     </div>
@@ -750,7 +914,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                   <div className="mt-3">
                     <button
                       onClick={() => setThresholdModal({ variant: v, value: String(v.lowStockThreshold ?? 0) })}
-                      className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors ${
+                      className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${
                         hasThreshold(v)
                           ? "border-amber-500/40 text-amber-600 bg-amber-500/10"
                           : "border-border text-muted-foreground hover:bg-primary/5"
@@ -768,7 +932,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
 
           {/* Desktop table */}
           {!isCompact && view === "table" && (
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -830,7 +994,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                             title={hasThreshold(v)
                               ? `Порог предупреждения: ${v.lowStockThreshold} шт.`
                               : "Настроить порог предупреждения"}
-                            className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 px-2 py-1 rounded-lg border text-xs transition-colors ${
+                            className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 px-2 py-1 rounded-xl border text-xs transition-colors ${
                               hasThreshold(v)
                                 ? "border-amber-500/40 text-amber-600 bg-amber-500/10 hover:bg-amber-500/15"
                                 : "border-border text-muted-foreground hover:border-primary/40 hover:text-primary hover:bg-primary/5"
@@ -851,19 +1015,19 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
           )}
 
           {/* Print summary */}
-          <div className="hidden print:block mt-6 text-xs text-gray-400 border-t pt-3">
+          <div className="hidden print:block mt-6 text-xs text-muted-foreground border-t pt-3">
             Всего: {variants.length} · В наличии: {totalIn} · Нет в наличии: {totalOut} · С учетом остатка: {tracked}
           </div>
         </div>
 
         {hasMoreRows && (
-          <div className="no-print flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border bg-card/70 p-4 text-center sm:flex-row">
+          <div className="no-print flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card/70 p-4 text-center sm:flex-row">
             <p className="text-sm text-muted-foreground">
               Показано {visibleRows.length} из {filtered.length}. Остальное подгружается порциями, чтобы склад не тормозил.
             </p>
             <button
               onClick={() => setRenderLimit((value) => value + ROW_BATCH)}
-              className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+              className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
             >
               Показать ещё {Math.min(ROW_BATCH, filtered.length - visibleRows.length)}
             </button>
@@ -871,13 +1035,13 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
         )}
 
         <section className="grid gap-3 no-print lg:grid-cols-[1.1fr_1fr]">
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2">
               <Zap className="h-4 w-4 text-primary" />
               <h2 className="font-semibold">Автоматизация</h2>
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3">
+              <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3">
                 <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
                   <CheckCircle2 className="h-4 w-4" /> Работает
                 </div>
@@ -885,58 +1049,202 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                   Остаток, цены и статус сохраняются inline. При остатке 0 статус становится “Нет в наличии”.
                 </p>
               </div>
-              <div className="rounded-lg border border-emerald-500/25 bg-emerald-500/10 p-3">
+              <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3">
                 <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-400">
                   <Bell className="h-4 w-4" /> Порог
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Порог сохраняется по варианту и подсвечивает строку, когда остаток меньше или равен порогу.
+                  Порог подсвечивает строку и создает складскую задачу с системным уведомлением.
                 </p>
               </div>
-              <div className="rounded-lg border border-amber-500/25 bg-amber-500/10 p-3">
+              <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 p-3">
                 <div className="flex items-center gap-1.5 text-sm font-medium text-amber-700 dark:text-amber-400">
                   <AlertTriangle className="h-4 w-4" /> Beta
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Импорт точных остатков, авто-списание после заказа и уведомления по порогам требуют подключения API.
+                  Авто-списание, возврат и пороговые уведомления работают для учтённых остатков.
                 </p>
               </div>
-              <div className="rounded-lg border border-border bg-muted/30 p-3">
-                <div className="flex items-center gap-1.5 text-sm font-medium">
-                  <History className="h-4 w-4 text-muted-foreground" /> Движение
+              <div className="rounded-xl border border-border bg-muted/30 p-3 sm:col-span-2">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-sm font-medium">
+                    <History className="h-4 w-4 text-muted-foreground" /> Движение
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void loadInventoryMovements(true)}
+                    disabled={movementsLoading}
+                    className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-2.5 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50"
+                  >
+                    {movementsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                    Обновить
+                  </button>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Быстрые правки пишутся в системный лог, но отдельный журнал прихода/расхода пока не подключен.
-                </p>
+                <div className="mt-3 space-y-2">
+                  {movementsLoading && movements.length === 0 ? (
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> Загружаю журнал
+                    </div>
+                  ) : movementsError ? (
+                    <div className="admin-alert admin-alert-warning rounded-xl px-3 py-2 text-xs">
+                      {movementsError}
+                    </div>
+                  ) : movements.length === 0 ? (
+                    <p className="rounded-xl border border-border bg-background/70 px-3 py-2 text-xs text-muted-foreground">
+                      Автоматических списаний и возвратов пока нет. Новые заказы появятся здесь сразу после обработки склада.
+                    </p>
+                  ) : (
+                    movements.map((movement) => {
+                      const isRelease = movement.action === "release";
+                      const visibleItems = movement.items.slice(0, 3);
+                      return (
+                        <div key={movement.id} className="rounded-xl border border-border bg-background/70 p-3">
+                          <div className="flex flex-wrap items-center gap-2 text-xs">
+                            <span className={`rounded-full px-2 py-0.5 font-semibold ${isRelease ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-700 dark:text-amber-300"}`}>
+                              {movementActionLabel(movement.action)}
+                            </span>
+                            {movement.orderId ? (
+                              <Link href={`/admin/orders/${movement.orderId}`} className="font-semibold text-foreground hover:text-primary">
+                                Заказ {movement.orderNumber ? `#${movement.orderNumber}` : movement.orderId.slice(0, 8)}
+                              </Link>
+                            ) : (
+                              <span className="font-semibold text-foreground">
+                                Заказ {movement.orderNumber ? `#${movement.orderNumber}` : "без номера"}
+                              </span>
+                            )}
+                            <span className="text-muted-foreground">· {formatMovementDate(movement.createdAt)}</span>
+                            <span className="ml-auto text-muted-foreground">{movement.totalStockUnits} шт.</span>
+                          </div>
+                          {visibleItems.length > 0 ? (
+                            <div className="mt-2 space-y-1">
+                              {visibleItems.map((item) => (
+                                <div key={`${movement.id}-${item.variantId}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+                                  <span className="font-medium text-foreground">{item.productName}</span>
+                                  {item.variantSize && <span className="font-mono">{item.variantSize}</span>}
+                                  <span>{movementUnitLabel(item)}</span>
+                                  <span className="text-muted-foreground/80">
+                                    {item.before} → {item.after} шт.
+                                  </span>
+                                </div>
+                              ))}
+                              {movement.items.length > visibleItems.length && (
+                                <p className="text-xs text-muted-foreground">Ещё позиций: {movement.items.length - visibleItems.length}</p>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-xs text-muted-foreground">
+                              В заказе не было позиций с учтённым остатком.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="rounded-lg border border-border bg-card p-4">
+          <div className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2">
               <FileDown className="h-4 w-4 text-primary" />
               <h2 className="font-semibold">Импорт / Экспорт</h2>
             </div>
             <div className="mt-3 space-y-2 text-sm">
-              <div className="flex items-start gap-2 rounded-lg bg-muted/30 p-3">
+              <div className="flex items-start gap-2 rounded-xl bg-muted/30 p-3">
                 <Download className="mt-0.5 h-4 w-4 text-primary" />
                 <p className="text-muted-foreground">
                   Экспорт CSV выгружает текущий отфильтрованный список с остатком, статусом и порогом.
                 </p>
               </div>
-              <div className="flex items-start gap-2 rounded-lg bg-muted/30 p-3">
+              <div className="flex items-start gap-2 rounded-xl bg-muted/30 p-3">
                 <Printer className="mt-0.5 h-4 w-4 text-primary" />
                 <p className="text-muted-foreground">
                   PDF работает через печать браузера и использует тот же фильтр, что открыт на экране.
                 </p>
               </div>
-              <div className="flex items-start gap-2 rounded-lg border border-dashed border-border p-3">
-                <Upload className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                <div className="min-w-0">
-                  <p className="text-muted-foreground">Импорт остатков отключен до API для stockQty и порогов.</p>
-                  <Link href="/admin/import" className="mt-1 inline-flex min-h-[44px] items-center text-xs font-medium text-primary hover:underline">
-                    Открыть общий импорт товаров
-                  </Link>
+              <div className="flex items-start gap-2 rounded-xl border border-primary/20 bg-primary/[0.04] p-3">
+                <Upload className="mt-0.5 h-4 w-4 text-primary" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-muted-foreground">
+                    CSV сначала проходит проверку. Остаток, статус и порог меняются только после отдельного подтверждения.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <input
+                      ref={importInputRef}
+                      type="file"
+                      accept=".csv,.txt"
+                      onChange={handleInventoryImport}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => importInputRef.current?.click()}
+                      disabled={importingStock}
+                      className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50 sm:w-auto"
+                    >
+                      {importingStock ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      {importingStock ? "Проверяю" : "Проверить CSV"}
+                    </button>
+                    <Link href="/admin/import" className="inline-flex min-h-[44px] items-center text-xs font-medium text-primary hover:underline">
+                      Общий импорт товаров
+                    </Link>
+                  </div>
+                  {inventoryImportFile && (
+                    <div className="mt-3 rounded-xl border border-border bg-background/70 p-3 text-xs">
+                      <div className="flex min-w-0 items-center gap-2 text-foreground">
+                        <Info className="h-4 w-4 shrink-0 text-primary" />
+                        <span className="truncate font-medium">{inventoryImportFile.name}</span>
+                      </div>
+                      {inventoryImportResult?.preview && (
+                        <p className="mt-2 text-muted-foreground">
+                          К обновлению: {Number(inventoryImportResult.updated || 0)} позиций. База ещё не изменена.
+                        </p>
+                      )}
+                      {Array.isArray(inventoryImportResult?.errors) && inventoryImportResult.errors.length > 0 && (
+                        <ul className="mt-2 space-y-1 text-destructive">
+                          {inventoryImportResult.errors.slice(0, 3).map((error) => (
+                            <li key={error}>{error}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {inventoryImportResult?.preview && Number(inventoryImportResult.updated || 0) > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {!confirmInventoryImport ? (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmInventoryImport(true)}
+                              disabled={importingStock}
+                              className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 sm:w-auto"
+                            >
+                              <Check className="h-4 w-4" />
+                              Применить проверенные изменения
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={applyInventoryImport}
+                                disabled={importingStock}
+                                className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-destructive px-3 text-xs font-semibold text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50 sm:w-auto"
+                              >
+                                {importingStock ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="h-4 w-4" />}
+                                Да, применить
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setConfirmInventoryImport(false)}
+                                disabled={importingStock}
+                                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-border px-3 text-xs font-semibold transition-colors hover:bg-muted disabled:opacity-50 sm:w-auto"
+                              >
+                                Отмена
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -962,7 +1270,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
         open={Boolean(thresholdModal)}
         onClose={() => { if (!thresholdSaving) setThresholdModal(null); }}
         title="Порог"
-        subtitle="Когда остаток достигнет порога, строка подсветится"
+        subtitle="Когда остаток достигнет порога, склад получит задачу"
         size="sm"
         bodyClassName="space-y-4"
         footer={thresholdModal && (
@@ -970,14 +1278,14 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
             <button
               onClick={() => setThresholdModal(null)}
               disabled={thresholdSaving}
-              className="min-h-[44px] flex-1 rounded-lg border border-border bg-card px-4 text-sm font-medium transition-colors hover:bg-primary/5 disabled:opacity-50"
+              className="min-h-[44px] flex-1 rounded-xl border border-border bg-card px-4 text-sm font-medium transition-colors hover:bg-primary/5 disabled:opacity-50"
             >
               Отмена
             </button>
             <button
               onClick={saveThreshold}
               disabled={thresholdSaving}
-              className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
+              className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-xl border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
             >
               {thresholdSaving ? (
                 <><span className="h-4 w-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin" /> Сохранение</>
@@ -990,7 +1298,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
       >
         {thresholdModal && (
           <>
-            <div className="bg-muted/40 border border-border rounded-lg p-3 text-sm">
+            <div className="bg-muted/40 border border-border rounded-xl p-3 text-sm">
               <p className="font-medium text-foreground line-clamp-1">{thresholdModal.variant.product.name}</p>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {thresholdModal.variant.product.category.name} · <span className="font-mono">{thresholdModal.variant.size}</span>
@@ -1016,10 +1324,10 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                   if (e.key === "Escape") { e.preventDefault(); if (!thresholdSaving) setThresholdModal(null); }
                 }}
                 placeholder="Например, 5"
-                className="w-full px-4 py-3 rounded-lg border border-border bg-background text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="w-full px-4 py-3 rounded-xl border border-border bg-background text-base focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
               <p className="text-xs text-muted-foreground mt-2">
-                0 — отключить предупреждение. При остатке ≤ порога строка подсветится амбером.
+                0 — отключить предупреждение. При остатке ≤ порога строка подсветится, а в задачах появится пополнение.
               </p>
             </div>
           </>

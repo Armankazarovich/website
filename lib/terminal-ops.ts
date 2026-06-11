@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import { enqueueTerminalOrderLifecycle, enqueueTerminalSyncJob, indexTerminalOrder } from "@/lib/terminal-sync";
 
 type TerminalOpsOrder = {
+  tenantId?: string | null;
   id: string;
   orderNumber: number;
   totalAmount: unknown;
@@ -16,16 +18,18 @@ type TerminalOpsOrder = {
 };
 
 export async function createTerminalOrderOps(order: TerminalOpsOrder, createdById?: string) {
+  const tenantId = order.tenantId ?? getCurrentTenantId();
   const amount = Number(order.totalAmount || 0);
   const shiftId = order.shiftId || null;
   const activeShift = shiftId
     ? await prisma.cashShift.findFirst({
-        where: { id: shiftId, status: "OPEN" },
+        where: { id: shiftId, tenantId, status: "OPEN" },
         select: { id: true, workstationId: true },
       })
     : null;
 
   await indexTerminalOrder({
+    tenantId,
     id: order.id,
     orderNumber: order.orderNumber,
     terminalProfile: order.terminalProfile,
@@ -35,6 +39,7 @@ export async function createTerminalOrderOps(order: TerminalOpsOrder, createdByI
   }).catch(console.error);
 
   await enqueueTerminalOrderLifecycle({
+    tenantId,
     id: order.id,
     orderNumber: order.orderNumber,
     paymentStatus: order.paymentStatus,
@@ -61,6 +66,7 @@ export async function createTerminalOrderOps(order: TerminalOpsOrder, createdByI
     await prisma.$transaction([
       prisma.payment.create({
         data: {
+          tenantId,
           orderId: order.id,
           shiftId: activeShift?.id || null,
           method: order.paymentMethod,
@@ -78,6 +84,7 @@ export async function createTerminalOrderOps(order: TerminalOpsOrder, createdByI
             }),
             prisma.shiftOperation.create({
               data: {
+                tenantId,
                 shiftId: activeShift.id,
                 type: "ORDER_CREATED",
                 amount,
@@ -101,6 +108,7 @@ export async function createTerminalOrderOps(order: TerminalOpsOrder, createdByI
 
     if (order.paymentMethod === "QR / ссылка" || order.paymentStatus === "REQUESTED") {
       await enqueueTerminalSyncJob({
+        tenantId,
         channel: "payments",
         event: "payment.request.created",
         entityType: "order",
@@ -122,6 +130,7 @@ export async function createTerminalOrderOps(order: TerminalOpsOrder, createdByI
   if (order.receiptMode === "PRINTER") {
     await prisma.printJob.create({
       data: {
+        tenantId,
         orderId: order.id,
         shiftId: activeShift?.id || null,
         workstationId: activeShift?.workstationId || null,
@@ -140,6 +149,7 @@ export async function createTerminalOrderOps(order: TerminalOpsOrder, createdByI
     }).catch(console.error);
 
     await enqueueTerminalSyncJob({
+      tenantId,
       channel: "printing",
       event: "print.receipt.queued",
       entityType: "order",
@@ -158,6 +168,7 @@ export async function createTerminalOrderOps(order: TerminalOpsOrder, createdByI
   if (["restaurant", "construction", "lumber", "retail"].includes(order.terminalProfile || "")) {
     await prisma.printJob.create({
       data: {
+        tenantId,
         orderId: order.id,
         shiftId: activeShift?.id || null,
         workstationId: activeShift?.workstationId || null,
@@ -177,6 +188,7 @@ export async function createTerminalOrderOps(order: TerminalOpsOrder, createdByI
     }).catch(console.error);
 
     await enqueueTerminalSyncJob({
+      tenantId,
       channel: "printing",
       event: "print.production.queued",
       entityType: "order",

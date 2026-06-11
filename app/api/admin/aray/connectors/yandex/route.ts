@@ -33,6 +33,9 @@ export async function POST(req: Request) {
   if (!auth.authorized) return auth.response;
 
   const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  if (body.confirm !== true) {
+    return NextResponse.json({ ok: false, error: "Подтвердите действие Яндекс-коннектора" }, { status: 400 });
+  }
   try {
     const result = await runYandexGrowthConnectorAction(req, body);
     return NextResponse.json({

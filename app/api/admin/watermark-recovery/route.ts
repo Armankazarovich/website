@@ -6,11 +6,22 @@ import { prisma } from "@/lib/prisma";
 import { readdir, stat } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 async function checkAdmin() {
   const session = await auth();
   const role = session?.user?.role;
   return role === "SUPER_ADMIN" || role === "ADMIN";
+}
+
+function isSafeProductImageUrl(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.startsWith("/images/products/") &&
+    !value.includes("..") &&
+    !value.includes("\\") &&
+    !value.includes("//")
+  );
 }
 
 // ─── Smart slug-based matching ────────────────────────────────────────────────
@@ -31,8 +42,10 @@ function matchScore(filename: string, slug: string): number {
 // ─── GET: list products + orphaned originals ──────────────────────────────────
 export async function GET() {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const products = await prisma.product.findMany({
+    where: { tenantId },
     select: { id: true, name: true, slug: true, images: true },
     orderBy: { name: "asc" },
   });
@@ -74,6 +87,7 @@ export async function GET() {
 // ─── POST: actions ────────────────────────────────────────────────────────────
 export async function POST(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const body = await req.json();
   const { action } = body;
@@ -83,7 +97,11 @@ export async function POST(req: Request) {
     const { productId, images } = body;
     if (!productId || !Array.isArray(images))
       return NextResponse.json({ error: "productId and images required" }, { status: 400 });
-    await prisma.product.update({ where: { id: productId }, data: { images } });
+    if (!images.every(isSafeProductImageUrl)) {
+      return NextResponse.json({ error: "Invalid image url" }, { status: 400 });
+    }
+    const result = await prisma.product.updateMany({ where: { id: productId, tenantId }, data: { images } });
+    if (result.count === 0) return NextResponse.json({ error: "Product not found" }, { status: 404 });
     return NextResponse.json({ ok: true });
   }
 
@@ -94,8 +112,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "assignments required" }, { status: 400 });
     let restored = 0;
     for (const { productId, images } of assignments) {
-      await prisma.product.update({ where: { id: productId }, data: { images } });
-      restored++;
+      if (!Array.isArray(images) || !images.every(isSafeProductImageUrl)) {
+        return NextResponse.json({ error: "Invalid image url" }, { status: 400 });
+      }
+      const result = await prisma.product.updateMany({ where: { id: productId, tenantId }, data: { images } });
+      restored += result.count;
     }
     return NextResponse.json({ ok: true, restored });
   }
@@ -103,6 +124,7 @@ export async function POST(req: Request) {
   // ── SMART AUTO-MATCH: match originals to products by slug/filename similarity ──
   if (action === "smart_auto_restore") {
     const products = await prisma.product.findMany({
+      where: { tenantId },
       select: { id: true, name: true, slug: true, images: true },
     });
 
@@ -159,8 +181,8 @@ export async function POST(req: Request) {
     // Apply matches
     let restored = 0;
     for (const { productId, images } of matched) {
-      await prisma.product.update({ where: { id: productId }, data: { images } });
-      restored++;
+      const result = await prisma.product.updateMany({ where: { id: productId, tenantId }, data: { images } });
+      restored += result.count;
     }
 
     return NextResponse.json({ ok: true, restored, unmatched, matched });

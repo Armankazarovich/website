@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 async function checkAdmin() {
   const session = await auth();
@@ -11,8 +12,15 @@ async function checkAdmin() {
 
 export async function PATCH(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
   const { variantId, pricePerCube, pricePerPiece, inStock } = await req.json();
   if (!variantId) return NextResponse.json({ error: "variantId required" }, { status: 400 });
+
+  const variant = await prisma.productVariant.findFirst({
+    where: { id: variantId, product: { tenantId } },
+    select: { id: true },
+  });
+  if (!variant) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const data: any = {};
   if (pricePerCube !== undefined) data.pricePerCube = pricePerCube;
@@ -25,10 +33,12 @@ export async function PATCH(req: Request) {
 
 export async function POST(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
   const { action, productId, active } = await req.json();
 
   if (action === "toggle_active") {
-    await prisma.product.update({ where: { id: productId }, data: { active } });
+    const result = await prisma.product.updateMany({ where: { id: productId, tenantId }, data: { active } });
+    if (result.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ ok: true });
   }
 

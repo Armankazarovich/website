@@ -1,5 +1,6 @@
 "use client";
 
+import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -859,6 +860,7 @@ function StoryModal({
 }
 
 export default function AdminStoriesPage() {
+  const confirmAction = useAdminConfirm();
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalStory, setModalStory] = useState<Partial<Story> | null>(null);
@@ -892,7 +894,7 @@ export default function AdminStoriesPage() {
     const res = await fetch(form.id ? `/api/admin/stories/${form.id}` : "/api/admin/stories", {
       method: form.id ? "PATCH" : "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({ ...form, confirm: true }),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || "Не удалось сохранить сторис");
@@ -900,7 +902,7 @@ export default function AdminStoriesPage() {
   };
 
   const deleteStory = async (story: Story) => {
-    const res = await fetch(`/api/admin/stories/${story.id}`, { method: "DELETE" });
+    const res = await fetch(`/api/admin/stories/${story.id}?confirm=true`, { method: "DELETE" });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       setError(data.error || "Не удалось удалить сторис");
@@ -911,6 +913,7 @@ export default function AdminStoriesPage() {
   };
 
   const toggleActive = async (story: Story) => {
+    if (!(await confirmAction(story.active ? "Скрыть сторис?" : "Показать сторис?"))) return;
     await saveStory({ ...normalizeForm(story), active: !story.active });
   };
 

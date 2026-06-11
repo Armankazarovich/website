@@ -41,13 +41,13 @@ export function CookieConsent() {
         opacity: 1,
         animation: "slideUp 0.3s ease forwards",
       }}
-      className="fixed bottom-[calc(5.25rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-[60] px-3 pb-1 sm:bottom-4 sm:left-4 sm:right-auto sm:max-w-[520px] sm:px-0 sm:pb-0 lg:bottom-6 lg:left-auto lg:right-6 lg:max-w-sm"
+      className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-[60] px-3 pb-1 sm:bottom-4 sm:left-4 sm:right-auto sm:max-w-[520px] sm:px-0 sm:pb-0 lg:bottom-6 lg:left-auto lg:right-6 lg:max-w-sm"
     >
-      <div className="bg-background/95 backdrop-blur-xl border border-border/60 rounded-2xl shadow-2xl p-4 flex flex-col gap-3">
+      <div className="flex flex-col gap-2 rounded-[18px] border border-border/60 bg-background/95 p-3 shadow-2xl  sm:gap-3 sm:rounded-2xl sm:p-4">
 
         {/* Иконка + текст */}
         <div className="flex gap-3 items-start">
-          <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5 text-primary">
+          <div className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary sm:mt-0.5 sm:flex">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
               <path d="M15 2.5C15.5 4 15 5.5 14 6.5C15.5 6 17 6.5 18 7.5C17.5 6 18 4.5 19.5 4C18 3.5 16 3 15 2.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
@@ -58,8 +58,8 @@ export function CookieConsent() {
             </svg>
           </div>
           <div>
-            <p className="text-sm font-semibold leading-tight mb-1">Мы используем cookies</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">
+            <p className="mb-1 text-[13px] font-semibold leading-tight sm:text-sm">Мы используем cookies</p>
+            <p className="text-[11px] leading-snug text-muted-foreground sm:text-xs sm:leading-relaxed">
               Для улучшения работы сайта и аналитики. Продолжая использование, вы соглашаетесь с нашей{" "}
               <Link href="/privacy" className="text-primary hover:underline">
                 политикой конфиденциальности
@@ -73,13 +73,13 @@ export function CookieConsent() {
         <div className="flex gap-2">
           <button
             onClick={accept}
-            className="flex-1 bg-primary text-primary-foreground text-xs font-semibold py-2.5 rounded-xl hover:bg-primary/90 active:scale-95 transition-all duration-150"
+            className="flex-1 rounded-xl bg-primary py-2 text-xs font-semibold text-primary-foreground transition-all duration-150 hover:bg-primary/90 active:scale-95 sm:py-2.5"
           >
             Принять
           </button>
           <button
             onClick={accept}
-            className="px-4 text-xs font-medium text-muted-foreground border border-border rounded-xl hover:bg-accent hover:text-foreground transition-colors"
+            className="rounded-xl border border-border px-4 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             Закрыть
           </button>

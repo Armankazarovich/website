@@ -42,10 +42,11 @@ export function requestArayOpen(mode: ArayOpenMode = "open") {
   const pendingWindow = getPendingWindow();
   if (!pendingWindow) return;
 
-  pendingWindow.__arayPendingOpen = mode;
+  const nextMode: Exclude<ArayOpenMode, "phone"> = mode === "phone" ? "open" : mode;
+  pendingWindow.__arayPendingOpen = nextMode;
   clearAdminNavigationCapsule();
-  window.dispatchEvent(new CustomEvent("aray:ensure-mounted", { detail: { mode } }));
-  window.dispatchEvent(new CustomEvent(mode === "voice" ? "aray:voice" : "aray:open", { detail: { mode } }));
+  window.dispatchEvent(new CustomEvent("aray:ensure-mounted", { detail: { mode: nextMode } }));
+  window.dispatchEvent(new CustomEvent(nextMode === "voice" ? "aray:voice" : "aray:open", { detail: { mode: nextMode } }));
 }
 
 export function requestArayClose() {

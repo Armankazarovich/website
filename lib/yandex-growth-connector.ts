@@ -91,9 +91,9 @@ async function readContext(req: Request) {
 
 async function saveSetting(tenantId: string, key: string, value: string) {
   await prisma.siteSettings.upsert({
-    where: { key },
-    create: { id: key, key, tenantId, value },
-    update: { tenantId, value },
+    where: { tenantId_key: { tenantId, key } },
+    create: { tenantId, key, value },
+    update: { value },
   });
 }
 

@@ -10,6 +10,8 @@ import { sendTelegramOrderNotification } from "@/lib/telegram";
 import { syncTerminalOrderToCrm } from "@/lib/terminal-crm-sync";
 import { createTerminalOrderOps } from "@/lib/terminal-ops";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { applyOrderInventory, isOrderInventoryError } from "@/lib/order-inventory";
 
 const UNIT_TYPES = new Set(["CUBE", "PIECE"]);
 const HIDDEN_CATEGORY_SORT_ORDER = 999;
@@ -18,6 +20,7 @@ export async function POST(req: NextRequest) {
   const access = await requireOrdersStaff();
   if (!access.authorized) return access.response;
   const { session } = access;
+  const tenantId = getCurrentTenantId();
 
   try {
     const body = await req.json();
@@ -76,8 +79,10 @@ export async function POST(req: NextRequest) {
         id: { in: requestedVariantIds },
         ...getPublicVariantsFilter(),
         product: {
+          tenantId,
           ...getPublicProductsFilter(),
           category: {
+            tenantId,
             showInMenu: true,
             sortOrder: { lt: HIDDEN_CATEGORY_SORT_ORDER },
           },
@@ -118,7 +123,7 @@ export async function POST(req: NextRequest) {
     const normalizedShiftId = typeof shiftId === "string" ? shiftId.trim() : "";
     if (normalizedShiftId) {
       const activeShift = await prisma.cashShift.findFirst({
-        where: { id: normalizedShiftId, status: "OPEN" },
+        where: { id: normalizedShiftId, tenantId, status: "OPEN" },
         select: { id: true },
       });
       if (!activeShift) {
@@ -141,37 +146,48 @@ export async function POST(req: NextRequest) {
             ? "из чата"
             : "по телефону";
 
-    const order = await prisma.order.create({
-      data: {
-        guestName: String(guestName).trim(),
-        guestPhone: guestPhone ? String(guestPhone).trim() : null,
-        guestEmail: guestEmail || null,
-        deliveryAddress: normalizedFulfillmentDetail || deliveryAddress || null,
-        paymentMethod: normalizedPaymentMethod,
-        contactMethod: normalizedContactMethod || "PHONE",
-        contactUsername: normalizedContactUsername || null,
-        terminalProfile: normalizedTerminalProfile || "lumber",
-        terminalWorkMode: normalizedWorkMode || "MOBILE",
-        fulfillmentType: normalizedFulfillmentType || null,
-        fulfillmentDetail: normalizedFulfillmentDetail || null,
-        receiptMode: normalizedReceiptMode || "ELECTRONIC",
-        paymentStatus,
-        fiscalStatus,
-        comment: comment || null,
-        totalAmount: orderTotal,
-        deliveryCost: normalizedDeliveryCost,
-        items: {
-          create: normalizedItems.map((item) => ({
-            variantId: item.variantId,
-            productName: item.productName,
-            variantSize: item.variantSize,
-            unitType: item.unitType as "CUBE" | "PIECE",
-            quantity: item.quantity,
-            price: item.price,
-          })),
+    const order = await prisma.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          tenantId,
+          guestName: String(guestName).trim(),
+          guestPhone: guestPhone ? String(guestPhone).trim() : null,
+          guestEmail: guestEmail || null,
+          deliveryAddress: normalizedFulfillmentDetail || deliveryAddress || null,
+          paymentMethod: normalizedPaymentMethod,
+          contactMethod: normalizedContactMethod || "PHONE",
+          contactUsername: normalizedContactUsername || null,
+          terminalProfile: normalizedTerminalProfile || "lumber",
+          terminalWorkMode: normalizedWorkMode || "MOBILE",
+          fulfillmentType: normalizedFulfillmentType || null,
+          fulfillmentDetail: normalizedFulfillmentDetail || null,
+          receiptMode: normalizedReceiptMode || "ELECTRONIC",
+          paymentStatus,
+          fiscalStatus,
+          comment: comment || null,
+          totalAmount: orderTotal,
+          deliveryCost: normalizedDeliveryCost,
+          items: {
+            create: normalizedItems.map((item) => ({
+              variantId: item.variantId,
+              productName: item.productName,
+              variantSize: item.variantSize,
+              unitType: item.unitType as "CUBE" | "PIECE",
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          },
         },
-      },
-      include: { items: true },
+        include: { items: true },
+      });
+
+      await applyOrderInventory(tx, created, {
+        tenantId,
+        source: "admin-order-created",
+        userId: session.user.id,
+      });
+
+      return created;
     });
 
     const orderItems = order.items.map((item) => ({
@@ -209,6 +225,21 @@ export async function POST(req: NextRequest) {
       body: `${order.guestName} — ${Number(order.totalAmount).toLocaleString("ru-RU")} ₽`,
       url: `/admin/orders/${order.id}`,
       icon: "/icons/icon-192x192.png",
+    }, {
+      tenantId,
+      source: "ORDER",
+      sourceUserId: session.user.id,
+      recipientRole: "STAFF",
+      entityType: "ORDER",
+      entityId: order.id,
+      entityLabel: `Order #${order.orderNumber}`,
+      entityHref: `/admin/orders/${order.id}`,
+      metadata: {
+        eventKey: "order.created.staff",
+        orderNumber: order.orderNumber,
+        source: "admin-terminal",
+        terminalProfile: order.terminalProfile,
+      },
     }).catch(console.error);
 
     // Email клиенту + PDF (если email указан)
@@ -254,6 +285,7 @@ export async function POST(req: NextRequest) {
       terminalProfile: order.terminalProfile,
       contactMethod: order.contactMethod,
       contactUsername: order.contactUsername,
+      tenantId: order.tenantId,
     }).catch(console.error);
 
     createTerminalOrderOps({
@@ -267,6 +299,7 @@ export async function POST(req: NextRequest) {
       fulfillmentType: order.fulfillmentType,
       fulfillmentDetail: order.fulfillmentDetail,
       terminalWorkMode: order.terminalWorkMode,
+      tenantId: order.tenantId,
       shiftId: normalizedShiftId || null,
     }, session.user.id).catch(console.error);
 
@@ -274,6 +307,7 @@ export async function POST(req: NextRequest) {
       runWorkflows("order_created", {
         orderId: order.id,
         orderNumber: order.orderNumber,
+        tenantId,
         status: "NEW",
         totalAmount: Number(order.totalAmount),
         customerName: order.guestName || "Клиент",
@@ -283,6 +317,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ orderNumber: order.orderNumber, id: order.id }, { status: 201 });
   } catch (err) {
+    if (isOrderInventoryError(err)) {
+      return NextResponse.json({ error: err.message, details: err.details }, { status: err.status });
+    }
     console.error("Admin order creation error:", err);
     return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
   }

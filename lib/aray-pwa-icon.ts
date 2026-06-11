@@ -10,7 +10,7 @@ export function clampArayPwaIconSize(value: number) {
 }
 
 async function readArayProductionIcon() {
-  arayProductionIcon ??= readFile(path.join(process.cwd(), "public", "aray", "aray-production-logo.png"));
+  arayProductionIcon ??= readFile(path.join(process.cwd(), "public", "icons", "icon-512x512.png"));
   return arayProductionIcon;
 }
 

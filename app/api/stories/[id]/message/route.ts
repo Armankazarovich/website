@@ -277,7 +277,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
                 entityType: "LEAD",
                 entityId: lead.id,
                 label: "Лид из сторис",
-                href: `/admin/messenger?leadId=${lead.id}`,
+                href: `/admin/crm?leadId=${lead.id}`,
                 metadata: { storyId: story.id, kind, arayBusinessEvent: businessEventPayload },
               },
             ],
@@ -299,7 +299,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     await sendPushToStaff({
       title: kind === "offer" ? "Предложение из сторис" : "Сообщение из сторис",
       body: `${name}: ${text.slice(0, 80)}`,
-      url: `/admin/messenger?leadId=${lead.id}`,
+      url: `/admin/crm?leadId=${lead.id}`,
     }).catch(() => null);
 
     return NextResponse.json({

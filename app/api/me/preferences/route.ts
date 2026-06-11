@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isPaletteId } from "@/lib/palettes";
 import { ADMIN_LANGUAGES, type LangCode } from "@/lib/admin-i18n";
+import { getSiteSetting, upsertSiteSetting } from "@/lib/tenant-settings";
 
 const THEMES = new Set(["light", "dark", "system"]);
 const LANG_CODES = new Set(ADMIN_LANGUAGES.map((lang) => lang.code));
@@ -79,9 +80,7 @@ export async function GET() {
     return NextResponse.json({ authenticated: false, preferences: {} });
   }
 
-  const row = await prisma.siteSettings.findUnique({
-    where: { key: preferenceKey(session.user.id) },
-  }).catch(() => null);
+  const row = await getSiteSetting(preferenceKey(session.user.id)).catch(() => null);
 
   return NextResponse.json({
     authenticated: true,
@@ -97,15 +96,11 @@ export async function PATCH(req: Request) {
 
   const body = await req.json().catch(() => ({}));
   const key = preferenceKey(session.user.id);
-  const row = await prisma.siteSettings.findUnique({ where: { key } }).catch(() => null);
+  const row = await getSiteSetting(key).catch(() => null);
   const preferences = sanitizePreferences(body, parsePreferences(row?.value));
   const value = JSON.stringify(preferences);
 
-  await prisma.siteSettings.upsert({
-    where: { key },
-    create: { id: key, key, value },
-    update: { value },
-  });
+  await upsertSiteSetting(key, value);
 
   return NextResponse.json({ ok: true, authenticated: true, preferences });
 }

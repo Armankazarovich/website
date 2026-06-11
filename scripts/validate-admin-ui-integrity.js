@@ -241,6 +241,135 @@ function assertSafeBuildAutomation() {
   );
 }
 
+function assertBulkProductActionsTruthful() {
+  const productsClientSource = read("app/admin/products/products-client.tsx");
+  const bulkPriceRouteSource = read("app/api/admin/products/bulk-price/route.ts");
+
+  assert(
+    productsClientSource.includes("const reloadProducts = useCallback") &&
+      productsClientSource.includes('fetch("/api/admin/products", { cache: "no-store" })') &&
+      productsClientSource.includes("await reloadProducts();") &&
+      productsClientSource.includes("router.refresh();"),
+    "bulk product actions must reload products from the database after success; visible prices/statuses must not stay stale",
+  );
+  assert(
+    productsClientSource.includes("Number(data.updated) <= 0") &&
+      bulkPriceRouteSource.includes("updates.length === 0") &&
+      bulkPriceRouteSource.includes("В выбранных товарах нет цен"),
+    "bulk price update must reject fake success when no variant price was actually changed",
+  );
+  assert(
+    bulkPriceRouteSource.includes('revalidatePath("/admin/products")') &&
+      bulkPriceRouteSource.includes('revalidatePath("/catalog")') &&
+      bulkPriceRouteSource.includes('revalidateTag("store-shell-data")'),
+    "bulk price update must revalidate admin and storefront views after changing prices",
+  );
+}
+
+function assertArayConnectorsAreOperationalFirst() {
+  const connectorsPageSource = read("app/admin/aray/connectors/page.tsx");
+  const yandexPanelSource = read("components/admin/yandex-growth-connector-panel.tsx");
+  const livePathIndex = connectorsPageSource.indexOf("<LiveConnectorPath");
+  const technicalMapIndex = connectorsPageSource.indexOf("<details");
+  const yandexOverviewRefreshIndex = yandexPanelSource.indexOf("if (data.overview) setOverview(data.overview);");
+  const yandexActionErrorIndex = yandexPanelSource.indexOf('throw new Error(data.error || data.message || "Действие не выполнено")');
+
+  assert(
+    livePathIndex >= 0 && technicalMapIndex > livePathIndex,
+    "/admin/aray/connectors must show live working connectors before the technical provider map",
+  );
+  assert(
+    connectorsPageSource.includes("скрыто от первого шага") &&
+      connectorsPageSource.includes("карта, не мастер запуска") &&
+      !connectorsPageSource.includes("Подключить в один клик"),
+    "/admin/aray/connectors must keep provider bundles clearly marked as a hidden technical map, not a fake one-click launch",
+  );
+  assert(
+    connectorsPageSource.includes('id="yandex-growth"') &&
+      connectorsPageSource.includes('id="google-growth"') &&
+      connectorsPageSource.includes('id="module-connectors"'),
+    "/admin/aray/connectors working path cards must point to real visible panels",
+  );
+  assert(
+    yandexPanelSource.includes("const canAutoPrepare") &&
+      yandexPanelSource.includes("Проверить готовность") &&
+      yandexOverviewRefreshIndex >= 0 &&
+      yandexActionErrorIndex > yandexOverviewRefreshIndex,
+    "Yandex connector actions must refresh real status even when an action stops on a missing prerequisite",
+  );
+}
+
+function assertArayWorkspaceResponsiveStandard() {
+  const cssSource = read("app/globals.css");
+  const ordersPageSource = read("app/admin/aray/orders/page.tsx");
+  const builderPageSource = read("app/admin/aray/builder/page.tsx");
+  const connectorsPageSource = read("app/admin/aray/connectors/page.tsx");
+  const importStudioSource = read("components/aray/aray-site-import-studio.tsx");
+
+  assert(
+    cssSource.includes(".admin-page-frame-aray-workspace") &&
+      cssSource.includes(".admin-aray-command-grid") &&
+      cssSource.includes(".admin-aray-command-side") &&
+      cssSource.includes("grid-template-columns: minmax(0, 1fr) minmax(19rem, clamp(19rem, 23vw, 24rem));"),
+    "ARAY workspace pages must keep the shared responsive frame and command grid instead of local narrow layouts",
+  );
+  assert(
+    ordersPageSource.includes("admin-page-frame admin-page-frame-aray-workspace") &&
+      ordersPageSource.includes("admin-aray-command-grid") &&
+      ordersPageSource.includes("admin-aray-command-main") &&
+      ordersPageSource.includes("admin-aray-command-side") &&
+      !ordersPageSource.includes("admin-page-frame admin-page-frame-readable"),
+    "/admin/aray/orders must use the ARAY workspace frame, not the readable document frame",
+  );
+  assert(
+    builderPageSource.includes("admin-page-frame admin-page-frame-aray-workspace") &&
+      connectorsPageSource.includes("admin-page-frame admin-page-frame-aray-workspace"),
+    "ARAY builder and connectors must inherit the same workspace frame as launch screens",
+  );
+  assert(
+    !importStudioSource.includes("pt-20 shadow-sm shadow-primary/5") &&
+      importStudioSource.includes('id="aray-site-import"') &&
+      importStudioSource.includes("p-5 sm:p-6"),
+    "ARAY launch import panel must stay compact and responsive instead of creating a tall empty top area",
+  );
+}
+
+function assertCatalogImportInventoryTruthful() {
+  const importRouteSource = read("app/api/admin/products/import/route.ts");
+  const supplierRouteSource = read("app/api/admin/products/import-supplier-prices/route.ts");
+  const importPricesPageSource = read("app/admin/products/import-prices/page.tsx");
+  const inventoryRouteSource = read("app/api/admin/inventory/route.ts");
+  const inventoryThresholdRouteSource = read("app/api/admin/inventory/threshold/route.ts");
+
+  assert(
+    importRouteSource.includes("function parseNumberField") &&
+      importRouteSource.includes("updated + created === 0") &&
+      importRouteSource.includes("Импорт не изменил каталог") &&
+      importRouteSource.includes('revalidatePath("/admin/products")') &&
+      importRouteSource.includes('revalidatePath("/catalog")') &&
+      importRouteSource.includes('revalidateTag("store-shell-data")'),
+    "product import must parse human price fields safely, reject zero-result imports, and refresh catalog/admin caches",
+  );
+  assert(
+    supplierRouteSource.includes("updated === 0") &&
+      supplierRouteSource.includes("Прайс разобран, но ни одна цена не была обновлена") &&
+      supplierRouteSource.includes("ok: false") &&
+      supplierRouteSource.includes('revalidatePath("/admin/products")') &&
+      supplierRouteSource.includes('revalidatePath("/catalog")') &&
+      importPricesPageSource.includes("!res.ok || data.ok === false"),
+    "supplier price import must not show success when zero prices were applied, and the UI must respect failed API status",
+  );
+  assert(
+    inventoryRouteSource.includes("Вариант не найден") &&
+      inventoryRouteSource.includes('revalidatePath("/admin/products")') &&
+      inventoryRouteSource.includes('revalidatePath("/catalog")') &&
+      inventoryThresholdRouteSource.includes("Варианты не найдены") &&
+      inventoryThresholdRouteSource.includes("res.count === 0") &&
+      inventoryThresholdRouteSource.includes('revalidateTag("store-shell-data")'),
+    "inventory and low-stock threshold updates must reject zero-result updates, use readable errors, and refresh visible catalog state",
+  );
+}
+
 function assertArayPopupStandard() {
   const modalSource = read("components/admin/admin-modal.tsx");
   const sidePanelSource = read("components/store/side-panel.tsx");
@@ -349,8 +478,8 @@ function assertAppIdentityBaseline() {
     "PWA install must stay opt-in as a quiet compact banner, not an auto-open rail/capsule install control",
   );
   assert(
-    iconSource.includes("aray-production-logo.png"),
-    "ARAY PWA icon endpoint must use the ARAY Production logo source",
+    iconSource.includes('"icons", "icon-512x512.png"'),
+    "Admin PWA icon endpoint must use the shared PiloRus header-logo source",
   );
   assert(
     contextSource.includes("getPwaIconSrc") &&
@@ -360,7 +489,7 @@ function assertAppIdentityBaseline() {
       contextSource.includes("PWA_SITE_ICON_VERSION") &&
       contextSource.includes('"pilorus-site"') &&
       contextSource.includes('"pilorus-catalog"'),
-    "PWA icon resolution must keep ARAY Production icons for admin/modules and dynamic client logo icons for storefront contexts",
+    "PWA icon resolution must keep branded app icons for admin/modules and dynamic client logo icons for storefront contexts",
   );
   assert(
     manifestRouteSource.includes("getPwaIconSrc(context, size)") &&
@@ -370,16 +499,16 @@ function assertAppIdentityBaseline() {
       siteIconSource.includes("getSiteSettings") &&
       siteIconSource.includes("tenant") &&
       siteIconSource.includes("DEFAULT_SITE_LOGO") &&
-      adminLayoutSource.includes('/api/pwa/icon?s=192&v=aray-production-20260508') &&
+      adminLayoutSource.includes('/api/pwa/icon?s=192&v=pilorus-brand-header-20260526') &&
       adminManifestSource.includes('"name": "ARAY Production"') &&
-      adminManifestSource.includes('"/api/pwa/icon?s=512&v=aray-production-20260508"') &&
+      adminManifestSource.includes('"/api/pwa/icon?s=512&v=pilorus-brand-header-20260526"') &&
       !adminManifestSource.includes("Pilo"),
-    "Admin identity must stay on ARAY icons while storefront PWA icons are generated from the client logo layer",
+    "Admin identity must use the shared PiloRus header-logo icon while storefront PWA icons stay on the client logo layer",
   );
   assert(
-    swSource.includes("'/api/pwa/icon?s=192&v=aray-production-20260508'") &&
-      swSource.includes("'/api/pwa/icon?s=72&v=aray-production-20260508'"),
-    "push notification icons must use the shared ARAY PWA icon endpoint",
+    swSource.includes("'/api/pwa/icon?s=192&v=pilorus-brand-header-20260526'") &&
+      swSource.includes("'/api/pwa/icon?s=72&v=pilorus-brand-header-20260526'"),
+    "push notification icons must use the shared PiloRus PWA icon endpoint",
   );
 }
 
@@ -410,6 +539,10 @@ assertWorkflowsBaseline();
 assertNoGenericArayFillers();
 assertBalancedShadows();
 assertSafeBuildAutomation();
+assertBulkProductActionsTruthful();
+assertArayConnectorsAreOperationalFirst();
+assertArayWorkspaceResponsiveStandard();
+assertCatalogImportInventoryTruthful();
 assertArayPopupStandard();
 assertMotionSystemBaseline();
 assertAppIdentityBaseline();

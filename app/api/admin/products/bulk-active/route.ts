@@ -2,6 +2,8 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
 
@@ -22,6 +24,7 @@ async function checkAccess() {
 export async function POST(req: Request) {
   const access = await checkAccess();
   if (!access.allowed) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   let body: { productIds?: unknown; active?: unknown; featured?: unknown };
   try {
@@ -47,9 +50,14 @@ export async function POST(req: Request) {
 
   try {
     const result = await prisma.product.updateMany({
-      where: { id: { in: productIds } },
+      where: { tenantId, id: { in: productIds } },
       data,
     });
+
+    revalidateTag("store-shell-data");
+    revalidatePath("/catalog");
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/admin/products");
 
     // Audit log
     if (access.userId) {

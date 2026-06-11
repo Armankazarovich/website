@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { getSiteSetting } from "@/lib/tenant-settings";
 import { VariantSelector } from "@/components/store/variant-selector";
 import { VariantCards } from "@/components/store/variant-cards";
 import { ProductCard } from "@/components/store/product-card";
@@ -110,7 +111,7 @@ export default async function ProductPage({ params }: Props) {
   const sessionPromise = auth();
   const productPromise = getProductBySlug(params.slug);
   const siteSettingsPromise = getSiteSettings();
-  const yandexMapsSettingPromise = prisma.siteSettings.findUnique({ where: { key: "yandex_maps_review_url" } });
+  const yandexMapsSettingPromise = getSiteSetting("yandex_maps_review_url");
 
   const product = await productPromise;
 
@@ -493,7 +494,7 @@ export default async function ProductPage({ params }: Props) {
       {yandexMapsUrl && (
         <section className="mb-16">
           <div className="flex items-center gap-3 p-4 rounded-2xl border border-border bg-muted/30">
-            <div className="w-8 h-8 rounded-full bg-[#FC3F1D] flex items-center justify-center text-white text-xs font-bold shrink-0">
+            <div className="w-8 h-8 rounded-full bg-card flex items-center justify-center text-foreground text-xs font-bold shrink-0">
               Я
             </div>
             <div className="flex-1">
@@ -504,7 +505,7 @@ export default async function ProductPage({ params }: Props) {
               href={yandexMapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1.5 rounded-xl bg-[#FC3F1D] text-white text-xs font-semibold hover:opacity-90 transition-opacity shrink-0 inline-flex items-center gap-1"
+              className="px-3 py-1.5 rounded-xl bg-card text-foreground text-xs font-semibold hover:opacity-90 transition-opacity shrink-0 inline-flex items-center gap-1"
             >
               Написать
               <ExternalLink className="w-3 h-3" />

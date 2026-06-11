@@ -19,6 +19,8 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { normalizePhone } from "@/lib/phone";
 import nodemailer from "nodemailer";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { applyOrderInventory, isOrderInventoryError } from "@/lib/order-inventory";
 
 function saleUnitAllows(saleUnit: "CUBE" | "PIECE" | "BOTH", unitType: "CUBE" | "PIECE") {
   return saleUnit === "BOTH" || saleUnit === unitType;
@@ -71,6 +73,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, phone, email, address, paymentMethod, comment, items, totalAmount, attribution } = parsed.data;
+    const tenantId = getCurrentTenantId();
     const normalizedEmail = email?.toLowerCase().trim() || null;
 
     // Парсим firstTouchAt если пришёл как строка
@@ -86,6 +89,7 @@ export async function POST(req: NextRequest) {
         id: { in: requestedVariantIds },
         ...getPublicVariantsFilter(),
         product: {
+          tenantId,
           active: true,
           images: { isEmpty: false },
         },
@@ -171,8 +175,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const order = await prisma.order.create({
-      data: {
+    const order = await prisma.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          tenantId,
         userId: userId || undefined,
         guestName: name,
         guestPhone: phone,
@@ -201,8 +207,17 @@ export async function POST(req: NextRequest) {
             price: item.price,
           })),
         },
-      },
-      include: { items: true },
+        },
+        include: { items: true },
+      });
+
+      await applyOrderInventory(tx, created, {
+        tenantId,
+        source: "public-checkout",
+        userId,
+      });
+
+      return created;
     });
 
     const orderItems = order.items.map((item) => ({
@@ -331,6 +346,19 @@ export async function POST(req: NextRequest) {
         body: `Сумма: ${Number(order.totalAmount).toLocaleString("ru-RU")} ₽. Менеджер свяжется с вами.`,
         url: `/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
         icon: "/icons/icon-192x192.png",
+      }, {
+        tenantId,
+        source: "ORDER",
+        recipientLabel: order.guestName || order.guestEmail || order.guestPhone || null,
+        entityType: "ORDER",
+        entityId: order.id,
+        entityLabel: `Order #${order.orderNumber}`,
+        entityHref: `/admin/orders/${order.id}`,
+        metadata: {
+          eventKey: "order.created.customer",
+          orderNumber: order.orderNumber,
+          source: "public-checkout",
+        },
       }).catch(console.error);
     }
 
@@ -340,6 +368,19 @@ export async function POST(req: NextRequest) {
       body: `${order.guestName || "Клиент"} — ${Number(order.totalAmount).toLocaleString("ru-RU")} ₽`,
       url: `/admin/orders/${order.id}`,
       icon: "/icons/icon-192x192.png",
+    }, {
+      tenantId,
+      source: "ORDER",
+      recipientRole: "STAFF",
+      entityType: "ORDER",
+      entityId: order.id,
+      entityLabel: `Order #${order.orderNumber}`,
+      entityHref: `/admin/orders/${order.id}`,
+      metadata: {
+        eventKey: "order.created.staff",
+        orderNumber: order.orderNumber,
+        source: "public-checkout",
+      },
     }).catch(console.error);
 
     // Telegram notification — сохраняем message_id для авто-удаления при финальных статусах
@@ -381,6 +422,7 @@ export async function POST(req: NextRequest) {
     // 🎯 Авто-создание лида в CRM при новом заказе
     prisma.lead.create({
       data: {
+        tenantId,
         name: name,
         phone: phone || null,
         email: normalizedEmail,
@@ -408,6 +450,7 @@ export async function POST(req: NextRequest) {
       runWorkflows("order_created", {
         orderId: order.id,
         orderNumber: order.orderNumber,
+        tenantId,
         status: "NEW",
         totalAmount: Number(serverTotal),
         customerName: name || "Клиент",
@@ -419,6 +462,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ orderNumber: order.orderNumber, id: order.id }, { status: 201 });
   } catch (err) {
+    if (isOrderInventoryError(err)) {
+      return NextResponse.json({ error: err.message, details: err.details }, { status: err.status });
+    }
     console.error("Order creation error:", err);
     return NextResponse.json({ error: "Ошибка сервера" }, { status: 500 });
   }

@@ -39,7 +39,7 @@ export function AdminMessengerHubClient({ staffName }: AdminMessengerHubClientPr
   );
 
   const openMainAray = useCallback(() => {
-    requestArayOpen("phone");
+    requestArayOpen("open");
     router.push("/admin");
   }, [router]);
 

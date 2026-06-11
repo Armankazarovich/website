@@ -58,6 +58,7 @@ const GROUP_ICONS: Record<string, React.ElementType> = {
   content: BookOpen,
   marketing: Megaphone,
   finance: Wallet,
+  arayCms: ArayIcon,
   settings: Settings,
   help: HelpCircle,
 };

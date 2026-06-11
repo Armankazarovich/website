@@ -1,5 +1,7 @@
 import { google } from "googleapis";
 import { prisma } from "@/lib/prisma";
+import { getSiteSetting } from "@/lib/tenant-settings";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 // ─── Transliteration ────────────────────────────────────────────────────────
 const TMAP: Record<string, string> = {
@@ -22,7 +24,7 @@ export function transliterate(str: string): string {
 
 // ─── Auth helper ────────────────────────────────────────────────────────────
 export async function getSheetsClient() {
-  const row = await prisma.siteSettings.findUnique({ where: { key: "google_service_account" } });
+  const row = await getSiteSetting("google_service_account");
   if (!row?.value) throw new Error("Ключ сервисного аккаунта Google не настроен");
   const creds = JSON.parse(row.value);
   const auth = new google.auth.GoogleAuth({
@@ -138,8 +140,10 @@ export async function createSheetTemplate(title = "ПилоРус — Товар
 // ─── Sync DB → Sheet ──────────────────────────────────────────────────────────
 export async function syncToSheet(spreadsheetId: string): Promise<{ rows: number }> {
   const { sheets } = await getSheetsClient();
+  const tenantId = getCurrentTenantId();
 
   const products = await prisma.product.findMany({
+    where: { tenantId },
     include: { category: true, variants: { orderBy: { size: "asc" } } },
     orderBy: [{ category: { name: "asc" } }, { name: "asc" }],
   });
@@ -186,6 +190,7 @@ export async function syncFromSheet(
   spreadsheetId: string
 ): Promise<{ updated: number; created: number; errors: string[] }> {
   const { sheets } = await getSheetsClient();
+  const tenantId = getCurrentTenantId();
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
@@ -229,13 +234,13 @@ export async function syncFromSheet(
     try {
       // Find or create category
       let category = await prisma.category.findFirst({
-        where: { name: { equals: data.catName, mode: "insensitive" } },
+        where: { tenantId, name: { equals: data.catName, mode: "insensitive" } },
       });
       if (!category && data.catName) {
         const catSlug = transliterate(data.catName);
         category = await prisma.category.upsert({
-          where: { slug: catSlug },
-          create: { slug: catSlug, name: data.catName },
+          where: { tenantId_slug: { tenantId, slug: catSlug } },
+          create: { tenantId, slug: catSlug, name: data.catName },
           update: { name: data.catName },
         });
       }
@@ -245,10 +250,11 @@ export async function syncFromSheet(
       }
 
       // Upsert product
-      let product = await prisma.product.findUnique({ where: { slug } });
+      let product = await prisma.product.findUnique({ where: { tenantId_slug: { tenantId, slug } } });
       if (!product) {
         product = await prisma.product.create({
           data: {
+            tenantId,
             slug,
             name: data.name,
             categoryId: category.id,
@@ -259,7 +265,7 @@ export async function syncFromSheet(
         created++;
       } else {
         product = await prisma.product.update({
-          where: { slug },
+          where: { id: product.id },
           data: {
             name: data.name,
             categoryId: category.id,

@@ -770,6 +770,11 @@ export default function AdminServicesPage() {
     reordered.splice(to, 0, moved);
     const updated = reordered.map((s, i) => ({ ...s, sortOrder: i }));
     const previous = services;
+    if (!window.confirm("Сохранить новый порядок услуг?")) {
+      dragItem.current = null;
+      dragOver.current = null;
+      return;
+    }
     setServices(updated);
     dragItem.current = null;
     dragOver.current = null;
@@ -780,7 +785,7 @@ export default function AdminServicesPage() {
           fetch(`/api/admin/services/${s.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sortOrder: s.sortOrder }),
+            body: JSON.stringify({ sortOrder: s.sortOrder, confirm: true }),
           }),
         ),
       );
@@ -810,12 +815,13 @@ export default function AdminServicesPage() {
     loadServices();
   }, []);
 
-  const saveService = async (data: Partial<Service>) => {
+  const saveService = async (data: Partial<Service>, confirmed = false) => {
+    if (!confirmed && !window.confirm(data.id ? "Сохранить услугу?" : "Создать услугу?")) return;
     if (data.id) {
       const res = await fetch(`/api/admin/services/${data.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, confirm: true }),
       });
       const updated = await res.json().catch(() => ({}));
       if (!res.ok)
@@ -825,7 +831,7 @@ export default function AdminServicesPage() {
       const res = await fetch("/api/admin/services", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, confirm: true }),
       });
       const created = await res.json().catch(() => ({}));
       if (!res.ok)
@@ -840,7 +846,7 @@ export default function AdminServicesPage() {
     setDeletingIds((prev) => new Set(prev).add(id));
     setActionError("");
     try {
-      const res = await fetch(`/api/admin/services/${id}`, {
+      const res = await fetch(`/api/admin/services/${id}?confirm=true`, {
         method: "DELETE",
       });
       const data = await res.json().catch(() => ({}));
@@ -857,12 +863,14 @@ export default function AdminServicesPage() {
     }
   };
 
-  const toggleActive = (service: Service) =>
-    saveService({ id: service.id, active: !service.active }).catch(
+  const toggleActive = (service: Service) => {
+    if (!window.confirm(service.active ? "Скрыть услугу?" : "Показать услугу?")) return;
+    saveService({ id: service.id, active: !service.active }, true).catch(
       (error: any) => {
         setActionError(error.message || "Не удалось изменить видимость услуги");
       },
     );
+  };
 
   return (
     <div className="admin-page-frame admin-page-frame-readable">

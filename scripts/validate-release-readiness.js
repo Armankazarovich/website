@@ -70,6 +70,32 @@ check(
   "The site builder needs a real blueprint contract, module passport, API route and quality guard before any one-click launch work.",
 );
 check(
+  "ARAY multisite release control is wired",
+  exists("lib/aray-release-control.ts") &&
+    exists("app/admin/site/releases/page.tsx") &&
+    exists("app/api/admin/aray/release/route.ts") &&
+    includesAll(read("lib/aray-release-control.ts"), [
+      "ARAY_CORE_RELEASE_VERSION",
+      "ARAY_RELEASE_GATES",
+      "ARAY_DUPLICATE_SITE_STEPS",
+      "getArayReleaseControl",
+    ]) &&
+    includesAll(read("app/admin/site/releases/page.tsx"), [
+      "data-aray-release-control",
+      "data-aray-release-targets",
+      "data-aray-release-gates",
+      "data-aray-duplicate-site-flow",
+      "data-aray-new-site-release-flow",
+    ]) &&
+    includesAll(read("components/admin/admin-navigation-registry.ts"), [
+      'href: "/admin/site/releases"',
+      'label: "Ядро и релизы"',
+      'moduleId: "constructor.store-builder"',
+    ]) &&
+    read("lib/aray-module-registry.ts").includes('"/api/admin/aray/release"'),
+  "ARAY Network needs a visible release center, API contract, Duplicate Site flow and navigation passport.",
+);
+check(
   "Browser cart guard is wired into deploy",
   Boolean(packageJson.scripts?.["browser:cart:check"]) &&
     exists("scripts/validate-browser-cart-flow.js") &&
@@ -193,7 +219,7 @@ check(
 const pwaContext = read("lib/pwa-install-context.ts");
 check(
   "PWA icon cache version is bumped",
-  /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-20260526"/.test(pwaContext),
+  /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-pilorus-logo-20260610"/.test(pwaContext),
   "Mobile PWA should request the fresh icon version after logo changes.",
 );
 

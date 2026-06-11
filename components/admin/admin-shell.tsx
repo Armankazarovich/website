@@ -24,12 +24,14 @@
  *  - LazyAdminArayAssistant (единый PiloRus voice-first ARAY: dock + panel)
  */
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Search,
   ChevronLeft,
+  ChevronDown,
+  Check,
   RefreshCw,
   MoreVertical,
   Trash2,
@@ -37,6 +39,8 @@ import {
   BarChart2,
   FileCheck,
   Stethoscope,
+  Store,
+  ExternalLink,
   Sun,
   Moon,
   Palette,
@@ -59,6 +63,11 @@ import { buildAdminArayNavigation } from "@/components/admin/admin-aray-navigati
 import { getAdminNavigationPageMeta } from "@/components/admin/admin-navigation-model";
 import { requestArayOpen as dispatchArayOpen, type ArayOpenMode } from "@/components/store/aray-events";
 import { useAdminLang, AdminLangProvider } from "@/lib/admin-lang-context";
+import {
+  getArayManagedSiteProfiles,
+  getMultisiteAdminHref,
+  getMultisitePublicHref,
+} from "@/lib/multisite-sites";
 import { useAdminOverlayRecovery } from "@/lib/use-admin-overlay-guard";
 import { useAccountDrawer } from "@/store/account-drawer";
 import { UI_LAYERS } from "@/lib/ui-layers";
@@ -67,6 +76,7 @@ import { UI_LAYERS } from "@/lib/ui-layers";
 const LS_CLASSIC = "aray-classic-mode";
 const LS_BG_MODE = "aray-bg-mode";
 const LS_BG_MODE_MIGRATION = "aray-bg-clean-default-v2";
+const LS_ACTIVE_SITE = "aray-active-site";
 export const LS_FONT = "aray-font-size";
 
 type AdminBgMode = "clean";
@@ -140,6 +150,8 @@ interface AdminShellProps {
   email: string | null | undefined;
   userName?: string | null;
   disabledModuleIds?: string[];
+  initialActiveSiteId?: string | null;
+  canCreateAraySite?: boolean;
   children: React.ReactNode;
 }
 
@@ -178,7 +190,15 @@ function isAdminActionVisibleForModules(action: AdminAction, disabledModuleIds: 
   return true;
 }
 
-function AdminShellInner({ role, email, userName, disabledModuleIds = [], children }: AdminShellProps) {
+function AdminShellInner({
+  role,
+  email,
+  userName,
+  disabledModuleIds = [],
+  initialActiveSiteId,
+  canCreateAraySite = false,
+  children,
+}: AdminShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -468,6 +488,7 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
                 {headerMeta.context}
               </div>
             )}
+            <AdminSiteSwitcher initialSiteId={initialActiveSiteId} canCreateAraySite={canCreateAraySite} />
             <div className="min-w-0 flex-[1.45]">
               <AdminHeaderSearch
                 role={role}
@@ -479,6 +500,8 @@ function AdminShellInner({ role, email, userName, disabledModuleIds = [], childr
           }
           rightSlot={
           <div className="flex items-center gap-1.5">
+            <AdminSiteSwitcher variant="compact" initialSiteId={initialActiveSiteId} canCreateAraySite={canCreateAraySite} />
+
             {/* Поиск — компактная иконка → открывает side-panel слева */}
             <button
               onClick={() => setSearchOpen(true)}
@@ -651,6 +674,298 @@ export function AdminShell(props: AdminShellProps) {
         <AdminShellInner {...props} />
       </AdminPageActionsProvider>
     </AdminLangProvider>
+  );
+}
+
+type AdminSiteStatus = "template" | "clone-live" | "draft";
+
+type AdminSiteOption = {
+  id: string;
+  tenantId: string;
+  name: string;
+  title: string;
+  domain: string;
+  status: AdminSiteStatus;
+  deploymentMode: "shared-aray" | "external-server";
+  catalogSource: string;
+  publicHref: string;
+  adminHref: string;
+};
+
+const STATIC_ADMIN_SITE_OPTIONS: AdminSiteOption[] = getArayManagedSiteProfiles().map((site) => ({
+  id: site.id,
+  tenantId: site.tenantId,
+  name: site.name,
+  title: site.title,
+  domain: site.domain,
+  status: site.status,
+  deploymentMode: site.deploymentMode,
+  catalogSource: site.catalogSource,
+  publicHref: getMultisitePublicHref(site),
+  adminHref: getMultisiteAdminHref(site),
+}));
+
+function isValidAdminSiteId(value: string | null | undefined) {
+  return Boolean(value && /^[a-z0-9-]{2,40}$/.test(value));
+}
+
+function normalizeAdminSiteId(value: string | null | undefined): string {
+  return isValidAdminSiteId(value) ? String(value) : "pilorus";
+}
+
+function readActiveSiteCookie() {
+  if (typeof document === "undefined") return null;
+  const prefix = `${LS_ACTIVE_SITE}=`;
+  const match = document.cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(prefix));
+  return match ? decodeURIComponent(match.slice(prefix.length)) : null;
+}
+
+function persistActiveSite(siteId: string) {
+  try {
+    localStorage.setItem(LS_ACTIVE_SITE, siteId);
+  } catch {}
+  try {
+    document.cookie = `${LS_ACTIVE_SITE}=${encodeURIComponent(siteId)}; Max-Age=31536000; Path=/; SameSite=Lax`;
+  } catch {}
+}
+
+function AdminSiteSwitcher({
+  variant = "wide",
+  initialSiteId,
+  canCreateAraySite = false,
+}: {
+  variant?: "wide" | "compact";
+  initialSiteId?: string | null;
+  canCreateAraySite?: boolean;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [siteOptions, setSiteOptions] = useState<AdminSiteOption[]>(STATIC_ADMIN_SITE_OPTIONS);
+  const [activeSiteId, setActiveSiteId] = useState<string>(() => normalizeAdminSiteId(initialSiteId));
+  const menuRef = useRef<HTMLDivElement>(null);
+  const isCompact = variant === "compact";
+
+  useLayoutEffect(() => {
+    let storedSite: string | null = null;
+    try {
+      storedSite = localStorage.getItem(LS_ACTIVE_SITE);
+    } catch {}
+    const saved = normalizeAdminSiteId(storedSite || readActiveSiteCookie());
+    setActiveSiteId(saved);
+    persistActiveSite(saved);
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadSites() {
+      try {
+        const response = await fetch("/api/admin/site-constructor/sites", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json().catch(() => ({}));
+        const dynamicSites = Array.isArray(data.sites) ? data.sites : [];
+        const dynamicOptions: AdminSiteOption[] = dynamicSites
+          .map((site: any) => {
+            const tenantId = normalizeAdminSiteId(site?.tenantId);
+            if (tenantId === "pilorus" && site?.tenantId !== "pilorus") return null;
+            const name = String(site?.storeName || site?.name || tenantId).trim() || tenantId;
+            const domain = String(site?.domain || `${tenantId}.pilo-rus.ru`).trim();
+            return {
+              id: tenantId,
+              tenantId,
+              name,
+              title: name,
+              domain,
+              status: site?.status === "published" ? "clone-live" : "draft",
+              deploymentMode: "shared-aray",
+              catalogSource: String(site?.referralSource || "ARAY CMS").trim(),
+              publicHref: domain ? `https://${domain}` : `https://${tenantId}.pilo-rus.ru`,
+              adminHref: "/admin",
+            } satisfies AdminSiteOption;
+          })
+          .filter(Boolean) as AdminSiteOption[];
+
+        const merged = new Map<string, AdminSiteOption>();
+        for (const site of STATIC_ADMIN_SITE_OPTIONS) merged.set(site.id, site);
+        for (const site of dynamicOptions) merged.set(site.id, { ...merged.get(site.id), ...site });
+
+        if (!alive) return;
+        setSiteOptions(Array.from(merged.values()));
+      } catch {}
+    }
+
+    void loadSites();
+    window.addEventListener("aray:active-site-change", loadSites);
+    return () => {
+      alive = false;
+      window.removeEventListener("aray:active-site-change", loadSites);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onSiteChange = (event: Event) => {
+      const detail = (event as CustomEvent<{ tenantId?: string }>).detail;
+      setActiveSiteId(normalizeAdminSiteId(detail?.tenantId));
+    };
+    window.addEventListener("aray:active-site-change", onSiteChange);
+    return () => window.removeEventListener("aray:active-site-change", onSiteChange);
+  }, []);
+
+  useEffect(() => {
+    const onDocClick = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  const activeSite = siteOptions.find((site) => site.id === activeSiteId)
+    || siteOptions.find((site) => site.id === "pilorus")
+    || STATIC_ADMIN_SITE_OPTIONS[0];
+  const chooseSite = (nextSite: AdminSiteOption) => {
+    setActiveSiteId(nextSite.id);
+    setOpen(false);
+    persistActiveSite(nextSite.id);
+    try {
+      window.dispatchEvent(new CustomEvent("aray:active-site-change", {
+        detail: { tenantId: nextSite.tenantId, title: nextSite.title, domain: nextSite.domain },
+      }));
+    } catch {}
+    router.refresh();
+  };
+
+  const siteStatus = activeSite.status === "template" ? "база ARAY" : activeSite.status === "draft" ? "черновик" : "сайт ARAY";
+  const deploymentStatus = activeSite.deploymentMode === "external-server" ? "отдельная установка" : "под управлением ARAY";
+  const activePublicHref = activeSite.publicHref;
+  const activeAdminHref = activeSite.adminHref;
+
+  return (
+    <div
+      ref={menuRef}
+      className={
+        isCompact
+          ? "relative flex shrink-0 lg:hidden"
+          : "relative hidden w-44 shrink-0 lg:block min-[1320px]:w-52"
+      }
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        data-admin-site-switcher-trigger
+        data-admin-site-switcher-variant={variant}
+        className={
+          isCompact
+            ? "flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-background/60 text-primary transition-colors hover:border-primary/35 hover:bg-primary/[0.035]"
+            : "flex h-10 w-full items-center gap-2 rounded-xl border border-border bg-background/60 px-3 text-left text-foreground transition-colors hover:border-primary/35 hover:bg-primary/[0.035]"
+        }
+        aria-label="Выбрать активный сайт"
+        aria-expanded={open}
+        title={`Активный сайт: ${activeSite.name}`}
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-primary">
+          <Store className="h-3.5 w-3.5" />
+        </span>
+        {!isCompact && (
+          <>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-xs font-semibold leading-tight">{activeSite.name}</span>
+              <span className="block truncate text-[10px] leading-tight text-muted-foreground">{siteStatus}</span>
+            </span>
+            <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+          </>
+        )}
+      </button>
+
+      {open && (
+        <div
+          className={`admin-popup-liquid absolute top-full z-50 mt-2 w-[22rem] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-border p-2 ${
+            isCompact ? "right-0" : "left-0"
+          }`}
+        >
+          <div className="px-2 pb-2 pt-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+              ARAY Network
+            </p>
+            <p className="mt-1 text-[13px] leading-5 text-foreground/80">
+              Здесь только сайты, созданные и управляемые через ARAY. Внешние проекты не переключают данные этой админки.
+            </p>
+          </div>
+          <div className="grid gap-1.5">
+            {siteOptions.map((site) => {
+              const selected = site.id === activeSiteId;
+              return (
+                <button
+                  key={site.id}
+                  type="button"
+                  onClick={() => chooseSite(site)}
+                  data-admin-site-switcher-option={site.id}
+                  className={`flex min-h-16 w-full items-start gap-3 rounded-xl border px-3 py-2 text-left transition-colors ${
+                    selected
+                      ? "border-primary/35 bg-primary/10"
+                      : "border-border bg-background/70 hover:border-primary/30 hover:bg-primary/[0.035]"
+                  }`}
+                >
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-primary">
+                    {selected ? <Check className="h-4 w-4" /> : <Store className="h-4 w-4" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold text-foreground">{site.name}</span>
+                      <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        {site.status === "template" ? "эталон" : site.status === "draft" ? "черновик" : "сайт"}
+                      </span>
+                      <span className="rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+                        ARAY
+                      </span>
+                    </span>
+                    <span className="mt-1 block truncate text-xs font-medium text-foreground/80">{site.domain}</span>
+                    <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
+                      {site.catalogSource} · данные этого сайта
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-2 rounded-xl border border-border/70 bg-background/70 px-3 py-2 text-xs leading-5 text-muted-foreground">
+            Выбран сайт: <span className="font-semibold text-foreground">{activeSite.name}</span> · {deploymentStatus}
+          </div>
+          {canCreateAraySite ? (
+            <Link
+              href="/admin/aray/orders#aray-site-import"
+              className="mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              onClick={() => setOpen(false)}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Добавить сайт
+            </Link>
+          ) : null}
+          <div className="mt-2 grid grid-cols-2 gap-2 border-t border-border/70 pt-2">
+            <a
+              href={activePublicHref}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-semibold text-foreground transition-colors hover:border-primary/35"
+              onClick={() => setOpen(false)}
+            >
+              Сайт
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            <a
+              href={activeAdminHref}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              onClick={() => setOpen(false)}
+            >
+              Админка
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

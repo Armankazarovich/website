@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import { TasksKanban } from "./tasks-client";
 
 export const dynamic = "force-dynamic";
@@ -12,9 +13,11 @@ export default async function TasksPage() {
   if (!session || !["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"].includes(role)) {
     redirect("/login");
   }
+  const tenantId = getCurrentTenantId();
 
   const [tasks, staff] = await Promise.all([
     prisma.task.findMany({
+      where: { tenantId },
       include: {
         assignee: { select: { id: true, name: true, email: true } },
         createdBy: { select: { id: true, name: true } },
@@ -28,7 +31,10 @@ export default async function TasksPage() {
       orderBy: [{ status: "asc" }, { sortOrder: "asc" }, { createdAt: "desc" }],
     }),
     prisma.user.findMany({
-      where: { role: { in: ["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"] } },
+      where: {
+        tenantId,
+        role: { in: ["SUPER_ADMIN", "ADMIN", "MANAGER", "ACCOUNTANT", "WAREHOUSE", "SELLER", "COURIER"] },
+      },
       select: { id: true, name: true, email: true, role: true },
       orderBy: { name: "asc" },
     }),

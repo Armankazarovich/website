@@ -71,6 +71,7 @@ const nextConfig = {
     remotePatterns: [
       { hostname: 'localhost', pathname: '/**' },
       { protocol: 'https', hostname: 'pilo-rus.ru', pathname: '/**' },
+      { protocol: 'https', hostname: 'zaidr.ru', pathname: '/**' },
       { protocol: 'https', hostname: 'pilmos.ru', pathname: '/**' },
     ],
     formats: ['image/avif', 'image/webp'],
@@ -78,7 +79,7 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'pilo-rus.ru'],
+      allowedOrigins: ['localhost:3000', 'pilo-rus.ru', 'zaidr.ru'],
     },
     serverComponentsExternalPackages: [
       '@react-pdf/renderer',

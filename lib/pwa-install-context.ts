@@ -24,8 +24,8 @@ export type PwaInstallContext = {
   shortcuts?: PwaShortcut[];
 };
 
-export const PWA_ARAY_ICON_VERSION = "aray-production-20260508";
-export const PWA_SITE_ICON_VERSION = "site-brand-20260526";
+export const PWA_ARAY_ICON_VERSION = "pilorus-brand-header-20260526";
+export const PWA_SITE_ICON_VERSION = "site-brand-pilorus-logo-20260610";
 
 const ARAY_THEME = "hsl(201 70% 11%)";
 const ARAY_BACKGROUND = "hsl(210 54% 6%)";

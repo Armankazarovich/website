@@ -4,6 +4,8 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 async function checkAuth() {
   const session = await auth();
@@ -44,10 +46,23 @@ function parseCSV(text: string): Record<string, string>[] {
   });
 }
 
+function parseNumberField(value: string | undefined, integer = false) {
+  if (!value) return null;
+  const normalized = value
+    .replace(/\s+/g, "")
+    .replace(/₽|руб\.?/gi, "")
+    .replace(",", ".")
+    .replace(/[^\d.-]/g, "");
+  if (!normalized) return null;
+  const parsed = integer ? Number.parseInt(normalized, 10) : Number.parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : Number.NaN;
+}
+
 export async function POST(req: NextRequest) {
   if (!(await checkAuth())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const tenantId = getCurrentTenantId();
 
   const contentType = req.headers.get("content-type") || "";
   if (!contentType.includes("multipart/form-data")) {
@@ -56,6 +71,7 @@ export async function POST(req: NextRequest) {
 
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
+  const preview = formData.get("preview") === "1";
   if (!file) return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
 
   const filename = file.name.toLowerCase();
@@ -118,9 +134,9 @@ export async function POST(req: NextRequest) {
       if (!size && !slug) { errors.push(`Строка без размера и slug — пропущена`); continue; }
 
       // Validate numeric fields
-      const parsedPricePerCube = pricePerCube ? parseFloat(pricePerCube) : null;
-      const parsedPricePerPiece = pricePerPiece ? parseFloat(pricePerPiece) : null;
-      const parsedPiecesPerCube = piecesPerCube ? parseInt(piecesPerCube) : null;
+      const parsedPricePerCube = parseNumberField(pricePerCube);
+      const parsedPricePerPiece = parseNumberField(pricePerPiece);
+      const parsedPiecesPerCube = parseNumberField(piecesPerCube, true);
 
       if (parsedPricePerCube !== null && (isNaN(parsedPricePerCube) || parsedPricePerCube < 0)) {
         errors.push(`Некорректная цена м³ "${pricePerCube}" для ${slug || size}`); continue;
@@ -142,9 +158,13 @@ export async function POST(req: NextRequest) {
 
       // Update by variant ID — most reliable
       if (variantId) {
-        const existing = await prisma.productVariant.findUnique({ where: { id: variantId } });
+        const existing = await prisma.productVariant.findFirst({
+          where: { id: variantId, product: { tenantId } },
+        });
         if (existing) {
-          await prisma.productVariant.update({ where: { id: variantId }, data: variantData });
+          if (!preview) {
+            await prisma.productVariant.update({ where: { id: variantId }, data: variantData });
+          }
           updated++;
           continue;
         }
@@ -152,22 +172,26 @@ export async function POST(req: NextRequest) {
 
       // Fallback: find by slug + size
       if (slug && size) {
-        const product = await prisma.product.findUnique({
-          where: { slug },
+        const product = await prisma.product.findFirst({
+          where: { slug, tenantId },
           include: { variants: true },
         });
         if (product) {
           const existingVariant = product.variants.find((v) => v.size === size);
           if (existingVariant) {
-            await prisma.productVariant.update({ where: { id: existingVariant.id }, data: variantData });
+            if (!preview) {
+              await prisma.productVariant.update({ where: { id: existingVariant.id }, data: variantData });
+            }
             updated++;
           } else {
             // Create new variant for existing product
-            await prisma.productVariant.create({ data: { productId: product.id, ...variantData } });
+            if (!preview) {
+              await prisma.productVariant.create({ data: { productId: product.id, ...variantData } });
+            }
             created++;
           }
           // Update product saleUnit if provided
-          if (saleUnit !== product.saleUnit) {
+          if (!preview && saleUnit !== product.saleUnit) {
             await prisma.product.update({ where: { id: product.id }, data: { saleUnit } });
           }
           continue;
@@ -184,10 +208,19 @@ export async function POST(req: NextRequest) {
           errors.push(`Некорректные данные после очистки: slug="${slug}"`); continue;
         }
 
-        let category = await prisma.category.findFirst({ where: { name: safeCategoryName } });
+        if (preview) {
+          created++;
+          continue;
+        }
+
+        let category = await prisma.category.findFirst({ where: { name: safeCategoryName, tenantId } });
         if (!category) {
           category = await prisma.category.create({
-            data: { name: safeCategoryName, slug: safeCategoryName.toLowerCase().replace(/[^a-zа-яёЁ0-9]+/g, "-").replace(/-+$/, "") },
+            data: {
+              name: safeCategoryName,
+              slug: safeCategoryName.toLowerCase().replace(/[^a-zа-яёЁ0-9]+/g, "-").replace(/-+$/, ""),
+              tenantId,
+            },
           });
         }
         const newProduct = await prisma.product.create({
@@ -195,6 +228,7 @@ export async function POST(req: NextRequest) {
             slug: safeSlug,
             name: safeProductName,
             categoryId: category.id,
+            tenantId,
             saleUnit,
             active: true,
           },
@@ -210,5 +244,27 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ updated, created, errors });
+  if (preview) {
+    return NextResponse.json({ ok: true, preview: true, updated, created, errors, rows: rows.length });
+  }
+
+  if (updated + created === 0) {
+    return NextResponse.json(
+      {
+        ok: false,
+        updated,
+        created,
+        errors,
+        rows: rows.length,
+        error: errors[0] || "Импорт не изменил каталог: не найдено подходящих строк",
+      },
+      { status: 409 },
+    );
+  }
+
+  revalidateTag("store-shell-data");
+  revalidatePath("/catalog");
+  revalidatePath("/admin/products");
+
+  return NextResponse.json({ ok: true, updated, created, errors, rows: rows.length });
 }

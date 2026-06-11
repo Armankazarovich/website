@@ -6,6 +6,8 @@ import { cookies } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { upsertSiteSetting } from "@/lib/tenant-settings";
 import { buildAraySystemPrompt, ArayRole, ARAY_TOOLS, getToolsForRole, calculateProjectMaterials } from "@/lib/aray-agent";
 import {
   getOrCreateMemory,
@@ -1321,7 +1323,8 @@ async function handleTool(
       // Создать slug для товара
       const baseSlug = productName.toLowerCase().replace(/[^a-zа-яё0-9]/gi, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
       let slug = baseSlug || `product-${Date.now()}`;
-      const existing = await prisma.product.findUnique({ where: { slug } });
+      const tenantId = getCurrentTenantId();
+      const existing = await prisma.product.findUnique({ where: { tenantId_slug: { tenantId, slug } } });
       if (existing) slug = `${baseSlug}-${Date.now().toString(36)}`;
 
       // Создать товар
@@ -1789,12 +1792,7 @@ async function handleTool(
         const value = input.value ? String(input.value) : null;
         if (!key || !value) return { error: "Укажи key и value" };
 
-        // Безопасный upsert (try create, catch update)
-        try {
-          await prisma.siteSettings.create({ data: { id: key, key, value } });
-        } catch {
-          await prisma.siteSettings.update({ where: { key }, data: { value } });
-        }
+        await upsertSiteSetting(key, value);
 
         return {
           success: true,

@@ -3,6 +3,8 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { parseJsonRecord, requireWriteConfirmation } from "@/lib/admin-content-guard";
 
 async function checkAdmin() {
   const session = await auth();
@@ -50,10 +52,14 @@ const STARTER_REVIEWS = [
   },
 ];
 
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
   if (!(await checkAdmin())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+  const tenantId = getCurrentTenantId();
 
   const created: string[] = [];
   const errors: string[] = [];
@@ -62,6 +68,7 @@ export async function POST(_req: Request) {
     try {
       const r = await prisma.review.create({
         data: {
+          tenantId,
           // Review.name — имя автора (поле в схеме)
           name: review.name,
           rating: review.rating,

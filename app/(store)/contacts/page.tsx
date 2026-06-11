@@ -6,10 +6,10 @@ import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Контакты — адрес, телефоны, как проехать",
-  description: "Контакты ПилоРус: адрес склада Химки, Заводская 2А стр.28. Режим работы, телефоны, самовывоз и доставка.",
+  description: "Контакты ПилоРус: адрес склада г. Химки, Заводская 2А, стр.13. Режим работы, телефоны, самовывоз и доставка.",
   keywords: ["пилорус контакты", "адрес склада химки", "пиломатериалы химки телефон", "купить доски химки адрес"],
   openGraph: {
-    title: "Контакты ПилоРус — Химки, Заводская 2А стр.28",
+    title: "Контакты ПилоРус — Химки, Заводская 2А, стр.13",
     description: "Телефоны, адрес склада, режим работы. Самовывоз и доставка по Москве и МО.",
     url: "https://pilo-rus.ru/contacts",
     type: "website",
@@ -24,8 +24,34 @@ export default async function ContactsPage() {
   const firstPhoneLink = phones[0]?.tel || getSetting(settings, "phone_link");
   const email = getSetting(settings, "email");
   const address = getSetting(settings, "address");
+  const companyName = getSetting(settings, "company_name");
+  const legalFullName = getSetting(settings, "legal_full_name") || companyName;
   const inn = getSetting(settings, "inn");
   const ogrn = getSetting(settings, "ogrn");
+  const kpp = getSetting(settings, "kpp");
+  const settlementAccount = getSetting(settings, "settlement_account");
+  const bankName = getSetting(settings, "bank_name");
+  const correspondentAccount = getSetting(settings, "correspondent_account");
+  const bik = getSetting(settings, "bik");
+  const okpo = getSetting(settings, "okpo");
+  const okato = getSetting(settings, "okato");
+  const oktmo = getSetting(settings, "oktmo");
+  const requisites = [
+    ["Полное наименование", legalFullName],
+    ["Краткое наименование", companyName],
+    ["ОГРН", ogrn],
+    ["ИНН", inn],
+    ["КПП", kpp],
+    ["Расчетный счет", settlementAccount],
+    ["Банк", bankName],
+    ["Корреспондентский счет", correspondentAccount],
+    ["БИК", bik],
+    ["ОКПО", okpo],
+    ["ОКАТО", okato],
+    ["ОКТМО", oktmo],
+  ]
+    .map(([label, value]) => ({ label, value }))
+    .filter((item): item is { label: string; value: string } => Boolean(item.value));
   const contactPageSchema = {
     "@context": "https://schema.org",
     "@type": "ContactPage",
@@ -34,6 +60,7 @@ export default async function ContactsPage() {
     "mainEntity": {
       "@type": "LocalBusiness",
       "name": "ПилоРус",
+      "legalName": legalFullName,
       "telephone": phones.map((phone) => phone.display),
       "email": email,
       "address": {
@@ -139,10 +166,11 @@ export default async function ContactsPage() {
           <div className="p-5 bg-muted/30 rounded-2xl border border-border">
             <h3 className="font-semibold mb-2">Реквизиты компании</h3>
             <div className="space-y-1 text-sm text-muted-foreground">
-              <p>ООО «ПИТИ»</p>
-              {inn && <p>ИНН: {inn}</p>}
-              <p>КПП: 504701001</p>
-              {ogrn && <p>ОГРН: {ogrn}</p>}
+              {requisites.map(({ label, value }) => (
+                <p key={label}>
+                  <span className="font-medium text-foreground">{label}:</span> {value}
+                </p>
+              ))}
             </div>
           </div>
         </div>

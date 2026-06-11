@@ -1,5 +1,6 @@
 "use client";
 
+import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
@@ -71,6 +72,7 @@ type ActionState = {
 };
 
 export function YandexGrowthConnectorPanel() {
+  const confirmAction = useAdminConfirm();
   const [overview, setOverview] = useState<YandexGrowthOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [action, setAction] = useState<ActionState>({
@@ -82,6 +84,8 @@ export function YandexGrowthConnectorPanel() {
   const detectedCounterId = useMemo(() => {
     return overview?.metrika.storedCounterId || overview?.metrika.selectedCounterId || overview?.metrika.counters[0]?.id || null;
   }, [overview]);
+  const canAutoPrepare = Boolean(overview?.metrika.connected);
+  const autoPrepareLabel = canAutoPrepare ? "Подготовить автоматически" : "Проверить готовность";
 
   async function loadOverview() {
     setLoading(true);
@@ -117,8 +121,8 @@ export function YandexGrowthConnectorPanel() {
         error?: string;
         overview?: YandexGrowthOverview;
       };
-      if (!response.ok || !data.ok) throw new Error(data.error || data.message || "Действие не выполнено");
       if (data.overview) setOverview(data.overview);
+      if (!response.ok || !data.ok) throw new Error(data.error || data.message || "Действие не выполнено");
       setAction({ loading: false, message: data.message || "Готово", error: "" });
     } catch (error) {
       setAction({
@@ -127,6 +131,11 @@ export function YandexGrowthConnectorPanel() {
         error: error instanceof Error ? error.message : "Действие не выполнено",
       });
     }
+  }
+
+  async function runConfirmedAction(payload: Record<string, unknown>, label: string) {
+    if (!(await confirmAction(`${label}?`))) return;
+    void runAction({ ...payload, confirm: true });
   }
 
   useEffect(() => {
@@ -166,12 +175,12 @@ export function YandexGrowthConnectorPanel() {
         </a>
         <button
           type="button"
-          onClick={() => runAction({ action: "auto_prepare" })}
+          onClick={() => runConfirmedAction({ action: "auto_prepare" }, autoPrepareLabel)}
           disabled={action.loading || loading}
           className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
         >
           {action.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
-          Подготовить автоматически
+          {autoPrepareLabel}
         </button>
         <a
           href={overview?.actions.directOauthUrl || "/api/admin/direct/oauth/start"}
@@ -206,7 +215,7 @@ export function YandexGrowthConnectorPanel() {
         {overview?.metrika.connected && detectedCounterId && !overview.metrika.storedCounterId ? (
           <button
             type="button"
-            onClick={() => runAction({ action: "save_counter", counterId: detectedCounterId })}
+            onClick={() => runConfirmedAction({ action: "save_counter", counterId: detectedCounterId }, `Сохранить счетчик #${detectedCounterId}`)}
             disabled={action.loading}
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-60"
           >
@@ -216,7 +225,7 @@ export function YandexGrowthConnectorPanel() {
         {overview?.metrika.connected && detectedCounterId && !overview.metrika.goalsReady ? (
           <button
             type="button"
-            onClick={() => runAction({ action: "ensure_metrika_goals", counterId: detectedCounterId })}
+            onClick={() => runConfirmedAction({ action: "ensure_metrika_goals", counterId: detectedCounterId }, `Создать цели для счетчика #${detectedCounterId}`)}
             disabled={action.loading}
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-60"
           >

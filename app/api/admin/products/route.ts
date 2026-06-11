@@ -8,6 +8,7 @@ import { generateProductDescription } from "@/lib/product-seo";
 import { makeShortProductDescription, normalizeProductText } from "@/lib/product-descriptions";
 import { normalizeProductCardTags } from "@/lib/product-insights";
 import { slugify } from "@/lib/slug";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
@@ -35,11 +36,11 @@ function serializeProduct<T extends { variants?: Array<Record<string, unknown>> 
   };
 }
 
-async function makeUniqueProductSlug(base: string) {
+async function makeUniqueProductSlug(base: string, tenantId: string) {
   const cleanBase = slugify(base) || "product";
   let candidate = cleanBase;
   let suffix = 1;
-  while (await prisma.product.findUnique({ where: { slug: candidate }, select: { id: true } })) {
+  while (await prisma.product.findUnique({ where: { tenantId_slug: { tenantId, slug: candidate } }, select: { id: true } })) {
     candidate = `${cleanBase}-${suffix}`;
     suffix += 1;
   }
@@ -54,7 +55,9 @@ async function checkProductsAccess() {
 
 export async function GET() {
   if (!(await checkProductsAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
   const products = await prisma.product.findMany({
+    where: { tenantId },
     include: { category: true, variants: true },
     orderBy: { createdAt: "desc" },
   });
@@ -63,6 +66,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   if (!(await checkProductsAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   let body: Record<string, unknown>;
   try {
@@ -93,7 +97,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Название не должно превышать 200 символов" }, { status: 400 });
   }
   const finalSlug = await makeUniqueProductSlug(
-    typeof slug === "string" && slug.trim() ? slug : name.trim()
+    typeof slug === "string" && slug.trim() ? slug : name.trim(),
+    tenantId
   );
   if (!categoryId || typeof categoryId !== "string") {
     return NextResponse.json({ error: "Выберите категорию" }, { status: 400 });
@@ -186,8 +191,8 @@ export async function POST(req: Request) {
   }
 
   // Проверка существования категории
-  const categoryExists = await prisma.category.findUnique({
-    where: { id: categoryId },
+  const categoryExists = await prisma.category.findFirst({
+    where: { id: categoryId, tenantId },
     select: { id: true, name: true },
   });
   if (!categoryExists) {
@@ -221,6 +226,7 @@ export async function POST(req: Request) {
   try {
     const product = await prisma.product.create({
       data: {
+        tenantId,
         name: name.trim(),
         slug: finalSlug,
         shortDescription: finalShortDescription,

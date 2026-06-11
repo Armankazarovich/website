@@ -86,11 +86,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/favicon.ico", sizes: "any", type: "image/x-icon" },
       { url: "/icons/icon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
     ],
     apple: "/apple-touch-icon.png",
-    shortcut: "/icons/icon-192x192.png",
+    shortcut: "/favicon.ico",
   },
   manifest: "/api/pwa/manifest?app=pilorus-site",
   appleWebApp: {
@@ -244,11 +245,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <link rel="preconnect" href="https://translate.google.com" />
         <link rel="preconnect" href="https://translate.googleapis.com" />
         <link rel="dns-prefetch" href="https://translate.google.com" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icons/icon-192x192.png" type="image/png" sizes="192x192" />
         <link rel="icon" href="/icons/icon-96x96.png" type="image/png" sizes="96x96" />
         <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
-        <link rel="shortcut icon" href="/icons/icon-192x192.png" />
+        <link rel="shortcut icon" href="/favicon.ico" />
         {yandexVerification && <meta name="yandex-verification" content={yandexVerification} />}
         {googleVerification && <meta name="google-site-verification" content={googleVerification} />}
         {/* Anti-flash: синхронно применяем палитру ДО гидратации React */}

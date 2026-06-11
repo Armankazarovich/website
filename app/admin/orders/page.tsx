@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { OrdersClient } from "./orders-client";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 type AdminOrdersPageProps = {
   searchParams?: {
@@ -20,8 +21,9 @@ function readLimit(value: string | string[] | undefined) {
 }
 
 export default async function AdminOrdersPage({ searchParams }: AdminOrdersPageProps) {
+  const tenantId = getCurrentTenantId();
   const limit = readLimit(searchParams?.limit);
-  const where = { deletedAt: null };
+  const where = { tenantId, deletedAt: null };
   const [orders, totalCount] = await Promise.all([
     prisma.order.findMany({
       where,

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import {
   buildOrderTaskRelation,
   mergeTaskRelations,
@@ -38,6 +39,11 @@ function normalizeEnumValue(value: unknown, allowed: Set<string>, fallback: stri
   return allowed.has(candidate) ? candidate : fallback;
 }
 
+function isEnumValue(value: unknown, allowed: Set<string>) {
+  const candidate = typeof value === "string" ? value.trim().toUpperCase() : "";
+  return allowed.has(candidate);
+}
+
 function normalizeText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
@@ -68,16 +74,23 @@ function parseOptionalDate(value: unknown): { date: Date | null; error?: string 
 export async function GET(req: Request) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const { searchParams } = new URL(req.url);
-  const status = searchParams.get("status");
+  const rawStatus = searchParams.get("status");
+  const status = normalizeText(rawStatus).toUpperCase();
   const assigneeId = searchParams.get("assigneeId");
   const orderId = searchParams.get("orderId");
   const entityType = normalizeTaskRelationType(searchParams.get("entityType"));
   const entityId = searchParams.get("entityId")?.trim();
 
+  if (rawStatus && !isEnumValue(rawStatus, TASK_STATUSES)) {
+    return NextResponse.json({ error: "Некорректный статус задачи" }, { status: 400 });
+  }
+
   const tasks = await prisma.task.findMany({
     where: {
+      tenantId,
       ...(status ? { status: status as any } : {}),
       ...(assigneeId ? { assigneeId } : {}),
       ...(entityType && entityId
@@ -96,7 +109,7 @@ export async function GET(req: Request) {
   });
 
   const staff = await prisma.user.findMany({
-    where: { role: { in: [...STAFF_ROLES] as any } },
+    where: { tenantId, role: { in: [...STAFF_ROLES] as any } },
     select: { id: true, name: true, email: true, role: true },
     orderBy: { name: "asc" },
   });
@@ -107,6 +120,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const s = await getSession();
   if (!s) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   let body: any;
   try {
@@ -129,10 +143,18 @@ export async function POST(req: Request) {
 
   if (assigneeId) {
     const assignee = await prisma.user.findFirst({
-      where: { id: assigneeId, role: { in: [...STAFF_ROLES] as any } },
+      where: { id: assigneeId, tenantId, role: { in: [...STAFF_ROLES] as any } },
       select: { id: true },
     });
     if (!assignee) return NextResponse.json({ error: "Исполнитель не найден" }, { status: 400 });
+  }
+
+  if (orderId) {
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!order) return NextResponse.json({ error: "Заказ не найден" }, { status: 400 });
   }
 
   const orderRelation = buildOrderTaskRelation(
@@ -147,6 +169,7 @@ export async function POST(req: Request) {
   const task = await prisma.$transaction(async (tx) => {
     const created = await tx.task.create({
       data: {
+        tenantId,
         title,
         description,
         status: status as any,
@@ -162,6 +185,7 @@ export async function POST(req: Request) {
     if (relations.length > 0) {
       await tx.taskRelation.createMany({
         data: relations.map((relation) => ({
+          tenantId,
           taskId: created.id,
           entityType: relation.entityType,
           entityId: relation.entityId,

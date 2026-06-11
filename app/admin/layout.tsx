@@ -3,12 +3,22 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { AdminDeferredClientTools } from "@/components/admin/admin-deferred-client-tools";
+import { AdminConfirmProvider } from "@/components/admin/admin-confirm-provider";
 import { prisma } from "@/lib/prisma";
 import { getArayModuleControlItemsForRole } from "@/lib/aray-module-state";
+import { canUserBusinessRoleAccessAction } from "@/lib/business-role-access";
+import { getArayManagedSiteProfiles } from "@/lib/multisite-sites";
 
 const LAST_ACTIVE_UPDATE_INTERVAL_MS = 5 * 60 * 1000;
+const ACTIVE_ADMIN_SITE_COOKIE = "aray-active-site";
+const MANAGED_ADMIN_SITE_IDS = new Set(getArayManagedSiteProfiles().map((site) => site.id));
+
+function normalizeActiveAdminSite(value: string | undefined) {
+  return value && MANAGED_ADMIN_SITE_IDS.has(value as any) ? value : "pilorus";
+}
 
 export const metadata: Metadata = {
   title: {
@@ -24,12 +34,12 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/api/pwa/icon?s=32&v=aray-production-20260508", sizes: "32x32", type: "image/png" },
-      { url: "/api/pwa/icon?s=96&v=aray-production-20260508", sizes: "96x96", type: "image/png" },
-      { url: "/api/pwa/icon?s=192&v=aray-production-20260508", sizes: "192x192", type: "image/png" },
+      { url: "/api/pwa/icon?s=32&v=pilorus-brand-header-20260526", sizes: "32x32", type: "image/png" },
+      { url: "/api/pwa/icon?s=96&v=pilorus-brand-header-20260526", sizes: "96x96", type: "image/png" },
+      { url: "/api/pwa/icon?s=192&v=pilorus-brand-header-20260526", sizes: "192x192", type: "image/png" },
     ],
-    apple: "/api/pwa/icon?s=180&v=aray-production-20260508",
-    shortcut: "/api/pwa/icon?s=192&v=aray-production-20260508",
+    apple: "/api/pwa/icon?s=180&v=pilorus-brand-header-20260526",
+    shortcut: "/api/pwa/icon?s=192&v=pilorus-brand-header-20260526",
   },
 };
 
@@ -40,6 +50,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const userId = (session?.user as any)?.id;
   const isStaff = role && role !== "USER";
   const isSuperAdmin = role === "SUPER_ADMIN";
+  const isPlatformAdmin = role === "ADMIN";
 
   if (!session || !isStaff) {
     redirect("/login");
@@ -84,13 +95,25 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         .filter((module) => !module.effectiveEnabled || !module.role.canView)
         .map((module) => module.id)
     : [];
+  const activeSiteId = normalizeActiveAdminSite(cookies().get(ACTIVE_ADMIN_SITE_COOKIE)?.value);
+  const canCreateAraySite =
+    isSuperAdmin ||
+    isPlatformAdmin ||
+    (await canUserBusinessRoleAccessAction(userId, "store.constructor.launch").catch(() => false));
 
   return (
-    <>
-      <AdminShell role={role} email={session.user?.email} userName={userName} disabledModuleIds={disabledModuleIds}>
+    <AdminConfirmProvider>
+      <AdminShell
+        role={role}
+        email={session.user?.email}
+        userName={userName}
+        disabledModuleIds={disabledModuleIds}
+        initialActiveSiteId={activeSiteId}
+        canCreateAraySite={canCreateAraySite}
+      >
         {children}
       </AdminShell>
       <AdminDeferredClientTools role={role} />
-    </>
+    </AdminConfirmProvider>
   );
 }

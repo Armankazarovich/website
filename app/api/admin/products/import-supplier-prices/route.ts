@@ -4,6 +4,8 @@ export const maxDuration = 60;
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 /**
  * Импорт прайса от поставщика (Пилорус, Стройматериалы и т.д.)
@@ -195,7 +197,7 @@ function parseSupplierCSV(text: string): { rows: ParsedRow[]; sections: string[]
 }
 
 // ─── Основная функция: матчинг + diff ─────────────────────────
-async function buildReport(csvText: string) {
+async function buildReport(csvText: string, tenantId: string) {
   const { rows, sections } = parseSupplierCSV(csvText);
 
   if (rows.length === 0) {
@@ -203,7 +205,7 @@ async function buildReport(csvText: string) {
   }
 
   const products = await prisma.product.findMany({
-    where: { active: true },
+    where: { active: true, tenantId },
     include: { variants: true, category: true },
   });
 
@@ -281,6 +283,7 @@ export async function POST(req: NextRequest) {
   if (!(await checkAuth())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const tenantId = getCurrentTenantId();
 
   let body: { csv?: string; apply?: boolean } = {};
   try {
@@ -296,7 +299,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "CSV пустой или слишком короткий" }, { status: 400 });
   }
 
-  const report = await buildReport(csv);
+  const report = await buildReport(csv, tenantId);
 
   if (!report.ok) {
     return NextResponse.json(report, { status: 400 });
@@ -317,16 +320,34 @@ export async function POST(req: NextRequest) {
       if (m.newPricePerCube !== null) data.pricePerCube = m.newPricePerCube;
       if (m.newPricePerPiece !== null) data.pricePerPiece = m.newPricePerPiece;
       if (Object.keys(data).length > 0) {
-        await prisma.productVariant.update({
-          where: { id: m.variantId },
+        const result = await prisma.productVariant.updateMany({
+          where: { id: m.variantId, product: { tenantId } },
           data,
         });
-        updated++;
+        updated += result.count;
       }
     } catch (e) {
       errors.push(`${m.productName} / ${m.variantSize}: ${String(e).slice(0, 80)}`);
     }
   }
+
+  if (updated === 0) {
+    return NextResponse.json(
+      {
+        ...report,
+        ok: false,
+        applied: false,
+        updated,
+        errors,
+        error: errors[0] || "Прайс разобран, но ни одна цена не была обновлена",
+      },
+      { status: 409 },
+    );
+  }
+
+  revalidateTag("store-shell-data");
+  revalidatePath("/catalog");
+  revalidatePath("/admin/products");
 
   return NextResponse.json({ ...report, applied: true, updated, errors });
 }

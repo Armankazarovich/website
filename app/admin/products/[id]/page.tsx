@@ -912,10 +912,11 @@ export default function AdminProductEditPage() {
             <a
               href={`/product/${slug}`}
               target="_blank"
+              title={active ? "Открыть товар на сайте" : "Открыть публичный адрес черновика"}
               className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-primary/[0.08] sm:flex-none"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              На сайте
+              {active ? "На сайте" : "Предпросмотр"}
             </a>
           )}
           {!isNew && (
@@ -1123,8 +1124,11 @@ export default function AdminProductEditPage() {
           <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
             <h3 className="text-sm font-semibold">Статус</h3>
             <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-sm">Активен на сайте</span>
+              <span className="text-sm">{active ? "Активен на сайте" : "Скрыт с сайта"}</span>
               <button
+                type="button"
+                aria-label={active ? "Скрыть товар с сайта" : "Показать товар на сайте"}
+                aria-pressed={active}
                 onClick={() => setActive((v) => !v)}
                 className={cn(
                   "relative w-11 h-6 rounded-full transition-colors",
@@ -1138,8 +1142,13 @@ export default function AdminProductEditPage() {
               </button>
             </label>
             <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-sm flex items-center gap-1">Рекомендуемый <Star className="w-3.5 h-3.5 text-amber-400" /></span>
+              <span className="text-sm flex items-center gap-1">
+                {featured ? "Рекомендуемый" : "Обычный товар"} <Star className="w-3.5 h-3.5 text-amber-400" />
+              </span>
               <button
+                type="button"
+                aria-label={featured ? "Убрать из рекомендуемых" : "Добавить в рекомендуемые"}
+                aria-pressed={featured}
                 onClick={() => setFeatured((v) => !v)}
                 className={cn(
                   "relative w-11 h-6 rounded-full transition-colors",
@@ -1610,7 +1619,7 @@ export default function AdminProductEditPage() {
         </div>
       </div>
 
-      <section className="sticky bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] z-30 rounded-2xl border border-border bg-card p-3 shadow-xl sm:p-4 lg:bottom-5">
+      <section className="rounded-2xl border border-border bg-card p-3 sm:p-4 lg:sticky lg:bottom-5 lg:z-30">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground">Проверьте товар перед сохранением</p>

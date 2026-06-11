@@ -1,5 +1,6 @@
 "use client";
 
+import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -726,6 +727,7 @@ function RoadmapCard({ item }: { item: (typeof ROADMAP_ITEMS)[number] }) {
 }
 
 export default function AdminPromotionsPage() {
+  const confirmAction = useAdminConfirm();
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -766,10 +768,11 @@ export default function AdminPromotionsPage() {
   }, []);
 
   async function handleUpdate(id: string, data: Partial<Promotion>) {
+    if (!(await confirmAction("Сохранить изменения акции?"))) return;
     const res = await fetch(`/api/admin/promotions/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, confirm: true }),
     });
     const updated = await res.json();
     if (!res.ok) throw new Error(updated?.error || "Не удалось обновить акцию");
@@ -780,7 +783,8 @@ export default function AdminPromotionsPage() {
   }
 
   async function handleDelete(id: string) {
-    const res = await fetch(`/api/admin/promotions/${id}`, {
+    if (!(await confirmAction("Удалить акцию?"))) return;
+    const res = await fetch(`/api/admin/promotions/${id}?confirm=true`, {
       method: "DELETE",
     });
     if (!res.ok) {
@@ -795,6 +799,7 @@ export default function AdminPromotionsPage() {
 
   async function handleCreate() {
     if (!newTitle.trim()) return;
+    if (!(await confirmAction("Создать новую акцию?"))) return;
     setCreating(true);
     const res = await fetch("/api/admin/promotions", {
       method: "POST",
@@ -804,6 +809,7 @@ export default function AdminPromotionsPage() {
         description: newDescription,
         discount: newDiscount ? Number(newDiscount) : null,
         active: false,
+        confirm: true,
       }),
     });
     const created = await res.json();

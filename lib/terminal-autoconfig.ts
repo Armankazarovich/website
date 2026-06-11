@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { upsertSiteSetting } from "@/lib/tenant-settings";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import {
   ALWAYS_ON_TERMINAL_CAPABILITIES,
   getDefaultTerminalCapabilities,
@@ -21,12 +23,12 @@ function unique(keys: TerminalCapabilityKey[]) {
   return Array.from(new Set(keys));
 }
 
-export async function buildTerminalAutoconfig() {
+export async function buildTerminalAutoconfig(tenantId = getCurrentTenantId()) {
   const [settingsRows, productCount, variantWithStockCount, deliveryRateCount] = await Promise.all([
-    prisma.siteSettings.findMany(),
-    prisma.product.count({ where: { active: true } }),
-    prisma.productVariant.count({ where: { stockQty: { not: null } } }),
-    prisma.deliveryRate.count(),
+    prisma.siteSettings.findMany({ where: { tenantId } }),
+    prisma.product.count({ where: { tenantId, active: true } }),
+    prisma.productVariant.count({ where: { product: { tenantId }, stockQty: { not: null } } }),
+    prisma.deliveryRate.count({ where: { tenantId } }),
   ]);
 
   const settings = Object.fromEntries(settingsRows.map((row) => [row.key, row.value]));
@@ -77,41 +79,26 @@ export async function buildTerminalAutoconfig() {
   };
 }
 
-export async function applyTerminalAutoconfig() {
-  const config = await buildTerminalAutoconfig();
+export async function applyTerminalAutoconfig(tenantId = getCurrentTenantId()) {
+  const config = await buildTerminalAutoconfig(tenantId);
 
   await Promise.all([
-    prisma.siteSettings.upsert({
-      where: { key: "terminal_profile" },
-      create: { id: "terminal_profile", key: "terminal_profile", value: config.profile.key },
-      update: { value: config.profile.key },
-    }),
-    prisma.siteSettings.upsert({
-      where: { key: "business_type" },
-      create: { id: "business_type", key: "business_type", value: config.profile.key },
-      update: { value: config.profile.key },
-    }),
-    prisma.siteSettings.upsert({
-      where: { key: "terminal_enabled_modules" },
-      create: {
-        id: "terminal_enabled_modules",
-        key: "terminal_enabled_modules",
-        value: JSON.stringify(config.enabledModules),
-      },
-      update: { value: JSON.stringify(config.enabledModules) },
-    }),
+    upsertSiteSetting("terminal_profile", config.profile.key, tenantId),
+    upsertSiteSetting("business_type", config.profile.key, tenantId),
+    upsertSiteSetting("terminal_enabled_modules", JSON.stringify(config.enabledModules), tenantId),
   ]);
 
-  await ensureTerminalDefaultConnectors();
+  await ensureTerminalDefaultConnectors(tenantId);
 
   const mobileWorkstation = await prisma.terminalWorkstation.findFirst({
-    where: { name: "Мобильный терминал", profile: config.profile.key },
+    where: { tenantId, name: "Мобильный терминал", profile: config.profile.key },
     select: { id: true },
   });
 
   if (!mobileWorkstation) {
     await prisma.terminalWorkstation.create({
       data: {
+        tenantId,
         name: "Мобильный терминал",
         type: "MOBILE",
         profile: config.profile.key,
@@ -126,8 +113,9 @@ export async function applyTerminalAutoconfig() {
     });
   }
 
-  const indexResult = await rebuildTerminalSearchIndex(300);
+  const indexResult = await rebuildTerminalSearchIndex(300, tenantId);
   await enqueueTerminalSyncJob({
+    tenantId,
     channel: "terminal",
     event: "terminal.autoconfig.applied",
     entityType: "terminal",

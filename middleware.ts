@@ -15,6 +15,8 @@ import type { NextRequest } from "next/server";
 
 const DEFAULT_TENANT = "pilorus";
 const ROOT_DOMAIN = "pilo-rus.ru";
+const ACTIVE_ADMIN_SITE_COOKIE = "aray-active-site";
+const KNOWN_TENANT_DOMAINS: Array<{ tenantId: string; domains: string[] }> = [];
 
 function normalizeHostname(value: string): string {
   return value
@@ -32,6 +34,12 @@ function domainMatches(hostname: string, domain: string): boolean {
 }
 
 function tenantFromDomainMap(hostname: string): string | null {
+  for (const item of KNOWN_TENANT_DOMAINS) {
+    if (item.domains.some((domain) => domainMatches(hostname, domain))) {
+      return item.tenantId;
+    }
+  }
+
   const raw = process.env.TENANT_DOMAIN_MAP || process.env.NEXT_PUBLIC_TENANT_DOMAIN_MAP || "";
   if (!raw.trim()) return null;
 
@@ -53,17 +61,33 @@ function tenantFromDomainMap(hostname: string): string | null {
   return null;
 }
 
+function isLocalHostname(hostname: string): boolean {
+  return (
+    hostname === "localhost" ||
+    hostname.startsWith("127.") ||
+    hostname.startsWith("192.168.") ||
+    hostname.startsWith("10.")
+  );
+}
+
+function previewTenantFromQuery(request: NextRequest, hostname: string): string | null {
+  const enabled = isLocalHostname(hostname) || process.env.ARAY_ENABLE_PUBLIC_TENANT_PREVIEW === "1";
+  if (!enabled) return null;
+
+  const value = (
+    request.nextUrl.searchParams.get("tenantPreview") ||
+    request.nextUrl.searchParams.get("arayTenant") ||
+    ""
+  ).trim().toLowerCase();
+  return /^[a-z0-9-]{2,40}$/.test(value) ? value : null;
+}
+
 function detectTenant(host: string): string {
   if (!host) return DEFAULT_TENANT;
   const hostname = normalizeHostname(host);
 
   // Dev / localhost / IP
-  if (
-    hostname === "localhost" ||
-    hostname.startsWith("127.") ||
-    hostname.startsWith("192.168.") ||
-    hostname.startsWith("10.")
-  ) {
+  if (isLocalHostname(hostname)) {
     return DEFAULT_TENANT;
   }
 
@@ -87,6 +111,25 @@ function detectTenant(host: string): string {
   if (mappedTenant) return mappedTenant;
 
   return DEFAULT_TENANT;
+}
+
+function activeAdminTenant(request: NextRequest): string | null {
+  const value = request.cookies.get(ACTIVE_ADMIN_SITE_COOKIE)?.value?.trim().toLowerCase();
+  if (!value || !/^[a-z0-9-]{2,40}$/.test(value)) return null;
+
+  const configuredTenants = process.env.ARAY_ADMIN_TENANTS?.trim();
+
+  // If the network list is not locked by env, ARAY can work with newly created
+  // draft tenants immediately. Production can still pin the allowed list through
+  // ARAY_ADMIN_TENANTS.
+  if (!configuredTenants) return value;
+
+  const allowed = configuredTenants
+    .split(/[,;\s]+/g)
+    .map((item) => item.trim().toLowerCase())
+    .filter(Boolean);
+
+  return allowed.includes(value) ? value : null;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -123,7 +166,13 @@ async function getRedirects(): Promise<Map<string, { toSlug: string | null; perm
 export async function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const host = request.headers.get("host") || "";
-  const tenantId = detectTenant(host);
+  const hostname = normalizeHostname(host);
+  const fromHost = detectTenant(host);
+  const adminWorkspace =
+    url.pathname.startsWith("/admin") || url.pathname.startsWith("/api/admin");
+  const tenantId = adminWorkspace
+    ? activeAdminTenant(request) || fromHost
+    : previewTenantFromQuery(request, hostname) || fromHost;
 
   // 1. Redirect для переименованных категорий (существующая логика)
   if (url.pathname === "/catalog") {

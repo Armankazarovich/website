@@ -48,7 +48,7 @@ model Category {
   id             String     @id @default(cuid())
   tenantId        String         @default("pilorus")
   name           String
-  slug           String     @unique
+  slug           String
   image          String?
   sortOrder      Int        @default(0)
   parentId       String?
@@ -62,12 +62,13 @@ model Category {
   products       Product[]
 
   @@index([tenantId])
+  @@unique([tenantId, slug])
 }
 
 model Product {
   id          String           @id @default(cuid())
   tenantId        String         @default("pilorus")
-  slug        String           @unique
+  slug        String
   name        String
   shortDescription String?
   description String?
@@ -90,6 +91,7 @@ model Product {
   @@index([featured])
   @@index([active, featured])
   @@index([name])
+  @@unique([tenantId, slug])
 }
 
 model ProductVariant {
@@ -387,12 +389,13 @@ model NotificationAudiencePreference {
 }
 
 model SiteSettings {
-  id    String @id @default("default")
+  id    String @id @default(cuid())
   tenantId        String         @default("pilorus")
-  key   String @unique
+  key   String
   value String
 
   @@index([tenantId])
+  @@unique([tenantId, key])
 }
 
 model NewsletterSubscriber {

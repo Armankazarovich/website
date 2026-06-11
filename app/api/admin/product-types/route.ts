@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { extractProductType, getDefaultProductTypes } from "@/lib/product-types";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 import {
   applyProductTypeSettings,
   getProductTypeSettings,
@@ -22,10 +23,12 @@ export async function GET() {
   if (!(await checkAccess())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const tenantId = getCurrentTenantId();
 
   const [settings, products] = await Promise.all([
     getProductTypeSettings(),
     prisma.product.findMany({
+      where: { tenantId },
       select: {
         name: true,
         active: true,

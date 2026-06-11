@@ -2,6 +2,7 @@
 
 import { useState, useEffect, createContext, useContext } from "react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import {
   Save,
   Check,
@@ -38,6 +39,7 @@ const SITE_SETTING_KEYS = [
   "address_map",
   "company_city",
   "company_name",
+  "legal_full_name",
   "contacts_description",
   "delivery_region",
   "delivery_text",
@@ -46,8 +48,16 @@ const SITE_SETTING_KEYS = [
   "google_analytics_id",
   "google_verification",
   "inn",
+  "kpp",
   "min_order",
   "ogrn",
+  "settlement_account",
+  "bank_name",
+  "correspondent_account",
+  "bik",
+  "okpo",
+  "okato",
+  "oktmo",
   "phone",
   "phone_link",
   "phone2",
@@ -59,6 +69,7 @@ const SITE_SETTING_KEYS = [
   "social_telegram",
   "social_vk",
   "social_whatsapp",
+  "social_max",
   "telegram_enabled",
   "telegram_message",
   "telegram_username",
@@ -220,6 +231,7 @@ export default function AdminSitePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
@@ -275,6 +287,7 @@ export default function AdminSitePage() {
     setSaving(true);
     setSaved(false);
     setSaveError(null);
+    setConfirmSaveOpen(false);
     try {
       const payload = SITE_SETTING_KEYS.reduce<Record<string, string>>(
         (acc, key) => {
@@ -286,7 +299,7 @@ export default function AdminSitePage() {
       const res = await fetch("/api/admin/site-settings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, confirm: true }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.ok !== true) {
@@ -337,7 +350,7 @@ export default function AdminSitePage() {
             </p>
           </div>
           <Button
-            onClick={handleSave}
+            onClick={() => setConfirmSaveOpen(true)}
             disabled={saving || saved}
             className="min-h-11 w-full sm:w-auto sm:min-w-[140px]"
           >
@@ -395,12 +408,12 @@ export default function AdminSitePage() {
               <Field
                 label="Телефон 1 (отображаемый)"
                 settingKey="phone"
-                placeholder="8-985-067-08-88"
+                placeholder="+7 (499) 372-04-41"
               />
               <Field
                 label="Телефон 1 (для tel: ссылки)"
                 settingKey="phone_link"
-                placeholder="+79850670888"
+                placeholder="+74993720441"
               />
               <Field
                 label="Телефон 2 (отображаемый)"
@@ -415,7 +428,7 @@ export default function AdminSitePage() {
               <Field
                 label="Телефон 3 (отображаемый)"
                 settingKey="phone3"
-                placeholder="8-977-606-80-20"
+                placeholder="пусто или дополнительный номер"
               />
               <Field
                 label="Телефон 3 (для tel: ссылки)"
@@ -441,7 +454,7 @@ export default function AdminSitePage() {
               <Field
                 label="Адрес (текст)"
                 settingKey="address"
-                placeholder="Химки, ул. Заводская 2А, стр.28"
+                placeholder="г. Химки, ул. Заводская 2А, стр.13"
               />
               <Field
                 label="Ссылка на Яндекс.Карты"
@@ -497,14 +510,39 @@ export default function AdminSitePage() {
               <Field
                 label="Название компании"
                 settingKey="company_name"
-                placeholder="ООО ПИТИ (ПилоРус)"
+                placeholder="ООО «ДЕРЕВОЛИДЕР»"
               />
-              <Field label="ИНН" settingKey="inn" placeholder="7735711780" />
+              <Field
+                label="Полное наименование"
+                settingKey="legal_full_name"
+                placeholder="ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ..."
+              />
+              <Field label="ИНН" settingKey="inn" placeholder="7733291699" />
+              <Field label="КПП" settingKey="kpp" placeholder="773301001" />
               <Field
                 label="ОГРН"
                 settingKey="ogrn"
-                placeholder="1157746520813"
+                placeholder="1167746624902"
               />
+              <Field
+                label="Расчетный счет"
+                settingKey="settlement_account"
+                placeholder="40702810040000036989"
+              />
+              <Field
+                label="Банк"
+                settingKey="bank_name"
+                placeholder="ПАО Сбербанк"
+              />
+              <Field
+                label="Корреспондентский счет"
+                settingKey="correspondent_account"
+                placeholder="30101810400000000225"
+              />
+              <Field label="БИК" settingKey="bik" placeholder="044525225" />
+              <Field label="ОКПО" settingKey="okpo" placeholder="03368545" />
+              <Field label="ОКАТО" settingKey="okato" placeholder="45283555000" />
+              <Field label="ОКТМО" settingKey="oktmo" placeholder="45366000000" />
             </div>
 
             <Divider />
@@ -1023,7 +1061,7 @@ export default function AdminSitePage() {
                           onChange={(e) =>
                             set("whatsapp_number", e.target.value)
                           }
-                          placeholder="+79850670888"
+                          placeholder="+74993720441"
                           className="w-full min-h-11 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
@@ -1258,6 +1296,13 @@ export default function AdminSitePage() {
                 ),
               },
               {
+                key: "social_max",
+                label: "MAX",
+                placeholder: "https://max.ru/u/...",
+                color: "text-primary",
+                Icon: () => <MessageCircle className="h-[18px] w-[18px] text-primary" />,
+              },
+              {
                 key: "social_vk",
                 label: "ВКонтакте",
                 placeholder: "https://vk.com/piloruswood",
@@ -1338,6 +1383,11 @@ export default function AdminSitePage() {
                     <Send className="w-3 h-3" /> Telegram
                   </span>
                 )}
+                {settings["social_max"] && (
+                  <span className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground rounded-xl text-xs font-medium">
+                    <MessageCircle className="w-3 h-3" /> MAX
+                  </span>
+                )}
                 {settings["social_vk"] && (
                   <span className="flex items-center gap-1.5 px-3 py-1.5 bg-[#0077FF] text-white rounded-xl text-xs font-medium">
                     <Globe className="w-3 h-3" /> ВКонтакте
@@ -1380,7 +1430,7 @@ export default function AdminSitePage() {
         {/* Bottom save */}
         <div className="flex justify-end pb-6">
           <Button
-            onClick={handleSave}
+            onClick={() => setConfirmSaveOpen(true)}
             disabled={saving || saved}
             size="lg"
             className="min-h-11 w-full sm:w-auto"
@@ -1400,6 +1450,16 @@ export default function AdminSitePage() {
             )}
           </Button>
         </div>
+        <ConfirmDialog
+          open={confirmSaveOpen}
+          onClose={() => setConfirmSaveOpen(false)}
+          onConfirm={handleSave}
+          title="Сохранить настройки сайта?"
+          description="Контакты, SEO, мессенджеры и виджет будут обновлены на публичной витрине."
+          confirmLabel="Сохранить"
+          variant="warning"
+          loading={saving}
+        />
       </div>
     </SettingsCtx.Provider>
   );

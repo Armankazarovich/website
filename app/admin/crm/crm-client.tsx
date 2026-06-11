@@ -878,51 +878,79 @@ const PRESETS = [
   },
 ];
 
-function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (leads: any[]) => void }) {
+function PresetsModal({ onClose, onApply }: { onClose: () => void; onApply: (leads: any[]) => void | Promise<void> }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [applying, setApplying] = useState(false);
   const preset = PRESETS.find(p => p.key === selected);
 
+  const confirmApply = async () => {
+    if (!preset) return;
+    setApplying(true);
+    try {
+      await onApply(preset.sampleLeads);
+      setConfirmOpen(false);
+      onClose();
+    } finally {
+      setApplying(false);
+    }
+  };
+
   return (
-    <AdminModal
-      open
-      onClose={onClose}
-      title="Шаблоны по отраслям"
-      subtitle="Быстро добавьте примерные заявки для своей сферы"
-      size="sm"
-      bodyClassName="space-y-2 p-4"
-      footer={(
-        <>
-          <button
-            type="button"
-            onClick={onClose}
-            className="min-h-[44px] rounded-xl border border-border px-4 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted/45 hover:text-foreground"
-          >
-            Отмена
-          </button>
-          <button
-            type="button"
-            disabled={!selected || !preset?.sampleLeads.length}
-            onClick={() => { preset && onApply(preset.sampleLeads); onClose(); }}
-            className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-          >
-            <Plus className="h-4 w-4" />
-            Добавить ({preset?.sampleLeads.length || 0})
-          </button>
-        </>
+    <>
+      <AdminModal
+        open
+        onClose={onClose}
+        title="Шаблоны по отраслям"
+        subtitle="Быстро добавьте примерные заявки для своей сферы"
+        size="sm"
+        bodyClassName="space-y-2 p-4"
+        footer={(
+          <>
+            <button
+              type="button"
+              onClick={onClose}
+              className="min-h-[44px] rounded-xl border border-border px-4 text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted/45 hover:text-foreground"
+            >
+              Отмена
+            </button>
+            <button
+              type="button"
+              disabled={!selected || !preset?.sampleLeads.length}
+              onClick={() => setConfirmOpen(true)}
+              className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" />
+              Добавить ({preset?.sampleLeads.length || 0})
+            </button>
+          </>
+        )}
+      >
+              {PRESETS.map(p => (
+                <button key={p.key} onClick={() => setSelected(p.key)}
+                  className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
+                    selected === p.key
+                      ? "border-2 border-primary bg-primary/15 shadow-[0_0_12px_hsl(var(--primary)/0.1)]"
+                      : "border-2 border-primary/10 hover:border-primary/30 hover:bg-primary/[0.05]"
+                  }`}>
+                  <p className="font-semibold text-sm text-foreground">{p.label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
+                </button>
+              ))}
+      </AdminModal>
+
+      {confirmOpen && preset && (
+        <ConfirmDialog
+          title="Добавить примерные заявки?"
+          description={`Будет создано ${preset.sampleLeads.length} демонстрационных CRM-заявок из шаблона «${preset.label}».`}
+          confirmLabel="Добавить"
+          variant="warning"
+          loading={applying}
+          onConfirm={confirmApply}
+          onClose={() => setConfirmOpen(false)}
+        />
       )}
-    >
-            {PRESETS.map(p => (
-              <button key={p.key} onClick={() => setSelected(p.key)}
-                className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
-                  selected === p.key
-                    ? "border-2 border-primary bg-primary/15 shadow-[0_0_12px_hsl(var(--primary)/0.1)]"
-                    : "border-2 border-primary/10 hover:border-primary/30 hover:bg-primary/[0.05]"
-                }`}>
-                <p className="font-semibold text-sm text-foreground">{p.label}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{p.desc}</p>
-              </button>
-            ))}
-    </AdminModal>
+    </>
   );
 }
 
@@ -1173,6 +1201,7 @@ function OrdersKanban({ search }: { search: string }) {
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [mobileOrderStage, setMobileOrderStage] = useState("NEW");
   const [selectedOrder, setSelectedOrder] = useState<OrderCard | null>(null);
+  const [confirmSyncOpen, setConfirmSyncOpen] = useState(false);
   const dragOrderRef = useRef<OrderCard | null>(null);
   const hasLoadedOrdersRef = useRef(false);
 
@@ -1211,6 +1240,7 @@ function OrdersKanban({ search }: { search: string }) {
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(getApiError(data, "Не удалось синхронизировать заказы."));
       setSyncResult(data.message || `Импортировано ${data.imported ?? 0} заказов`);
+      setConfirmSyncOpen(false);
       setTimeout(() => setSyncResult(null), 4000);
     } catch (err) {
       setOrderError(err instanceof Error ? err.message : "Не удалось синхронизировать заказы.");
@@ -1336,7 +1366,7 @@ function OrdersKanban({ search }: { search: string }) {
       {/* Синхронизация */}
       <div className="flex flex-shrink-0 flex-wrap items-center gap-2 border-b border-primary/[0.08] px-4 py-2.5 sm:gap-3 sm:px-5">
         <button
-          onClick={handleSyncToLeads}
+          onClick={() => setConfirmSyncOpen(true)}
           disabled={syncing}
           className="flex min-h-11 max-w-full items-center justify-center gap-2 rounded-xl border border-primary/15 px-4 py-2.5 text-sm font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-primary/[0.05] disabled:opacity-50"
         >
@@ -1468,6 +1498,18 @@ function OrdersKanban({ search }: { search: string }) {
           order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onStatusChange={handleOrderStatusChange}
+        />
+      )}
+
+      {confirmSyncOpen && (
+        <ConfirmDialog
+          title="Обновить лиды из заказов?"
+          description="Система создаст недостающие CRM-заявки по реальным заказам. Уже связанные заказы не будут дублироваться."
+          confirmLabel="Обновить"
+          variant="warning"
+          loading={syncing}
+          onConfirm={handleSyncToLeads}
+          onClose={() => setConfirmSyncOpen(false)}
         />
       )}
     </div>

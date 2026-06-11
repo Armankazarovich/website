@@ -5,27 +5,37 @@ import Anthropic from "@anthropic-ai/sdk";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { requireArayModuleAccess } from "@/lib/aray-module-auth";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
 
 // ── Контекст бизнеса — реальные данные ──────────────────────────────────────
 async function getBusinessContext() {
+  const tenantId = getCurrentTenantId();
   const now = new Date();
   const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
   const weekStart = new Date(now); weekStart.setDate(now.getDate() - 7);
 
   const [ordersToday, ordersWeek, pendingOrders, topProducts, totalRevenue] = await Promise.all([
-    prisma.order.count({ where: { createdAt: { gte: todayStart } } }),
-    prisma.order.count({ where: { createdAt: { gte: weekStart } } }),
-    prisma.order.count({ where: { status: { in: ["NEW", "CONFIRMED"] } } }),
+    prisma.order.count({ where: { tenantId, createdAt: { gte: todayStart } } }),
+    prisma.order.count({ where: { tenantId, createdAt: { gte: weekStart } } }),
+    prisma.order.count({ where: { tenantId, status: { in: ["NEW", "CONFIRMED"] } } }),
     prisma.orderItem.groupBy({
       by: ["variantId"],
+      where: {
+        order: {
+          tenantId,
+          status: { notIn: ["CANCELLED"] },
+          createdAt: { gte: weekStart },
+          deletedAt: null,
+        },
+      },
       _sum: { quantity: true },
       orderBy: { _sum: { quantity: "desc" } },
       take: 3,
     }),
     prisma.order.aggregate({
-      where: { status: { notIn: ["CANCELLED"] }, createdAt: { gte: weekStart } },
+      where: { tenantId, status: { notIn: ["CANCELLED"] }, createdAt: { gte: weekStart } },
       _sum: { totalAmount: true },
     }),
   ]);
@@ -33,7 +43,10 @@ async function getBusinessContext() {
   // Названия топ-товаров (через вариант → продукт)
   const topProductNames = await Promise.all(
     topProducts.map(async (tp) => {
-      const v = await prisma.productVariant.findUnique({ where: { id: tp.variantId }, select: { product: { select: { name: true } } } });
+      const v = await prisma.productVariant.findFirst({
+        where: { id: tp.variantId, product: { tenantId } },
+        select: { product: { select: { name: true } } },
+      });
       return v?.product?.name || "Товар";
     })
   );

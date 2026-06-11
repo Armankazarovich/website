@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER"];
 
@@ -26,16 +27,17 @@ export async function POST(req: NextRequest) {
   if (!session || !STAFF_ROLES.includes(role as string)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const tenantId = getCurrentTenantId();
 
   // Загружаем все заказы которых ещё нет в CRM (по convertedOrderId)
   const existingLeadOrderIds = await prisma.lead.findMany({
-    where: { convertedOrderId: { not: null } },
+    where: { tenantId, convertedOrderId: { not: null } },
     select: { convertedOrderId: true },
   });
   const alreadySyncedIds = new Set(existingLeadOrderIds.map(l => l.convertedOrderId));
 
   const orders = await prisma.order.findMany({
-    where: { deletedAt: null },
+    where: { tenantId, deletedAt: null },
     include: { items: true },
     orderBy: { createdAt: "desc" },
   });
@@ -56,6 +58,7 @@ export async function POST(req: NextRequest) {
 
     await prisma.lead.create({
       data: {
+        tenantId,
         name: order.guestName || "Клиент",
         phone: order.guestPhone || null,
         email: order.guestEmail || null,
@@ -86,10 +89,11 @@ export async function GET(req: NextRequest) {
   if (!session || !STAFF_ROLES.includes(role as string)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const tenantId = getCurrentTenantId();
 
   const [totalOrders, syncedLeads] = await Promise.all([
-    prisma.order.count({ where: { deletedAt: null } }),
-    prisma.lead.count({ where: { convertedOrderId: { not: null } } }),
+    prisma.order.count({ where: { tenantId, deletedAt: null } }),
+    prisma.lead.count({ where: { tenantId, convertedOrderId: { not: null } } }),
   ]);
 
   return NextResponse.json({

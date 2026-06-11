@@ -4,15 +4,18 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { requireTerminalStaff } from "@/lib/terminal-auth";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const HIDDEN_CATEGORY_SORT_ORDER = 999;
 
 export async function GET() {
   const access = await requireTerminalStaff();
   if (!access.authorized) return access.response;
+  const tenantId = getCurrentTenantId();
 
   const products = await prisma.product.findMany({
     where: {
+      tenantId,
       ...getPublicProductsFilter(),
       category: {
         showInMenu: true,

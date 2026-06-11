@@ -2,6 +2,7 @@ import "server-only";
 
 import { revalidatePath, revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { getSiteSetting, upsertSiteSetting } from "@/lib/tenant-settings";
 import {
   getDefaultProductTypes,
   getAvailableTypes,
@@ -28,10 +29,7 @@ function cleanText(value: unknown, max = 2400): string | null {
 }
 
 export async function getProductTypeSettings(): Promise<ProductTypeSettings> {
-  const row = await prisma.siteSettings.findUnique({
-    where: { key: PRODUCT_TYPE_SETTINGS_KEY },
-    select: { value: true },
-  });
+  const row = await getSiteSetting(PRODUCT_TYPE_SETTINGS_KEY);
   if (!row?.value) return {};
   try {
     const parsed = JSON.parse(row.value);
@@ -104,11 +102,7 @@ export async function saveProductTypeSettings(items: Array<ProductTypeInfo & { c
     };
   });
 
-  await prisma.siteSettings.upsert({
-    where: { key: PRODUCT_TYPE_SETTINGS_KEY },
-    create: { id: PRODUCT_TYPE_SETTINGS_KEY, key: PRODUCT_TYPE_SETTINGS_KEY, value: JSON.stringify(settings) },
-    update: { value: JSON.stringify(settings) },
-  });
+  await upsertSiteSetting(PRODUCT_TYPE_SETTINGS_KEY, JSON.stringify(settings));
 
   revalidateTag("store-shell-data");
   revalidatePath("/catalog");

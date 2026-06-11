@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { requireArayModuleAccess } from "@/lib/aray-module-auth";
 import { canAccess } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const STATUSES = new Set<NotificationStatus>([
   "DRAFT",
@@ -55,25 +56,36 @@ export async function GET(req: NextRequest) {
   const take = parseTake(req.nextUrl.searchParams.get("take"));
   const status = toStatus(req.nextUrl.searchParams.get("status"));
   const channel = toChannel(req.nextUrl.searchParams.get("channel"));
+  const tenantId = getCurrentTenantId();
 
   const where: Prisma.NotificationCenterEventWhereInput = {
-    tenantId: "pilorus",
+    tenantId,
     ...(status ? { status } : {}),
     ...(channel ? { channel } : {}),
   };
 
-  const [events, total, queued, sent, partial, failed, inbound] = await Promise.all([
+  const attentionWhere: Prisma.NotificationCenterEventWhereInput = {
+    tenantId,
+    archivedAt: null,
+    OR: [
+      { readAt: null },
+      { status: { in: ["QUEUED", "PARTIAL", "FAILED"] } },
+    ],
+  };
+
+  const [events, total, queued, sent, partial, failed, inbound, attention] = await Promise.all([
     prisma.notificationCenterEvent.findMany({
       where,
       orderBy: { createdAt: "desc" },
       take,
     }),
-    prisma.notificationCenterEvent.count({ where: { tenantId: "pilorus" } }),
-    prisma.notificationCenterEvent.count({ where: { tenantId: "pilorus", status: "QUEUED" } }),
-    prisma.notificationCenterEvent.count({ where: { tenantId: "pilorus", status: "SENT" } }),
-    prisma.notificationCenterEvent.count({ where: { tenantId: "pilorus", status: "PARTIAL" } }),
-    prisma.notificationCenterEvent.count({ where: { tenantId: "pilorus", status: "FAILED" } }),
-    prisma.notificationCenterEvent.count({ where: { tenantId: "pilorus", direction: "INBOUND" } }),
+    prisma.notificationCenterEvent.count({ where: { tenantId } }),
+    prisma.notificationCenterEvent.count({ where: { tenantId, status: "QUEUED" } }),
+    prisma.notificationCenterEvent.count({ where: { tenantId, status: "SENT" } }),
+    prisma.notificationCenterEvent.count({ where: { tenantId, status: "PARTIAL" } }),
+    prisma.notificationCenterEvent.count({ where: { tenantId, status: "FAILED" } }),
+    prisma.notificationCenterEvent.count({ where: { tenantId, direction: "INBOUND" } }),
+    prisma.notificationCenterEvent.count({ where: attentionWhere }),
   ]);
 
   return NextResponse.json({
@@ -85,6 +97,7 @@ export async function GET(req: NextRequest) {
       partial,
       failed,
       inbound,
+      attention,
     },
   });
 }
@@ -98,6 +111,7 @@ export async function PATCH(req: NextRequest) {
   if (!moduleAccess.authorized) return moduleAccess.response;
 
   const body = await req.json().catch(() => null);
+  const tenantId = getCurrentTenantId();
   const id = typeof body?.id === "string" ? body.id.trim() : "";
   const action = typeof body?.action === "string" ? body.action : "";
 
@@ -110,7 +124,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const existing = await prisma.notificationCenterEvent.findFirst({
-    where: { id, tenantId: "pilorus" },
+    where: { id, tenantId },
     select: { id: true, status: true },
   });
 

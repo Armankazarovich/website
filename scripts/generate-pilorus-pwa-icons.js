@@ -6,8 +6,9 @@ const sharp = require("sharp");
 const root = path.resolve(__dirname, "..");
 const publicDir = path.join(root, "public");
 const iconsDir = path.join(publicDir, "icons");
-const sourceLogo = path.join(publicDir, "logo.svg");
+const sourceLogo = path.join(publicDir, "logo.png");
 const iconSizes = [32, 72, 96, 128, 144, 152, 192, 384, 512];
+const faviconSizes = [16, 32, 48];
 
 function iconBackground(size) {
   return Buffer.from(`
@@ -36,7 +37,7 @@ function iconBackground(size) {
 </svg>`);
 }
 
-async function renderIcon(size, outputPath) {
+async function renderIconBuffer(size) {
   const logoSize = Math.round(size * 0.74);
   const logo = await sharp(sourceLogo)
     .resize(logoSize, logoSize, {
@@ -46,12 +47,47 @@ async function renderIcon(size, outputPath) {
     .png()
     .toBuffer();
 
-  await sharp(iconBackground(size))
+  return sharp(iconBackground(size))
     .composite([{ input: logo, gravity: "center" }])
     .flatten({ background: { r: 16, g: 11, b: 8 } })
     .removeAlpha()
     .png({ compressionLevel: 9, adaptiveFiltering: true })
-    .toFile(outputPath);
+    .toBuffer();
+}
+
+async function renderIcon(size, outputPath) {
+  fs.writeFileSync(outputPath, await renderIconBuffer(size));
+}
+
+async function writeFavicon(outputPath) {
+  const images = await Promise.all(
+    faviconSizes.map(async (size) => ({
+      size,
+      buffer: await renderIconBuffer(size),
+    })),
+  );
+  const header = Buffer.alloc(6);
+  const entries = Buffer.alloc(images.length * 16);
+  let imageOffset = header.length + entries.length;
+
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(images.length, 4);
+
+  images.forEach(({ size, buffer }, index) => {
+    const entryOffset = index * 16;
+    entries.writeUInt8(size >= 256 ? 0 : size, entryOffset);
+    entries.writeUInt8(size >= 256 ? 0 : size, entryOffset + 1);
+    entries.writeUInt8(0, entryOffset + 2);
+    entries.writeUInt8(0, entryOffset + 3);
+    entries.writeUInt16LE(1, entryOffset + 4);
+    entries.writeUInt16LE(32, entryOffset + 6);
+    entries.writeUInt32LE(buffer.length, entryOffset + 8);
+    entries.writeUInt32LE(imageOffset, entryOffset + 12);
+    imageOffset += buffer.length;
+  });
+
+  fs.writeFileSync(outputPath, Buffer.concat([header, entries, ...images.map((image) => image.buffer)]));
 }
 
 async function main() {
@@ -69,8 +105,10 @@ async function main() {
 
   await renderIcon(180, path.join(publicDir, "apple-touch-icon.png"));
   await renderIcon(32, path.join(publicDir, "favicon-32.png"));
+  await writeFavicon(path.join(publicDir, "favicon.ico"));
   console.log("[PWA] public/apple-touch-icon.png");
   console.log("[PWA] public/favicon-32.png");
+  console.log("[PWA] public/favicon.ico");
 }
 
 main().catch((error) => {

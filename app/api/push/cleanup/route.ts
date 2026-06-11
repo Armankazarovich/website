@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { canAccess } from "@/lib/permissions";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 // Оставляем максимум MAX_PER_USER подписок на пользователя (самые новые)
 // Гостевые подписки не трогаем (нет userId)
@@ -14,11 +15,12 @@ export async function POST() {
   if (!session || !canAccess(session.user.role, "notifications")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+  const tenantId = getCurrentTenantId();
 
   // Находим всех зарегистрированных пользователей с подписками
   const grouped = await prisma.pushSubscription.groupBy({
     by: ["userId"],
-    where: { userId: { not: null } },
+    where: { userId: { not: null }, user: { is: { tenantId } } },
     _count: { id: true },
     having: { id: { _count: { gt: MAX_PER_USER } } },
   });
@@ -30,7 +32,7 @@ export async function POST() {
 
     // Получаем все подписки этого пользователя, самые новые первыми
     const subs = await prisma.pushSubscription.findMany({
-      where: { userId: group.userId },
+      where: { userId: group.userId, user: { is: { tenantId } } },
       orderBy: { createdAt: "desc" },
       select: { id: true },
     });

@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
 import { sendTelegramStatusUpdate, deleteTelegramMessage } from "@/lib/telegram";
 import { sendPushToStaff } from "@/lib/push";
+import { isOrderInventoryError, releaseOrderInventory } from "@/lib/order-inventory";
 
 const limiter = rateLimit("cabinet-cancel", 5, 60_000);
 
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Слишком часто. Попробуйте через минуту." }, { status: 429 });
   }
 
-  const order = await prisma.order.findUnique({ where: { id: params.id } });
+  const order = await prisma.order.findUnique({ where: { id: params.id }, include: { items: true } });
   if (!order) return NextResponse.json({ error: "Заказ не найден" }, { status: 404 });
 
   if (order.userId !== session.user.id) {
@@ -49,7 +50,10 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     /* no body — ок */
   }
 
-  const updated = await prisma.order.update({
+  let updated;
+  try {
+    updated = await prisma.$transaction(async (prisma) => {
+  const cancelled = await prisma.order.update({
     where: { id: order.id },
     data: {
       status: "CANCELLED",
@@ -57,7 +61,23 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         ? `${order.comment ? order.comment + "\n\n" : ""}Отменён клиентом: ${reason}`
         : order.comment,
     },
+    include: { items: true },
   });
+
+      await releaseOrderInventory(prisma, cancelled, {
+        tenantId: cancelled.tenantId,
+        source: "cabinet-order-cancel",
+        userId: session.user.id,
+      });
+
+      return cancelled;
+    });
+  } catch (err) {
+    if (isOrderInventoryError(err)) {
+      return NextResponse.json({ error: err.message, details: err.details }, { status: err.status });
+    }
+    throw err;
+  }
 
   // Удаляем сообщение из Telegram группы (финальный статус)
   if (order.telegramMessageId) {
@@ -81,6 +101,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     title: `Заказ #${updated.orderNumber} отменён клиентом`,
     body: `${updated.guestName || "Клиент"} отменил заказ${reason ? ": " + reason : ""}`,
     url: `/admin/orders/${updated.id}`,
+  }, {
+    tenantId: updated.tenantId,
+    source: "ORDER",
+    sourceUserId: session.user.id,
+    recipientRole: "STAFF",
+    entityType: "ORDER",
+    entityId: updated.id,
+    entityLabel: `Order #${updated.orderNumber}`,
+    entityHref: `/admin/orders/${updated.id}`,
+    metadata: {
+      eventKey: "order.cancelled.staff",
+      orderNumber: updated.orderNumber,
+      source: "cabinet",
+      reason: reason || null,
+    },
   }).catch(() => {});
 
   // ActivityLog

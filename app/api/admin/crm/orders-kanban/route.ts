@@ -7,8 +7,21 @@ import { sendPushToUser, sendPushToStaff } from "@/lib/push";
 import { sendOrderStatusEmail } from "@/lib/email";
 import { sendTelegramStatusUpdate, deleteTelegramMessage, FINAL_STATUSES } from "@/lib/telegram";
 import { enqueueTerminalOrderLifecycle, indexTerminalOrder } from "@/lib/terminal-sync";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { isOrderInventoryError, syncOrderInventoryForStatus } from "@/lib/order-inventory";
 
 const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
+const ORDER_STATUSES = new Set([
+  "NEW",
+  "CONFIRMED",
+  "PROCESSING",
+  "SHIPPED",
+  "IN_DELIVERY",
+  "READY_PICKUP",
+  "DELIVERED",
+  "COMPLETED",
+  "CANCELLED",
+]);
 
 const STATUS_LABELS: Record<string, string> = {
   CONFIRMED: "Ваш заказ подтверждён",
@@ -39,11 +52,13 @@ export async function GET(req: NextRequest) {
   if (!session || !STAFF_ROLES.includes(role as string)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const tenantId = getCurrentTenantId();
 
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
 
   const where: any = {
+    tenantId,
     deletedAt: null,
     ...(search ? {
       OR: [
@@ -67,7 +82,7 @@ export async function GET(req: NextRequest) {
   // Статистика
   const stats = await prisma.order.groupBy({
     by: ["status"],
-    where: { deletedAt: null },
+    where: { tenantId, deletedAt: null },
     _count: true,
     _sum: { totalAmount: true },
   });
@@ -82,29 +97,55 @@ export async function PATCH(req: NextRequest) {
   if (!session || !STAFF_ROLES.includes(role as string)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const tenantId = getCurrentTenantId();
 
   const { orderId, status } = await req.json();
+  if (status && !ORDER_STATUSES.has(status)) {
+    return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+  }
   if (!orderId || !status) {
     return NextResponse.json({ error: "orderId и status обязательны" }, { status: 400 });
   }
 
   // Получаем текущий заказ (нужен telegramMessageId для редактирования)
-  const prevOrder = await prisma.order.findUnique({
-    where: { id: orderId },
-    select: { telegramMessageId: true, status: true },
+  const prevOrder = await prisma.order.findFirst({
+    where: { id: orderId, tenantId, deletedAt: null },
+    select: { id: true, telegramMessageId: true, status: true },
   });
+  if (!prevOrder) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (prevOrder.status === status) {
+    return NextResponse.json({ id: prevOrder.id, status: prevOrder.status, unchanged: true });
+  }
 
   // Обновляем статус (финальный — очищаем telegramMessageId)
-  const order = await prisma.order.update({
-    where: { id: orderId },
-    data: {
-      status,
-      ...(FINAL_STATUSES.includes(status) && prevOrder?.telegramMessageId
-        ? { telegramMessageId: null }
-        : {}),
-    },
-    include: { items: true },
-  });
+  let order;
+  try {
+    order = await prisma.$transaction(async (tx) => {
+      const updated = await tx.order.update({
+        where: { id: prevOrder.id },
+        data: {
+          status,
+          ...(FINAL_STATUSES.includes(status) && prevOrder?.telegramMessageId
+            ? { telegramMessageId: null }
+            : {}),
+        },
+        include: { items: true },
+      });
+
+      await syncOrderInventoryForStatus(tx, updated, {
+        tenantId,
+        source: "crm-orders-kanban",
+        userId: session.user.id,
+      });
+
+      return updated;
+    });
+  } catch (err) {
+    if (isOrderInventoryError(err)) {
+      return NextResponse.json({ error: err.message, details: err.details }, { status: err.status });
+    }
+    throw err;
+  }
 
   indexTerminalOrder({
     id: order.id,
@@ -133,8 +174,25 @@ export async function PATCH(req: NextRequest) {
     totalAmount: order.totalAmount,
   }, "order.status_changed").catch(console.error);
 
+  import("@/lib/workflow-engine").then(({ runWorkflows }) => {
+    runWorkflows("order_status_changed", {
+      tenantId,
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      status,
+      previousStatus: prevOrder.status,
+      guestName: order.guestName,
+      guestPhone: order.guestPhone,
+      guestEmail: order.guestEmail || "",
+      deliveryAddress: order.deliveryAddress,
+      totalAmount: Number(order.totalAmount),
+      paymentMethod: (order as any).paymentMethod,
+      userId: order.userId || null,
+    }).catch(console.error);
+  }).catch(() => {});
+
   // Синхронизируем лид в CRM если есть
-  const lead = await prisma.lead.findFirst({ where: { convertedOrderId: orderId } });
+  const lead = await prisma.lead.findFirst({ where: { tenantId, convertedOrderId: orderId, deletedAt: null } });
   if (lead) {
     const stageMap: Record<string, string> = {
       NEW: "NEW", CONFIRMED: "CONTACTED", PROCESSING: "QUALIFIED",

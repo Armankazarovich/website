@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 async function checkAdmin() {
   const session = await auth();
@@ -128,22 +129,40 @@ function cleanWorkflowActions(actions: Array<Record<string, unknown>>): Prisma.I
 
 export async function POST() {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
-  // Create all default workflows
+  const prepared = DEFAULT_WORKFLOWS.map((wf) => ({
+    name: cleanWorkflowText(wf.name),
+    description: cleanWorkflowText(wf.description),
+    trigger: wf.trigger,
+    conditions: wf.conditions as Prisma.InputJsonValue,
+    actions: cleanWorkflowActions(wf.actions),
+    active: false,
+  }));
+
+  const existing = await prisma.workflow.findMany({
+    where: { tenantId, name: { in: prepared.map((wf) => wf.name) } },
+    select: { name: true },
+  });
+  const existingNames = new Set(existing.map((wf) => wf.name));
+  const toCreate = prepared.filter((wf) => !existingNames.has(wf.name));
+
+  // Create default workflows disabled, so they never start without an explicit enable action.
   const created = await Promise.all(
-    DEFAULT_WORKFLOWS.map(wf =>
+    toCreate.map(wf =>
       prisma.workflow.create({
         data: {
-          name: cleanWorkflowText(wf.name),
-          description: cleanWorkflowText(wf.description),
+          tenantId,
+          name: wf.name,
+          description: wf.description,
           trigger: wf.trigger,
           conditions: wf.conditions,
-          actions: cleanWorkflowActions(wf.actions),
-          active: true,
+          actions: wf.actions,
+          active: false,
         },
       })
     )
   );
 
-  return NextResponse.json({ ok: true, created: created.length });
+  return NextResponse.json({ ok: true, created: created.length, skipped: prepared.length - created.length });
 }

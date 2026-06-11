@@ -65,9 +65,9 @@ async function exchangeCode(req: Request, code: string) {
 
 async function saveSetting(tenantId: string, key: string, value: string) {
   await prisma.siteSettings.upsert({
-    where: { key },
-    create: { id: key, key, value, tenantId },
-    update: { value, tenantId },
+    where: { tenantId_key: { tenantId, key } },
+    create: { tenantId, key, value },
+    update: { value },
   });
 }
 
@@ -88,7 +88,7 @@ export async function GET(req: Request) {
   const tenantId = getCurrentTenantId();
 
   const redirectWith = (params: Record<string, string>) => {
-    const url = adminReturnUrl(req, "/admin/promotion");
+    const url = adminReturnUrl(req, "/admin/aray/connectors");
     for (const [key, value] of Object.entries(params)) {
       url.searchParams.set(key, value);
     }

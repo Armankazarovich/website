@@ -26,7 +26,7 @@ export {
 export type { NavItem } from "@/components/admin/admin-navigation-registry";
 
 // Группы которые будут collapsible (аккордеон)
-const COLLAPSIBLE_GROUPS = new Set(["settings", "marketing", "personal"]);
+const COLLAPSIBLE_GROUPS = new Set(["arayCms", "settings", "marketing", "personal"]);
 
 function isNavItemMatch(item: NavItem, pathname: string): boolean {
   return registryIsNavItemMatch(item, pathname);
@@ -106,18 +106,18 @@ export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () 
               >
                 <div className="flex items-center gap-2">
                   <span className={`text-[9px] font-bold uppercase tracking-[0.18em] whitespace-nowrap transition-colors ${
-                    hasActiveItem ? "text-primary/70" : "text-white/35 group-hover/gh:text-white/55"
+                    hasActiveItem ? "text-primary/70" : "text-foreground/35 group-hover/gh:text-foreground/55"
                   }`}>
                     {groupLabel}
                   </span>
                   <div className="flex-1 aray-nav-divider" />
                   {isCollapsible && (
-                    <ChevronDown className={`w-3 h-3 text-white/25 group-hover/gh:text-white/50 transition-all duration-200 ${isCollapsed ? "" : "rotate-180"}`} />
+                    <ChevronDown className={`w-3 h-3 text-foreground/25 group-hover/gh:text-foreground/50 transition-all duration-200 ${isCollapsed ? "" : "rotate-180"}`} />
                   )}
                 </div>
                 {/* Превью пунктов когда свёрнуто */}
                 {isCollapsible && isCollapsed && (
-                  <p className="text-[10px] text-white/28 mt-1 leading-relaxed truncate">
+                  <p className="text-[10px] text-foreground/28 mt-1 leading-relaxed truncate">
                     {g.items.slice(0, 4).map(i => i.labelKey ? t(i.labelKey) : i.label).join(" · ")}
                     {g.items.length > 4 && ` +${g.items.length - 4}`}
                   </p>
@@ -137,11 +137,11 @@ export function AdminNav({ role, onNavigate }: { role?: string; onNavigate?: () 
                     href={item.href}
                     onClick={onNavigate}
                     className={`relative flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 group mb-0.5 overflow-hidden aray-icon-spin ${
-                      isActive ? "aray-nav-active text-white" : "text-white/60 hover:text-white aray-nav-hover"
+                      isActive ? "aray-nav-active text-foreground" : "text-foreground/60 hover:text-foreground aray-nav-hover"
                     }`}
                   >
                     <item.icon className={`w-4 h-4 shrink-0 transition-colors duration-200 ${
-                      isActive ? "text-primary" : "text-white/45 group-hover:text-primary/80"
+                      isActive ? "text-primary" : "text-foreground/45 group-hover:text-primary/80"
                     }`} />
                     <span className="flex-1">{item.labelKey ? t(item.labelKey) : item.label}</span>
                     {item.badge && (

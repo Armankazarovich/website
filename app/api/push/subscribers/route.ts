@@ -4,14 +4,17 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { canAccess } from "@/lib/permissions";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 export async function GET() {
   const session = await auth();
   if (!session || !canAccess(session.user.role, "notifications")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+  const tenantId = getCurrentTenantId();
 
   const subs = await prisma.pushSubscription.findMany({
+    where: { OR: [{ userId: null }, { user: { is: { tenantId } } }] },
     include: {
       user: {
         select: {

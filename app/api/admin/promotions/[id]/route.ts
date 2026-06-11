@@ -4,6 +4,15 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import {
+  cleanLongText,
+  cleanNullableUrl,
+  cleanText,
+  parseJsonRecord,
+  requireSearchConfirmation,
+  requireWriteConfirmation,
+} from "@/lib/admin-content-guard";
 
 function parseNullableNumber(value: unknown) {
   if (value === undefined || value === null || value === "") return null;
@@ -42,19 +51,22 @@ export async function PATCH(
 ) {
   if (!(await checkAdmin()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const body = await req.json();
+  const body = await parseJsonRecord(req);
+  const confirmationError = requireWriteConfirmation(body);
+  if (confirmationError) return confirmationError;
+  const tenantId = getCurrentTenantId();
   const data: Prisma.PromotionUpdateInput = {};
 
   if (body.title !== undefined) {
-    if (typeof body.title !== "string" || !body.title.trim()) {
+    const title = cleanText(body.title, 160);
+    if (!title) {
       return NextResponse.json({ error: "Title is required" }, { status: 400 });
     }
-    data.title = body.title.trim();
+    data.title = title;
   }
 
   if (body.description !== undefined)
-    data.description =
-      typeof body.description === "string" ? body.description : "";
+    data.description = cleanLongText(body.description, 2000);
 
   if (body.discount !== undefined) {
     const discount = parseNullableNumber(body.discount);
@@ -64,10 +76,7 @@ export async function PATCH(
   }
 
   if (body.imageUrl !== undefined)
-    data.imageUrl =
-      typeof body.imageUrl === "string" && body.imageUrl.trim()
-        ? body.imageUrl.trim()
-        : null;
+    data.imageUrl = cleanNullableUrl(body.imageUrl);
 
   if (body.validUntil !== undefined) {
     const validUntil = parseNullableDate(body.validUntil);
@@ -85,19 +94,27 @@ export async function PATCH(
     data.active = body.active;
   }
 
-  const promotion = await prisma.promotion.update({
-    where: { id: params.id },
+  const result = await prisma.promotion.updateMany({
+    where: { id: params.id, tenantId },
     data,
+  });
+  if (!result.count) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const promotion = await prisma.promotion.findFirst({
+    where: { id: params.id, tenantId },
   });
   return NextResponse.json(promotion);
 }
 
 export async function DELETE(
-  _: Request,
+  req: Request,
   { params }: { params: { id: string } },
 ) {
   if (!(await checkAdmin()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  await prisma.promotion.delete({ where: { id: params.id } });
+  const confirmationError = requireSearchConfirmation(req);
+  if (confirmationError) return confirmationError;
+  const tenantId = getCurrentTenantId();
+  const result = await prisma.promotion.deleteMany({ where: { id: params.id, tenantId } });
+  if (!result.count) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

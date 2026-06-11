@@ -25,9 +25,12 @@ import {
   X,
 } from "lucide-react";
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import { InfoPopup } from "@/components/admin/info-popup";
 import { getAccessibleSections, type Section } from "@/lib/permissions";
 import { createStableArayNumber, formatArayPublicNumber } from "@/lib/aray-communication-identity";
+
+const ARAY_PHONE_UI_ENABLED = false;
 
 // ─── Role definitions ───────────────────────────────────────────────────────
 // Visual labels live here; access chips are derived from lib/permissions.
@@ -40,7 +43,6 @@ const ROLE_DEFINITIONS: Record<
     dot: string;
     avatarBg: string;
     description: string;
-    defaultPassword: string;
   }
 > = {
   SUPER_ADMIN: {
@@ -49,7 +51,6 @@ const ROLE_DEFINITIONS: Record<
     dot: "bg-orange-500",
     avatarBg: "bg-orange-500/20 text-orange-700 dark:text-orange-300",
     description: "Владелец системы — неограниченный доступ ко всему",
-    defaultPassword: "superadmin123",
   },
   ADMIN: {
     label: "Администратор",
@@ -57,7 +58,6 @@ const ROLE_DEFINITIONS: Record<
     dot: "bg-red-500",
     avatarBg: "bg-red-500/20 text-red-700 dark:text-red-300",
     description: "Полный доступ ко всем разделам",
-    defaultPassword: "admin123",
   },
   MANAGER: {
     label: "Менеджер",
@@ -65,7 +65,6 @@ const ROLE_DEFINITIONS: Record<
     dot: "bg-primary",
     avatarBg: "bg-primary/20 text-primary",
     description: "Продажи, клиенты, каталог, маркетинг и рабочие операции",
-    defaultPassword: "manager123",
   },
   COURIER: {
     label: "Курьер",
@@ -73,7 +72,6 @@ const ROLE_DEFINITIONS: Record<
     dot: "bg-amber-500",
     avatarBg: "bg-amber-500/20 text-amber-700 dark:text-amber-300",
     description: "Заказы, доставка, задачи и обучение терминала",
-    defaultPassword: "courier123",
   },
   ACCOUNTANT: {
     label: "Бухгалтер",
@@ -81,7 +79,6 @@ const ROLE_DEFINITIONS: Record<
     dot: "bg-purple-500",
     avatarBg: "bg-purple-500/20 text-purple-700 dark:text-purple-300",
     description: "Финансы, аналитика, задачи и обучение терминала",
-    defaultPassword: "accountant123",
   },
   WAREHOUSE: {
     label: "Складчик",
@@ -89,7 +86,6 @@ const ROLE_DEFINITIONS: Record<
     dot: "bg-green-500",
     avatarBg: "bg-green-500/20 text-green-700 dark:text-green-300",
     description: "Склад, каталог, доставка, заказы, импорт и задачи",
-    defaultPassword: "warehouse123",
   },
   SELLER: {
     label: "Продавец",
@@ -97,7 +93,6 @@ const ROLE_DEFINITIONS: Record<
     dot: "bg-cyan-500",
     avatarBg: "bg-cyan-500/20 text-cyan-700 dark:text-cyan-300",
     description: "Продажи, каталог, CRM, отзывы, медиа и задачи",
-    defaultPassword: "seller123",
   },
 };
 
@@ -208,11 +203,11 @@ function relativeTime(date: string | null): string {
 }
 
 function getOnlineDot(date: string | null) {
-  if (!date) return "bg-gray-300";
+  if (!date) return "bg-muted";
   const mins = (Date.now() - new Date(date).getTime()) / 60000;
   if (mins < 5) return "bg-green-500";
   if (mins < 30) return "bg-yellow-400";
-  return "bg-gray-300";
+  return "bg-muted";
 }
 
 function generatePassword(): string {
@@ -286,7 +281,7 @@ function RoleBadge({
               {getRoleSections(role).map((s) => (
                 <span
                   key={s}
-                  className="text-[10px] px-2 py-0.5 rounded-md text-muted-foreground bg-muted/50 border border-border"
+                  className="text-[10px] px-2 py-0.5 rounded-xl text-muted-foreground bg-muted/50 border border-border"
                 >
                   {s}
                 </span>
@@ -361,6 +356,11 @@ export default function StaffPage() {
   const [showPanelPwd, setShowPanelPwd] = useState(false);
   const [panelLoading, setPanelLoading] = useState(false);
   const [panelError, setPanelError] = useState("");
+  const [statusTarget, setStatusTarget] = useState<{
+    member: StaffMember;
+    staffStatus: "ACTIVE" | "SUSPENDED";
+  } | null>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
 
   // ── Load staff ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -411,9 +411,7 @@ export default function StaffPage() {
       businessRoleId: roleId,
       role: smartRole?.baseRole || current.role,
       customRole: smartRole?.label || current.customRole,
-      password: smartRole?.baseRole
-        ? ROLE_DEFINITIONS[smartRole.baseRole]?.defaultPassword || current.password
-        : current.password,
+      password: smartRole?.baseRole ? current.password || generatePassword() : current.password,
     }));
   }
 
@@ -531,13 +529,8 @@ export default function StaffPage() {
 
   // ── Toggle status ───────────────────────────────────────────────────────────
   async function handleToggleStatus(member: StaffMember) {
-    const newStatus = member.staffStatus === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
-    const data = await apiPost({
-      action: "set_status",
-      userId: member.id,
-      staffStatus: newStatus,
-    });
-    if (data.user) updateMember(data.user);
+    const newStatus = member.staffStatus === "SUSPENDED" ? "ACTIVE" : "SUSPENDED";
+    setStatusTarget({ member, staffStatus: newStatus });
   }
 
   // ── Approve / Reject PENDING ────────────────────────────────────────────────
@@ -545,8 +538,14 @@ export default function StaffPage() {
     userId: string,
     staffStatus: "ACTIVE" | "SUSPENDED",
   ) {
-    const data = await apiPost({ action: "set_status", userId, staffStatus });
-    if (data.user) updateMember(data.user);
+    setStatusLoading(true);
+    try {
+      const data = await apiPost({ action: "set_status", userId, staffStatus });
+      if (data.user) updateMember(data.user);
+      if (!data.error) setStatusTarget(null);
+    } finally {
+      setStatusLoading(false);
+    }
   }
 
   // ── Delete ──────────────────────────────────────────────────────────────────
@@ -571,7 +570,7 @@ export default function StaffPage() {
     const initials = getInitials(member.name, member.email);
     const avatarBg = def?.avatarBg || "bg-muted text-muted-foreground";
     const isActive = panel?.id === member.id;
-    const arayNumber = getStaffArayNumber(member);
+    const arayNumber = ARAY_PHONE_UI_ENABLED ? getStaffArayNumber(member) : "";
 
     return (
       <div
@@ -606,30 +605,32 @@ export default function StaffPage() {
             {member.phone && (
               <p className="text-xs text-muted-foreground">{member.phone}</p>
             )}
-            <div className="mt-2 flex max-w-full flex-wrap items-center gap-1.5">
-              <span className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/8 px-2.5 text-[11px] font-bold text-primary">
-                <PhoneCall className="h-3 w-3 shrink-0" />
-                <span className="truncate">{arayNumber}</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => dialArayNumber(arayNumber)}
-                className="inline-flex min-h-7 items-center gap-1 rounded-full border border-border bg-background/45 px-2 text-[10.5px] font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
-                title="Набрать в AR Phone"
-              >
-                <PhoneCall className="h-3 w-3" />
-                Набрать
-              </button>
-              <button
-                type="button"
-                onClick={() => void copyText(arayNumber)}
-                className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background/45 text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
-                title="Скопировать номер"
-                aria-label="Скопировать номер"
-              >
-                <Copy className="h-3 w-3" />
-              </button>
-            </div>
+            {ARAY_PHONE_UI_ENABLED ? (
+              <div className="mt-2 flex max-w-full flex-wrap items-center gap-1.5">
+                <span className="inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/8 px-2.5 text-[11px] font-bold text-primary">
+                  <PhoneCall className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{arayNumber}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => dialArayNumber(arayNumber)}
+                  className="inline-flex min-h-7 items-center gap-1 rounded-full border border-border bg-background/45 px-2 text-[10.5px] font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                  title="Набрать в AR Phone"
+                >
+                  <PhoneCall className="h-3 w-3" />
+                  Набрать
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void copyText(arayNumber)}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-border bg-background/45 text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+                  title="Скопировать номер"
+                  aria-label="Скопировать номер"
+                >
+                  <Copy className="h-3 w-3" />
+                </button>
+              </div>
+            ) : null}
             {member.businessRoles?.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {member.businessRoles.map((role) => (
@@ -720,13 +721,13 @@ export default function StaffPage() {
             </p>
             <div className="flex gap-2">
               <button
-                onClick={() => handleSetStatus(member.id, "ACTIVE")}
-                className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary/90"
+                onClick={() => setStatusTarget({ member, staffStatus: "ACTIVE" })}
+                className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-sm font-semibold text-foreground  transition-colors hover:bg-primary/90"
               >
                 <Check className="w-4 h-4" /> Одобрить
               </button>
               <button
-                onClick={() => handleSetStatus(member.id, "SUSPENDED")}
+                onClick={() => setStatusTarget({ member, staffStatus: "SUSPENDED" })}
                 className="flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10"
               >
                 <X className="w-4 h-4" /> Отклонить
@@ -916,6 +917,7 @@ export default function StaffPage() {
     (m) => m.staffStatus === "ACTIVE" || !m.staffStatus,
   );
   const suspended = members.filter((m) => m.staffStatus === "SUSPENDED");
+  const statusTargetName = statusTarget?.member.name || statusTarget?.member.email || "сотрудника";
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -1036,8 +1038,7 @@ export default function StaffPage() {
                     ...f,
                     role: r,
                     businessRoleId: "",
-                    password:
-                      ROLE_DEFINITIONS[r]?.defaultPassword || f.password,
+                    password: r ? f.password || generatePassword() : f.password,
                   }));
                 }}
                 disabled={formLoading}
@@ -1112,7 +1113,7 @@ export default function StaffPage() {
                 {getRoleSections(form.role).map((s) => (
                   <span
                     key={s}
-                    className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border"
+                    className="text-[11px] px-2 py-0.5 rounded-xl bg-muted text-muted-foreground border border-border"
                   >
                     {s}
                   </span>
@@ -1122,7 +1123,7 @@ export default function StaffPage() {
           )}
 
           {formError && (
-            <p className="text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+            <p className="admin-alert admin-alert-danger px-3 py-2 text-sm">
               {formError}
             </p>
           )}
@@ -1195,7 +1196,7 @@ export default function StaffPage() {
                     {getRoleSections(role).map((s) => (
                       <span
                         key={s}
-                        className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground border border-border"
+                        className="text-[11px] px-2 py-0.5 rounded-xl bg-muted text-muted-foreground border border-border"
                       >
                         {s}
                       </span>
@@ -1276,6 +1277,23 @@ export default function StaffPage() {
           )}
         </div>
       )}
+      <ConfirmDialog
+        open={Boolean(statusTarget)}
+        onClose={() => setStatusTarget(null)}
+        onConfirm={() => {
+          if (!statusTarget) return;
+          handleSetStatus(statusTarget.member.id, statusTarget.staffStatus);
+        }}
+        title={statusTarget?.staffStatus === "ACTIVE" ? "Открыть доступ сотруднику?" : "Заблокировать сотрудника?"}
+        description={
+          statusTarget?.staffStatus === "ACTIVE"
+            ? `${statusTargetName} получит доступ к разделам по своей роли.`
+            : `${statusTargetName} потеряет доступ к рабочей админке, пока вы не разблокируете аккаунт.`
+        }
+        confirmLabel={statusTarget?.staffStatus === "ACTIVE" ? "Открыть доступ" : "Заблокировать"}
+        variant={statusTarget?.staffStatus === "ACTIVE" ? "default" : "danger"}
+        loading={statusLoading}
+      />
     </div>
   );
 }

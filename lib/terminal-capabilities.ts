@@ -222,9 +222,9 @@ export const TERMINAL_CAPABILITIES: Record<TerminalCapabilityKey, TerminalCapabi
     title: "Склад и остатки",
     section: "devices",
     description: "Резерв, списание, выдача и контроль наличия.",
-    requiresSetup: true,
-    trustLevel: "BETA",
-    setupHint: "Нужны остатки, правила резерва и роли склада.",
+    requiresSetup: false,
+    trustLevel: "CORE",
+    setupHint: "Списание и возврат работают для учтённых остатков; пороговые уведомления подключаются отдельно.",
   },
   documents: {
     key: "documents",

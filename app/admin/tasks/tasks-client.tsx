@@ -254,7 +254,7 @@ function TaskModal({
       const res = await fetch(`/api/admin/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, description, priority, status, assigneeId: assigneeId || null, dueDate: dueDate || null, tags }),
+        body: JSON.stringify({ title: title.trim(), description: description.trim(), priority, status, assigneeId: assigneeId || null, dueDate: dueDate || null, tags }),
       });
       const updated = await res.json().catch(() => null);
       if (!res.ok || !isTaskPayload(updated)) {
@@ -590,7 +590,7 @@ function NewTaskForm({
       const res = await fetch("/api/admin/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, priority, status: defaultStatus, assigneeId: assigneeId || null, dueDate: dueDate || null }),
+        body: JSON.stringify({ title: title.trim(), priority, status: defaultStatus, assigneeId: assigneeId || null, dueDate: dueDate || null }),
       });
       const task = await res.json().catch(() => null);
       if (!res.ok || !isTaskPayload(task)) {

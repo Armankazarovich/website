@@ -1,9 +1,17 @@
 import { getSiteSettings } from "@/lib/site-settings";
 import { WatermarkClient } from "./watermark-client";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
 
 export const metadata = { title: "Водяной знак" };
 
+const WATERMARK_ROLES = new Set(["SUPER_ADMIN", "ADMIN"]);
+
 export default async function WatermarkPage() {
+  const session = await auth();
+  const role = session?.user?.role as string | undefined;
+  if (!role || !WATERMARK_ROLES.has(role)) redirect("/admin");
+
   const settings = await getSiteSettings();
   return (
     <div className="admin-page-frame admin-page-frame-readable">

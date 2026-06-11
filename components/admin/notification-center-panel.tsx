@@ -42,6 +42,7 @@ type NotificationCenterEvent = {
   url?: string | null;
   segment?: string | null;
   recipientLabel?: string | null;
+  recipientRole?: string | null;
   sentCount: number;
   failedCount: number;
   cleanedCount: number;
@@ -65,6 +66,7 @@ type NotificationCenterResponse = {
     partial: number;
     failed: number;
     inbound: number;
+    attention: number;
   };
 };
 
@@ -148,7 +150,7 @@ export function NotificationCenterPanel({ refreshKey = 0 }: { refreshKey?: numbe
   const summary = data?.summary;
 
   const openCount = useMemo(
-    () => (summary ? summary.queued + summary.partial + summary.failed : 0),
+    () => (summary ? summary.attention : 0),
     [summary],
   );
 
@@ -285,6 +287,7 @@ export function NotificationCenterPanel({ refreshKey = 0 }: { refreshKey?: numbe
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                       {event.segment && <span>сегмент: {event.segment}</span>}
                       {event.recipientLabel && <span>получатель: {event.recipientLabel}</span>}
+                      {!event.recipientLabel && event.recipientRole && <span>роль: {event.recipientRole}</span>}
                       <span>доставлено: {event.sentCount}</span>
                       {event.failedCount > 0 && <span>ошибок: {event.failedCount}</span>}
                       {event.cleanedCount > 0 && <span>очищено: {event.cleanedCount}</span>}

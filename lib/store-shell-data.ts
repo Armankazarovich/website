@@ -6,6 +6,7 @@ import { getAvailableTypes, type ProductTypeInfo } from "@/lib/product-types";
 import { applyProductTypeSettings, getProductTypeSettings } from "@/lib/product-type-settings";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { getPhones, getSetting, getSiteSettings } from "@/lib/site-settings";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 export type StoreShellCategory = {
   id: string;
@@ -61,9 +62,9 @@ function extractUniqueCrossSections(sizes: string[]): string[] {
   });
 }
 
-export const getStoreShellData = unstable_cache(
-  async (): Promise<StoreShellData> => {
-    const publicProductFilter = getPublicProductsFilter();
+const getCachedStoreShellData = unstable_cache(
+  async (tenantId: string): Promise<StoreShellData> => {
+    const publicProductFilter = { tenantId, ...getPublicProductsFilter() };
     const publicVariantFilter = getPublicVariantsFilter();
     const [
       categories,
@@ -75,11 +76,12 @@ export const getStoreShellData = unstable_cache(
     ] = await Promise.all([
       prisma.category.findMany({
         where: {
+          tenantId,
           showInMenu: true,
           parentId: null,
           OR: [
             { products: { some: publicProductFilter } },
-            { children: { some: { showInMenu: true, products: { some: publicProductFilter } } } },
+            { children: { some: { tenantId, showInMenu: true, products: { some: publicProductFilter } } } },
           ],
         },
         orderBy: { sortOrder: "asc" },
@@ -90,7 +92,7 @@ export const getStoreShellData = unstable_cache(
           image: true,
           _count: { select: { products: { where: publicProductFilter } } },
           children: {
-            where: { showInMenu: true, products: { some: publicProductFilter } },
+            where: { tenantId, showInMenu: true, products: { some: publicProductFilter } },
             orderBy: { sortOrder: "asc" },
             select: {
               id: true,
@@ -103,19 +105,19 @@ export const getStoreShellData = unstable_cache(
         },
       }),
       prisma.category.findMany({
-        where: { showInFooter: true, parentId: null },
+        where: { tenantId, showInFooter: true, parentId: null },
         orderBy: { sortOrder: "asc" },
         select: { id: true, name: true, slug: true },
       }),
       getSiteSettings(),
       getProductTypeSettings(),
       prisma.product.findMany({
-        where: { ...publicProductFilter, category: { showInMenu: true } },
+        where: { ...publicProductFilter, category: { tenantId, showInMenu: true } },
         select: { name: true },
       }),
       prisma.productVariant.findMany({
         where: {
-          product: { ...publicProductFilter, category: { showInMenu: true } },
+          product: { ...publicProductFilter, category: { tenantId, showInMenu: true } },
           ...publicVariantFilter,
         },
         select: { size: true },
@@ -144,3 +146,7 @@ export const getStoreShellData = unstable_cache(
   ["store-shell-data-v1"],
   { revalidate: 60, tags: ["store-shell-data"] },
 );
+
+export function getStoreShellData() {
+  return getCachedStoreShellData(getCurrentTenantId());
+}

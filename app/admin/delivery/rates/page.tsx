@@ -13,6 +13,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/admin/confirm-dialog";
+import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 type Rate = {
   id: string;
   vehicleName: string;
@@ -22,6 +23,7 @@ type Rate = {
 };
 const emptyNew = { vehicleName: "", payload: "", maxVolume: "", basePrice: "" };
 export default function DeliveryRatesPage() {
+  const confirmAction = useAdminConfirm();
   const [rates, setRates] = useState<Rate[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -72,13 +74,14 @@ export default function DeliveryRatesPage() {
     setEditValues({});
   };
   const saveEdit = async (id: string) => {
+    if (!(await confirmAction("Сохранить изменения тарифа доставки?"))) return;
     setSaving(true);
     setError("");
     try {
       const res = await fetch(`/api/admin/delivery-rates/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editValues),
+        body: JSON.stringify({ ...editValues, confirm: true }),
       });
       const updated = await res.json().catch(() => null);
       if (!res.ok)
@@ -99,7 +102,7 @@ export default function DeliveryRatesPage() {
     setDeleting(confirmDeleteId);
     setError("");
     try {
-      const res = await fetch(`/api/admin/delivery-rates?id=${targetId}`, {
+      const res = await fetch(`/api/admin/delivery-rates?id=${targetId}&confirm=true`, {
         method: "DELETE",
       });
       const data = await res.json().catch(() => ({}));
@@ -120,6 +123,7 @@ export default function DeliveryRatesPage() {
       !newRate.basePrice
     )
       return;
+    if (!(await confirmAction("Добавить новый тариф доставки?"))) return;
     setAddSaving(true);
     setError("");
     try {
@@ -131,6 +135,7 @@ export default function DeliveryRatesPage() {
           payload: newRate.payload,
           maxVolume: Number(newRate.maxVolume),
           basePrice: Number(newRate.basePrice),
+          confirm: true,
         }),
       });
       const created = await res.json().catch(() => null);

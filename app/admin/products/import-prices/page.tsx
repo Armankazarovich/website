@@ -73,6 +73,10 @@ export default function ImportPricesPage() {
         body: JSON.stringify({ csv, apply: false }),
       });
       const data = await res.json();
+      if (!res.ok || data.ok === false) {
+        setReport({ ...data, ok: false, error: data.error || "Не удалось разобрать прайс" } as Report);
+        return;
+      }
       setReport(data);
     } catch (e) {
       setReport({ ok: false, error: String(e) } as Report);
@@ -90,6 +94,11 @@ export default function ImportPricesPage() {
         body: JSON.stringify({ csv, apply: true }),
       });
       const data = await res.json();
+      if (!res.ok || data.ok === false) {
+        setReport({ ...data, ok: false, error: data.error || "Не удалось применить прайс" } as Report);
+        setConfirm(false);
+        return;
+      }
       setReport(data);
       setConfirm(false);
     } catch (e) {
@@ -291,39 +300,33 @@ export default function ImportPricesPage() {
                 них НЕ будут обновлены.{" "}
               </div>{" "}
               <div className="max-h-60 overflow-auto border border-amber-500/20 rounded-xl">
-                {" "}
                 <table className="w-full text-xs">
-                  {" "}
                   <thead className="bg-amber-500/10 sticky top-0">
-                    {" "}
                     <tr>
-                      {" "}
-                      <th className="text-left px-3 py-2">Секция</th>{" "}
-                      <th className="text-left px-3 py-2">Размер</th>{" "}
-                      <th className="text-left px-3 py-2">Длина</th>{" "}
-                      <th className="text-left px-3 py-2">Причина</th>{" "}
-                    </tr>{" "}
-                  </thead>{" "}
+                      <th className="text-left px-3 py-2">Секция</th>
+                      <th className="text-left px-3 py-2">Размер</th>
+                      <th className="text-left px-3 py-2">Длина</th>
+                      <th className="text-left px-3 py-2">Причина</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {" "}
                     {unmatched.map((u, i) => (
                       <tr key={i} className="border-t border-amber-500/10">
-                        {" "}
                         <td
                           className="px-3 py-2 max-w-[280px] truncate"
                           title={u.section}
                         >
                           {u.section}
-                        </td>{" "}
-                        <td className="px-3 py-2 font-mono">{u.sizeRaw}</td>{" "}
-                        <td className="px-3 py-2">{u.lengthRaw || "—"}</td>{" "}
+                        </td>
+                        <td className="px-3 py-2 font-mono">{u.sizeRaw}</td>
+                        <td className="px-3 py-2">{u.lengthRaw || "—"}</td>
                         <td className="px-3 py-2 text-amber-500/80">
                           {u.reason}
-                        </td>{" "}
+                        </td>
                       </tr>
-                    ))}{" "}
-                  </tbody>{" "}
-                </table>{" "}
+                    ))}
+                  </tbody>
+                </table>
               </div>{" "}
             </div>
           )}{" "}
@@ -355,23 +358,18 @@ export default function ImportPricesPage() {
                 </div>{" "}
               </div>{" "}
               <div className="max-h-[500px] overflow-auto">
-                {" "}
                 <table className="w-full text-xs">
-                  {" "}
                   <thead className="bg-muted/40 sticky top-0 z-10">
-                    {" "}
                     <tr>
-                      {" "}
-                      <th className="text-left px-3 py-2">Товар</th>{" "}
-                      <th className="text-left px-3 py-2">Размер</th>{" "}
-                      <th className="text-right px-3 py-2">Старая ₽/м³</th>{" "}
-                      <th className="text-right px-3 py-2">Новая ₽/м³</th>{" "}
-                      <th className="text-right px-3 py-2">Старая ₽/шт</th>{" "}
-                      <th className="text-right px-3 py-2">Новая ₽/шт</th>{" "}
-                    </tr>{" "}
-                  </thead>{" "}
+                      <th className="text-left px-3 py-2">Товар</th>
+                      <th className="text-left px-3 py-2">Размер</th>
+                      <th className="text-right px-3 py-2">Старая ₽/м³</th>
+                      <th className="text-right px-3 py-2">Новая ₽/м³</th>
+                      <th className="text-right px-3 py-2">Старая ₽/шт</th>
+                      <th className="text-right px-3 py-2">Новая ₽/шт</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {" "}
                     {visibleMatched.map((m, i) => {
                       const cubeChanged =
                         m.newPricePerCube !== null &&
@@ -384,55 +382,52 @@ export default function ImportPricesPage() {
                           key={i}
                           className={`border-t border-border ${m.changed ? "bg-emerald-500/5" : ""}`}
                         >
-                          {" "}
                           <td
                             className="px-3 py-2 max-w-[280px] truncate"
                             title={m.productName}
                           >
                             {m.productName}
-                          </td>{" "}
+                          </td>
                           <td className="px-3 py-2 font-mono">
                             {m.variantSize}
-                          </td>{" "}
+                          </td>
                           <td className="px-3 py-2 text-right text-muted-foreground">
                             {fmt(m.oldPricePerCube)}
-                          </td>{" "}
+                          </td>
                           <td
                             className={`px-3 py-2 text-right font-medium ${cubeChanged ? "text-emerald-500" : ""}`}
                           >
                             {fmt(m.newPricePerCube)}
-                          </td>{" "}
+                          </td>
                           <td className="px-3 py-2 text-right text-muted-foreground">
                             {fmt(m.oldPricePerPiece)}
-                          </td>{" "}
+                          </td>
                           <td
                             className={`px-3 py-2 text-right font-medium ${pieceChanged ? "text-emerald-500" : ""}`}
                           >
                             {fmt(m.newPricePerPiece)}
-                          </td>{" "}
+                          </td>
                         </tr>
                       );
-                    })}{" "}
+                    })}
                     {visibleMatched.length === 0 && (
                       <tr>
-                        {" "}
                         <td
                           colSpan={6}
                           className="text-center text-muted-foreground py-6"
                         >
-                          {" "}
-                          Пусто (попробуй другой фильтр){" "}
-                        </td>{" "}
+                          Пусто (попробуй другой фильтр)
+                        </td>
                       </tr>
-                    )}{" "}
-                  </tbody>{" "}
-                </table>{" "}
+                    )}
+                  </tbody>
+                </table>
               </div>{" "}
             </div>
           )}{" "}
           {/* Кнопка Применить */}{" "}
           {report.changed > 0 && (
-            <div className="sticky bottom-4 z-20 bg-card border border-primary/30 rounded-2xl p-4 flex items-center justify-between gap-4">
+            <div className="sticky bottom-[calc(5.75rem+env(safe-area-inset-bottom,0px))] z-30 flex flex-col gap-3 rounded-2xl border border-primary/30 bg-card p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4 lg:bottom-4">
               {" "}
               <div>
                 {" "}
@@ -449,17 +444,17 @@ export default function ImportPricesPage() {
               {!confirm ? (
                 <button
                   onClick={() => setConfirm(true)}
-                  className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:brightness-110 transition-all"
+                  className="w-full px-5 py-2.5 rounded-xl bg-primary text-primary-foreground font-medium hover:brightness-110 transition-all sm:w-auto"
                 >
                   {" "}
                   Применить изменения{" "}
                 </button>
               ) : (
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                   {" "}
                   <button
                     onClick={() => setConfirm(false)}
-                    className="px-4 py-2.5 rounded-xl border border-border hover:bg-muted transition-colors text-sm"
+                    className="w-full px-4 py-2.5 rounded-xl border border-border hover:bg-muted transition-colors text-sm sm:w-auto"
                   >
                     {" "}
                     Отмена{" "}
@@ -467,7 +462,7 @@ export default function ImportPricesPage() {
                   <button
                     onClick={apply}
                     disabled={applying}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-white font-medium disabled:opacity-50 hover:brightness-110 transition-all"
+                    className="inline-flex w-full items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-500 text-foreground font-medium disabled:opacity-50 hover:brightness-110 transition-all sm:w-auto"
                   >
                     {" "}
                     {applying ? (

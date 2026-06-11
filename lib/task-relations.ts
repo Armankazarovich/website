@@ -96,6 +96,14 @@ function cleanString(value: unknown, maxLength: number) {
   return trimmed.slice(0, maxLength);
 }
 
+function cleanInternalHref(value: unknown) {
+  const href = cleanString(value, 260);
+  if (!href) return null;
+  if (href.includes("\n") || href.includes("\r")) return null;
+  if (!href.startsWith("/admin/") && !href.startsWith("/cabinet/")) return null;
+  return href;
+}
+
 export function normalizeTaskRelations(value: unknown): NormalizedTaskRelation[] {
   if (!Array.isArray(value)) return [];
 
@@ -122,7 +130,7 @@ export function normalizeTaskRelations(value: unknown): NormalizedTaskRelation[]
       entityType,
       entityId,
       label: cleanString(source.label, 160),
-      href: cleanString(source.href, 260),
+      href: cleanInternalHref(source.href),
       metadata,
     });
   }

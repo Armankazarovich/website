@@ -3,6 +3,9 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireManager } from "@/lib/auth-helpers";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { syncLowStockAlerts } from "@/lib/inventory-alerts";
+import { revalidatePath, revalidateTag } from "next/cache";
 
 /**
  * PATCH /api/admin/inventory/threshold
@@ -18,6 +21,7 @@ import { requireManager } from "@/lib/auth-helpers";
 export async function PATCH(req: NextRequest) {
   const authResult = await requireManager();
   if (!authResult.authorized) return authResult.response;
+  const tenantId = getCurrentTenantId();
 
   let body: any;
   try {
@@ -43,10 +47,24 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "variantIds пуст" }, { status: 400 });
     }
     const res = await prisma.productVariant.updateMany({
-      where: { id: { in: ids } },
+      where: { id: { in: ids }, product: { tenantId } },
       data: { lowStockThreshold: thresholdInt },
     });
-    return NextResponse.json({ ok: true, updated: res.count, threshold: thresholdInt });
+    if (res.count === 0) {
+      return NextResponse.json({ ok: false, error: "Варианты не найдены" }, { status: 404 });
+    }
+    revalidateTag("store-shell-data");
+    revalidatePath("/catalog");
+    revalidatePath("/admin/products");
+    revalidatePath("/admin/tasks");
+    revalidatePath("/admin/notifications");
+    const alertSync = await syncLowStockAlerts(prisma, {
+      tenantId,
+      variantIds: ids,
+      source: "admin.inventory.threshold.bulk",
+      userId: authResult.userId,
+    });
+    return NextResponse.json({ ok: true, updated: res.count, threshold: thresholdInt, lowStockAlerts: alertSync });
   }
 
   // Одиночное обновление
@@ -56,12 +74,34 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    const variant = await prisma.productVariant.update({
-      where: { id: variantId },
+    const result = await prisma.productVariant.updateMany({
+      where: { id: variantId, product: { tenantId } },
       data: { lowStockThreshold: thresholdInt },
+    });
+    if (result.count === 0) {
+      return NextResponse.json({ ok: false, error: "Вариант не найден" }, { status: 404 });
+    }
+    const variant = await prisma.productVariant.findFirstOrThrow({
+      where: { id: variantId, product: { tenantId } },
       select: { id: true, lowStockThreshold: true },
     });
-    return NextResponse.json({ ok: true, variantId: variant.id, threshold: variant.lowStockThreshold });
+    revalidateTag("store-shell-data");
+    revalidatePath("/catalog");
+    revalidatePath("/admin/products");
+    revalidatePath("/admin/tasks");
+    revalidatePath("/admin/notifications");
+    const alertSync = await syncLowStockAlerts(prisma, {
+      tenantId,
+      variantIds: [variantId],
+      source: "admin.inventory.threshold",
+      userId: authResult.userId,
+    });
+    return NextResponse.json({
+      ok: true,
+      variantId: variant.id,
+      threshold: variant.lowStockThreshold,
+      lowStockAlerts: alertSync,
+    });
   } catch (e: any) {
     return NextResponse.json(
       { ok: false, error: e?.message || "Вариант не найден" },

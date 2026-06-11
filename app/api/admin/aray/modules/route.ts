@@ -38,6 +38,10 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ ok: false, error: "moduleId is required" }, { status: 400 });
   }
 
+  if (body?.confirm !== true) {
+    return NextResponse.json({ ok: false, error: "confirmation is required" }, { status: 400 });
+  }
+
   if (action === "policy") {
     const result = await setArayModulePolicy({
       moduleId,

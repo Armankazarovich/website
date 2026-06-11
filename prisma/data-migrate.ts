@@ -8,13 +8,14 @@ import { PrismaClient } from "@prisma/client";
 import { existsSync } from "fs";
 import { join } from "path";
 const prisma = new PrismaClient();
+const DEFAULT_TENANT_ID = "pilorus";
 
 async function upsertSetting(key: string, value: string) {
-  try {
-    await prisma.siteSettings.create({ data: { id: key, key, value } });
-  } catch {
-    await prisma.siteSettings.update({ where: { key }, data: { value } });
-  }
+  await prisma.siteSettings.upsert({
+    where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key } },
+    create: { tenantId: DEFAULT_TENANT_ID, key, value },
+    update: { value },
+  });
 }
 
 const PRODUCT_IMAGE_EXTENSIONS = ["webp", "jpg", "jpeg", "png", "gif"] as const;
@@ -188,7 +189,7 @@ async function main() {
   // ── 2026-03-29: Изменения по запросу клиента ─────────────────────────────
 
   // 1. Режим работы 09:00-20:00
-  const existingHours = await prisma.siteSettings.findUnique({ where: { key: "working_hours" } });
+  const existingHours = await prisma.siteSettings.findUnique({ where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key: "working_hours" } } });
   if (!existingHours || !existingHours.value.includes("20:00")) {
     await upsertSetting("working_hours", "Пн–Сб: 09:00–20:00, Вс: 09:00–18:00");
     console.log("[data-migrate] ✓ Режим работы обновлён");
@@ -197,7 +198,7 @@ async function main() {
   // 2. Дополнительные телефоны (если нет)
   // 20.04.2026: phone2 (8-999-662-26-02) удалён по просьбе клиента.
   // Слот сохранён в БД и админке — клиент может заполнить новым номером.
-  const phone3 = await prisma.siteSettings.findUnique({ where: { key: "phone3" } });
+  const phone3 = await prisma.siteSettings.findUnique({ where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key: "phone3" } } });
   if (!phone3) {
     await upsertSetting("phone3", "8-977-606-80-20");
     await upsertSetting("phone3_link", "+79776068020");
@@ -205,7 +206,7 @@ async function main() {
   }
 
   // 20.04.2026: одноразовая очистка старого phone2 (идемпотентно — проверяем точное значение)
-  const currentPhone2 = await prisma.siteSettings.findUnique({ where: { key: "phone2" } });
+  const currentPhone2 = await prisma.siteSettings.findUnique({ where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key: "phone2" } } });
   if (currentPhone2 && currentPhone2.value === "8-999-662-26-02") {
     await upsertSetting("phone2", "");
     await upsertSetting("phone2_link", "");
@@ -213,12 +214,12 @@ async function main() {
   }
 
   // 3. Категории — найти по slug
-  const kedrCat = await prisma.category.findUnique({ where: { slug: "kedr" } });
+  const kedrCat = await prisma.category.findUnique({ where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "kedr" } } });
   const faneraCat = await prisma.category.findFirst({
-    where: { slug: { in: ["fanera", "fanera-dsp-mdf-osb"] } }
+    where: { tenantId: DEFAULT_TENANT_ID, slug: { in: ["fanera", "fanera-dsp-mdf-osb"] } }
   });
   const dspCat = await prisma.category.findFirst({
-    where: { slug: { in: ["dsp-mdf-osb", "dsp-mdf-osb-csp", "dsp"] } }
+    where: { tenantId: DEFAULT_TENANT_ID, slug: { in: ["dsp-mdf-osb", "dsp-mdf-osb-csp", "dsp"] } }
   });
 
   // 4. Деактивировать товары Кедр + скрыть категорию
@@ -267,7 +268,7 @@ async function main() {
     "kedr":        "/images/categories/kedr.png",
   };
   for (const [slug, stablePath] of Object.entries(stableImages)) {
-    const cat = await prisma.category.findUnique({ where: { slug } });
+    const cat = await prisma.category.findUnique({ where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug } } });
     if (!cat) continue;
 
     let needsRestore = false;
@@ -285,7 +286,7 @@ async function main() {
     }
 
     if (needsRestore) {
-      await prisma.category.update({ where: { slug }, data: { image: stablePath } });
+      await prisma.category.update({ where: { id: cat.id }, data: { image: stablePath } });
       console.log(`[data-migrate] ✓ Восстановлено фото ${slug}: ${stablePath}`);
     }
   }
@@ -465,10 +466,10 @@ async function main() {
   try {
     let updatedCategories = 0;
     for (const [slug, data] of Object.entries(CATEGORY_SEO_20260424)) {
-      const cat = await prisma.category.findUnique({ where: { slug } });
+      const cat = await prisma.category.findUnique({ where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug } } });
       if (!cat) continue;
       await prisma.category.update({
-        where: { slug },
+        where: { id: cat.id },
         data: {
           ...(data.name ? { name: data.name } : {}),
           seoTitle: data.seoTitle,
@@ -479,11 +480,12 @@ async function main() {
     }
     console.log(`[data-migrate] ✓ SEO категорий ПилоРус обновлено (${updatedCategories}) — шаг 2026-04-24`);
 
-    const sosnaCat = await prisma.category.findUnique({ where: { slug: "sosna-el" } });
+    const sosnaCat = await prisma.category.findUnique({ where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "sosna-el" } } });
     if (sosnaCat) {
       await prisma.product.upsert({
-        where: { slug: "doska-stroganaya-suhaya-sosna" },
+        where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "doska-stroganaya-suhaya-sosna" } },
         create: {
+          tenantId: DEFAULT_TENANT_ID,
           slug: "doska-stroganaya-suhaya-sosna",
           name: PRODUCT_DESCRIPTIONS_20260424["doska-stroganaya-suhaya-sosna"].name || "Доска сухая строганная (Сосна/Ель)",
           description: PRODUCT_DESCRIPTIONS_20260424["doska-stroganaya-suhaya-sosna"].description,
@@ -501,8 +503,8 @@ async function main() {
         },
       });
 
-      const dryBoard = await prisma.product.findUnique({ where: { slug: "doska-stroganaya-suhaya-sosna" } });
-      const dryBeam = await prisma.product.findUnique({ where: { slug: "brus-strogannyy-suhoy-sosna" } });
+      const dryBoard = await prisma.product.findUnique({ where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "doska-stroganaya-suhaya-sosna" } } });
+      const dryBeam = await prisma.product.findUnique({ where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: "brus-strogannyy-suhoy-sosna" } } });
       if (dryBoard && dryBoard.images.length === 0) {
         await prisma.product.update({
           where: { id: dryBoard.id },
@@ -558,10 +560,10 @@ async function main() {
 
     let updatedProducts = 0;
     for (const [slug, data] of Object.entries(PRODUCT_DESCRIPTIONS_20260424)) {
-      const product = await prisma.product.findUnique({ where: { slug } });
+      const product = await prisma.product.findUnique({ where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug } } });
       if (!product) continue;
       await prisma.product.update({
-        where: { slug },
+        where: { id: product.id },
         data: {
           ...(data.name ? { name: data.name } : {}),
           description: data.description,
@@ -626,7 +628,7 @@ async function main() {
 
   try {
     const markerKey = "migration_20260512_whatsapp_hidden";
-    const marker = await prisma.siteSettings.findUnique({ where: { key: markerKey } });
+    const marker = await prisma.siteSettings.findUnique({ where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key: markerKey } } });
     if (!marker) {
       await upsertSetting("whatsapp_enabled", "false");
       await upsertSetting(markerKey, "done");
@@ -637,6 +639,38 @@ async function main() {
   }
 
   console.log("[data-migrate] Готово.");
+  try {
+    const pilorusLegalSettings20260611: Record<string, string> = {
+      phone: "+7 (499) 372-04-41",
+      phone_link: "+74993720441",
+      phone2: "+7 (495) 135-02-03",
+      phone2_link: "+74951350203",
+      phone3: "",
+      phone3_link: "",
+      address: "г. Химки, ул. Заводская 2А, стр.13",
+      company_name: "ООО «ДЕРЕВОЛИДЕР»",
+      legal_full_name: "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ «ДЕРЕВОЛИДЕР»",
+      inn: "7733291699",
+      ogrn: "1167746624902",
+      kpp: "773301001",
+      settlement_account: "40702810040000036989",
+      bank_name: "ПАО Сбербанк",
+      correspondent_account: "30101810400000000225",
+      bik: "044525225",
+      okpo: "03368545",
+      okato: "45283555000",
+      oktmo: "45366000000",
+      social_max: "https://max.ru/u/f9LHodD0cOKoOlL7NxRWbK5mRoS_CdJ9K0qX5LbbbFJXOW-acq-et78kUxo",
+    };
+
+    for (const [key, value] of Object.entries(pilorusLegalSettings20260611)) {
+      await upsertSetting(key, value);
+    }
+    console.log("[data-migrate] PiloRus contacts and legal requisites updated (2026-06-11)");
+  } catch (e: any) {
+    console.log("[data-migrate] PiloRus contacts/legal settings update skipped:", e.message);
+  }
+
   await prisma.$disconnect();
 }
 

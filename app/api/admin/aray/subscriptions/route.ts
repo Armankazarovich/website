@@ -47,6 +47,10 @@ function isValidationError(err: unknown) {
   return err instanceof Error && (err.message.includes("должен") || err.message.includes("Некоррект"));
 }
 
+function hasConfirmation(body: unknown) {
+  return body && typeof body === "object" && !Array.isArray(body) && (body as Record<string, unknown>).confirm === true;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/admin/aray/subscriptions — список всех подписок
 // ─────────────────────────────────────────────────────────────────────────────
@@ -93,7 +97,10 @@ export async function POST(req: NextRequest) {
   const tenantId = getCurrentTenantId();
 
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!hasConfirmation(body)) {
+      return NextResponse.json({ ok: false, error: "Подтвердите изменение подписки" }, { status: 400 });
+    }
     const {
       provider, name, costUsd, costRub, billingDay, billingType, active, notes, startedAt, endsAt,
     } = body as Record<string, unknown>;
@@ -146,7 +153,10 @@ export async function PATCH(req: NextRequest) {
     const id = url.searchParams.get("id");
     if (!id) return NextResponse.json({ ok: false, error: "id обязателен" }, { status: 400 });
 
-    const body = await req.json();
+    const body = await req.json().catch(() => null);
+    if (!hasConfirmation(body)) {
+      return NextResponse.json({ ok: false, error: "Подтвердите изменение подписки" }, { status: 400 });
+    }
     const data: Record<string, unknown> = {};
 
     if (body.provider != null)    data.provider = String(body.provider).trim().slice(0, 50);
@@ -198,6 +208,10 @@ export async function DELETE(req: NextRequest) {
     const url = new URL(req.url);
     const id = url.searchParams.get("id");
     if (!id) return NextResponse.json({ ok: false, error: "id обязателен" }, { status: 400 });
+    const body = await req.json().catch(() => null);
+    if (!hasConfirmation(body)) {
+      return NextResponse.json({ ok: false, error: "Подтвердите удаление подписки" }, { status: 400 });
+    }
 
     const result = await (prisma as any).apiSubscription.deleteMany({ where: { id, tenantId } });
     if (result.count === 0) {

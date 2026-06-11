@@ -5,13 +5,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireOrdersStaff } from "@/lib/orders-auth";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const access = await requireOrdersStaff();
   if (!access.authorized) return access.response;
+  const tenantId = getCurrentTenantId();
 
-  const order = await prisma.order.findUnique({
-    where: { id: params.id },
+  const order = await prisma.order.findFirst({
+    where: { id: params.id, tenantId },
     include: { items: true },
   });
 

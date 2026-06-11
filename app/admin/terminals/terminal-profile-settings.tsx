@@ -1,5 +1,6 @@
 "use client";
 
+import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 import { useEffect, useMemo, useState } from "react";
 import { Check, Loader2, Save, Settings2, SlidersHorizontal, WandSparkles } from "lucide-react";
 import {
@@ -11,6 +12,7 @@ import {
 import { TERMINAL_PROFILES, type TerminalProfileKey } from "@/lib/terminal-profiles";
 
 export function TerminalProfileSettings() {
+  const confirmAction = useAdminConfirm();
   const profiles = useMemo(() => Object.values(TERMINAL_PROFILES), []);
   const [selected, setSelected] = useState<TerminalProfileKey>("lumber");
   const [enabledModules, setEnabledModules] = useState<TerminalCapabilityKey[]>(PROFILE_RECOMMENDED_CAPABILITIES.lumber);
@@ -82,9 +84,14 @@ export function TerminalProfileSettings() {
   };
 
   const autoconfigure = async () => {
+    if (!(await confirmAction("Применить автонастройку терминала?"))) return;
     setAutoConfiguring(true);
     setSaved(false);
-    const res = await fetch("/api/admin/terminal/autoconfig", { method: "POST" });
+    const res = await fetch("/api/admin/terminal/autoconfig", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ confirm: true }),
+    });
     const data = await res.json().catch(() => ({}));
     if (res.ok && data.config) {
       if (data.config.profile?.key && data.config.profile.key in TERMINAL_PROFILES) {
@@ -100,6 +107,7 @@ export function TerminalProfileSettings() {
   };
 
   const save = async () => {
+    if (!(await confirmAction("Сохранить профиль и модули терминала?"))) return;
     setSaving(true);
     setSaved(false);
     await fetch("/api/admin/site-settings", {
@@ -109,6 +117,7 @@ export function TerminalProfileSettings() {
         terminal_profile: selected,
         business_type: selected,
         terminal_enabled_modules: JSON.stringify(Array.from(new Set([...ALWAYS_ON_TERMINAL_CAPABILITIES, ...enabledModules]))),
+        confirm: true,
       }),
     });
     setSaving(false);

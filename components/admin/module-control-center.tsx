@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { AdminModal } from "@/components/admin/admin-modal";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 import type {
   ArayModuleBillingPlan,
   ArayModuleCategory,
@@ -476,6 +477,11 @@ export function ModuleControlCenter({
   const [passportOpen, setPassportOpen] = useState(false);
   const [toggleLoadingId, setToggleLoadingId] = useState<string | null>(null);
   const [policyLoadingId, setPolicyLoadingId] = useState<string | null>(null);
+  const [pendingToggle, setPendingToggle] = useState<ArayModuleControlItem | null>(null);
+  const [pendingPolicy, setPendingPolicy] = useState<{
+    module: ArayModuleControlItem;
+    payload: ModulePolicyPayload;
+  } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -503,13 +509,14 @@ export function ModuleControlCenter({
   const selectedRoute = selected ? firstUiRoute(selected) : null;
 
   async function toggleModule(module: ArayModuleControlItem) {
+    setPendingToggle(null);
     setToggleLoadingId(module.id);
     setActionError(null);
     try {
       const res = await fetch("/api/admin/aray/modules", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ moduleId: module.id, enabled: !module.requestedEnabled }),
+        body: JSON.stringify({ moduleId: module.id, enabled: !module.requestedEnabled, confirm: true }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data?.ok) {
@@ -526,6 +533,7 @@ export function ModuleControlCenter({
   }
 
   async function savePolicy(module: ArayModuleControlItem, payload: ModulePolicyPayload) {
+    setPendingPolicy(null);
     setPolicyLoadingId(module.id);
     setActionError(null);
     try {
@@ -538,6 +546,7 @@ export function ModuleControlCenter({
           allowedRoles: payload.allowedRoles,
           subscriptionPlan: payload.subscriptionPlan,
           requiredConnectorTypes: payload.requiredConnectorTypes,
+          confirm: true,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -693,7 +702,7 @@ export function ModuleControlCenter({
                       module={module}
                       canManage={canManage}
                       loading={toggleLoadingId === module.id}
-                      onToggle={toggleModule}
+                      onToggle={setPendingToggle}
                     />
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
@@ -807,7 +816,7 @@ export function ModuleControlCenter({
                   module={selected}
                   canManage={canManage}
                   loading={toggleLoadingId === selected.id}
-                  onToggle={toggleModule}
+                  onToggle={setPendingToggle}
                 />
                 <button
                   type="button"
@@ -823,7 +832,7 @@ export function ModuleControlCenter({
               module={selected}
               canManage={canManage}
               loading={policyLoadingId === selected.id}
-              onSave={savePolicy}
+              onSave={(module, payload) => setPendingPolicy({ module, payload })}
             />
 
             <PassportBlock title="Что умеет ARAY" items={[...selected.aray.skills, ...selected.aray.quickActions]} empty="нет действий" />
@@ -834,6 +843,36 @@ export function ModuleControlCenter({
           </aside>
         )}
       </section>
+
+      <ConfirmDialog
+        open={Boolean(pendingToggle)}
+        onClose={() => setPendingToggle(null)}
+        onConfirm={() => pendingToggle ? void toggleModule(pendingToggle) : undefined}
+        title={pendingToggle?.requestedEnabled ? "Выключить модуль?" : "Включить модуль?"}
+        description={
+          pendingToggle
+            ? `${moduleTitle(pendingToggle)} изменит доступность связанных экранов и действий ARAY.`
+            : ""
+        }
+        confirmLabel={pendingToggle?.requestedEnabled ? "Выключить" : "Включить"}
+        variant="warning"
+        loading={Boolean(pendingToggle && toggleLoadingId === pendingToggle.id)}
+      />
+
+      <ConfirmDialog
+        open={Boolean(pendingPolicy)}
+        onClose={() => setPendingPolicy(null)}
+        onConfirm={() => pendingPolicy ? void savePolicy(pendingPolicy.module, pendingPolicy.payload) : undefined}
+        title="Сохранить политику модуля?"
+        description={
+          pendingPolicy
+            ? `${moduleTitle(pendingPolicy.module)} получит новые роли, тариф или обязательные подключения.`
+            : ""
+        }
+        confirmLabel="Сохранить"
+        variant="warning"
+        loading={Boolean(pendingPolicy && policyLoadingId === pendingPolicy.module.id)}
+      />
 
       {selected && (
         <AdminModal

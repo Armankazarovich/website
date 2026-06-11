@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 async function checkAdmin() {
   const session = await auth();
@@ -11,18 +12,19 @@ async function checkAdmin() {
 
 export async function GET() {
   if (!(await checkAdmin())) return new Response("Unauthorized", { status: 401 });
+  const tenantId = getCurrentTenantId();
 
-  const siteUrlRow = await prisma.siteSettings.findUnique({ where: { key: "site_url" } });
+  const siteUrlRow = await prisma.siteSettings.findFirst({ where: { key: "site_url", tenantId } });
   const siteUrl = siteUrlRow?.value || "https://pilo-rus.ru";
 
-  const phoneRow = await prisma.siteSettings.findUnique({ where: { key: "phone_link" } });
+  const phoneRow = await prisma.siteSettings.findFirst({ where: { key: "phone_link", tenantId } });
   const phone = phoneRow?.value?.replace(/\D/g, "") || "79850670888";
 
-  const addressRow = await prisma.siteSettings.findUnique({ where: { key: "address" } });
+  const addressRow = await prisma.siteSettings.findFirst({ where: { key: "address", tenantId } });
   const address = addressRow?.value || "Химки, ул. Заводская 2А, стр.28";
 
   const products = await prisma.product.findMany({
-    where: { active: true },
+    where: { active: true, tenantId },
     include: {
       category: { select: { name: true } },
       variants: { where: { inStock: true }, orderBy: { size: "asc" } },

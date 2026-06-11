@@ -189,8 +189,9 @@ export function AuditClient({ products, emptyCategories }: Props) {
     }
   }
 
-  /** Одиночное действие по кнопке в строке — без confirm, с мгновенным toast */
+  /** Одиночное действие по кнопке в строке — с подтверждением, потому что меняет каталог. */
   async function rowAction(action: string, id: string, successTitle: string) {
+    if (!confirm(`${successTitle}. Продолжить?`)) return;
     setRowWorking(`${action}:${id}`);
     try {
       const res = await fetch("/api/admin/products/audit-actions", {

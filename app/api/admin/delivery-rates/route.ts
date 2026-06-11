@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const STAFF_ROLES = [
   "SUPER_ADMIN",
@@ -33,7 +34,9 @@ export async function GET() {
   if (!session || !STAFF_ROLES.includes(session.user.role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+  const tenantId = getCurrentTenantId();
   const rates = await prisma.deliveryRate.findMany({
+    where: { tenantId },
     orderBy: { sortOrder: "asc" },
   });
   return NextResponse.json(rates);
@@ -45,9 +48,13 @@ export async function POST(req: NextRequest) {
   if (!role || !WRITE_ROLES.includes(role)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
   }
+  const tenantId = getCurrentTenantId();
   const body = await readJson(req);
   if (!body || typeof body !== "object") {
     return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
+  }
+  if ((body as Record<string, unknown>).confirm !== true) {
+    return NextResponse.json({ error: "Confirmation required" }, { status: 400 });
   }
   const { vehicleName, payload, maxVolume, basePrice } = body;
   const volume = readPositiveNumber(maxVolume);
@@ -65,9 +72,10 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  const count = await prisma.deliveryRate.count();
+  const count = await prisma.deliveryRate.count({ where: { tenantId } });
   const rate = await prisma.deliveryRate.create({
     data: {
+      tenantId,
       vehicleName: vehicleName.trim(),
       payload: payload.trim(),
       maxVolume: volume,
@@ -87,7 +95,11 @@ export async function DELETE(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
-  const deleted = await prisma.deliveryRate.deleteMany({ where: { id } });
+  if (searchParams.get("confirm") !== "true") {
+    return NextResponse.json({ error: "Confirmation required" }, { status: 400 });
+  }
+  const tenantId = getCurrentTenantId();
+  const deleted = await prisma.deliveryRate.deleteMany({ where: { id, tenantId } });
   if (deleted.count === 0) {
     return NextResponse.json({ error: "Тариф не найден" }, { status: 404 });
   }

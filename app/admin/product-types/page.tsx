@@ -17,6 +17,7 @@ import {
   Sparkles,
   Tags,
 } from "lucide-react";
+import { ConfirmDialog } from "@/components/admin/confirm-dialog";
 
 type ProductTypeAdminItem = {
   label: string;
@@ -92,6 +93,7 @@ export default function AdminProductTypesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [saved, setSaved] = useState(false);
+  const [confirmSave, setConfirmSave] = useState(false);
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("all");
 
@@ -252,7 +254,7 @@ export default function AdminProductTypesPage() {
           </button>
           <button
             type="button"
-            onClick={save}
+            onClick={() => setConfirmSave(true)}
             disabled={saving}
             className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
           >
@@ -294,6 +296,19 @@ export default function AdminProductTypesPage() {
           Настройки сохранены. Каталог, меню и sitemap обновятся автоматически.
         </div>
       )}
+
+      <ConfirmDialog
+        open={confirmSave}
+        onClose={() => setConfirmSave(false)}
+        onConfirm={() => {
+          void save().finally(() => setConfirmSave(false));
+        }}
+        title="Сохранить типы товаров?"
+        description="Изменения повлияют на фильтры каталога, SEO-тексты и sitemap."
+        confirmLabel="Сохранить"
+        variant="warning"
+        loading={saving}
+      />
 
       <div className="grid min-h-[620px] min-w-0 gap-4 xl:grid-cols-[420px_minmax(0,1fr)]">
         <section className="min-w-0 rounded-2xl border border-border bg-card">

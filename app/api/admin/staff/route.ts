@@ -24,12 +24,15 @@ async function checkSuperAdmin() {
   return session && session.user?.role === "SUPER_ADMIN";
 }
 
-async function protectedStaffResponse(userId: string) {
+async function protectedStaffResponse(userId: string, tenantId: string) {
   if (await checkSuperAdmin()) return null;
-  const target = await prisma.user.findUnique({
-    where: { id: userId },
+  const target = await prisma.user.findFirst({
+    where: { id: userId, tenantId },
     select: { role: true },
   });
+  if (!target) {
+    return NextResponse.json({ error: "Сотрудник не найден" }, { status: 404 });
+  }
   if (target?.role === "SUPER_ADMIN" || target?.role === "ADMIN") {
     return NextResponse.json({ error: "Только SUPER_ADMIN может менять администратора" }, { status: 403 });
   }
@@ -154,12 +157,13 @@ function businessRoleError(error: unknown) {
 export async function GET(req: NextRequest) {
   if (!(await checkAdmin()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const tenantId = getCurrentTenantId();
 
   const url = new URL(req.url);
   const statusFilter = url.searchParams.get("status");
   const limitParam = url.searchParams.get("limit");
 
-  const where: any = { role: { not: "USER" } };
+  const where: any = { tenantId, role: { not: "USER" } };
   if (statusFilter && VALID_STATUSES.includes(statusFilter)) {
     where.staffStatus = statusFilter;
   }
@@ -179,8 +183,12 @@ export async function POST(req: NextRequest) {
   if (!(await checkAdmin()))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
+  const body = await req.json().catch(() => null);
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Некорректный запрос" }, { status: 400 });
+  }
   const { action } = body;
+  const currentTenantId = getCurrentTenantId();
 
   // ── create ──────────────────────────────────────────────────────────────────
   if (action === "create" || !action) {
@@ -203,6 +211,9 @@ export async function POST(req: NextRequest) {
     // Only SUPER_ADMIN can create other SUPER_ADMIN accounts
     if (role === "SUPER_ADMIN" && !(await checkSuperAdmin()))
       return NextResponse.json({ error: "Только Супер Администратор может создавать другие SUPER_ADMIN аккаунты" }, { status: 403 });
+
+    if (role === "ADMIN" && !(await checkSuperAdmin()))
+      return NextResponse.json({ error: "Only SUPER_ADMIN can create ADMIN accounts" }, { status: 403 });
 
     if (password.length < 6)
       return NextResponse.json({ error: "Пароль минимум 6 символов" }, { status: 400 });
@@ -252,11 +263,19 @@ export async function POST(req: NextRequest) {
     if (role === "SUPER_ADMIN" && !(await checkSuperAdmin()))
       return NextResponse.json({ error: "Только SUPER_ADMIN может назначать SUPER_ADMIN" }, { status: 403 });
 
-    const protectedResponse = await protectedStaffResponse(userId);
+    if (role === "ADMIN" && !(await checkSuperAdmin()))
+      return NextResponse.json({ error: "Only SUPER_ADMIN can assign ADMIN roles" }, { status: 403 });
+
+    const protectedResponse = await protectedStaffResponse(userId, tenantId);
     if (protectedResponse) return protectedResponse;
+    const targetUser = await prisma.user.findFirst({
+      where: { id: userId, tenantId },
+      select: { id: true },
+    });
+    if (!targetUser) return NextResponse.json({ error: "Сотрудник не найден" }, { status: 404 });
 
     const user = await prisma.user.update({
-      where: { id: userId },
+      where: { id: targetUser.id },
       data: { role: role as any, customRole: customRole?.trim() || businessRole?.label || null },
       select: staffSelect,
     });
@@ -271,11 +290,17 @@ export async function POST(req: NextRequest) {
     if (!VALID_STATUSES.includes(staffStatus))
       return NextResponse.json({ error: "Недопустимый статус" }, { status: 400 });
 
-    const protectedResponse = await protectedStaffResponse(userId);
+    const tenantId = currentTenantId;
+    const protectedResponse = await protectedStaffResponse(userId, tenantId);
     if (protectedResponse) return protectedResponse;
+    const targetUser = await prisma.user.findFirst({
+      where: { id: userId, tenantId },
+      select: { id: true },
+    });
+    if (!targetUser) return NextResponse.json({ error: "Сотрудник не найден" }, { status: 404 });
 
     const user = await prisma.user.update({
-      where: { id: userId },
+      where: { id: targetUser.id },
       data: { staffStatus: staffStatus as any },
       select: staffSelect,
     });
@@ -288,8 +313,17 @@ export async function POST(req: NextRequest) {
     if (!password || password.length < 6)
       return NextResponse.json({ error: "Пароль минимум 6 символов" }, { status: 400 });
 
+    const tenantId = currentTenantId;
+    const protectedResponse = await protectedStaffResponse(userId, tenantId);
+    if (protectedResponse) return protectedResponse;
+
     const passwordHash = await bcrypt.hash(password, 10);
-    await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+    const targetUser = await prisma.user.findFirst({
+      where: { id: userId, tenantId },
+      select: { id: true },
+    });
+    if (!targetUser) return NextResponse.json({ error: "Сотрудник не найден" }, { status: 404 });
+    await prisma.user.update({ where: { id: targetUser.id }, data: { passwordHash } });
     return NextResponse.json({ ok: true });
   }
 
@@ -300,10 +334,16 @@ export async function POST(req: NextRequest) {
     if (session?.user?.id === userId)
       return NextResponse.json({ error: "Нельзя удалить свой аккаунт" }, { status: 400 });
 
-    const protectedResponse = await protectedStaffResponse(userId);
+    const tenantId = currentTenantId;
+    const protectedResponse = await protectedStaffResponse(userId, tenantId);
     if (protectedResponse) return protectedResponse;
+    const targetUser = await prisma.user.findFirst({
+      where: { id: userId, tenantId },
+      select: { id: true },
+    });
+    if (!targetUser) return NextResponse.json({ error: "Сотрудник не найден" }, { status: 404 });
 
-    await prisma.user.delete({ where: { id: userId } });
+    await prisma.user.delete({ where: { id: targetUser.id } });
     return NextResponse.json({ ok: true });
   }
 

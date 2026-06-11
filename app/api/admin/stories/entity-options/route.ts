@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireStaff } from "@/lib/auth-helpers";
+import { getCurrentTenantId } from "@/lib/tenant-context";
 
 export const dynamic = "force-dynamic";
 
@@ -131,6 +132,7 @@ function reviewOption(review: any) {
 export async function GET(req: NextRequest) {
   const auth = await requireStaff();
   if (!auth.authorized) return auth.response;
+  const tenantId = getCurrentTenantId();
 
   const url = new URL(req.url);
   const type = clean(url.searchParams.get("type"), 30);
@@ -142,8 +144,8 @@ export async function GET(req: NextRequest) {
   if (type === "product") {
     const products = await prisma.product.findMany({
       where: contains
-        ? { active: true, OR: [{ name: contains }, { slug: contains }, { shortDescription: contains }] }
-        : { active: true },
+        ? { tenantId, active: true, OR: [{ name: contains }, { slug: contains }, { shortDescription: contains }] }
+        : { tenantId, active: true },
       include: {
         category: { select: { name: true } },
         variants: { select: { pricePerCube: true, pricePerPiece: true }, take: 12 },
@@ -156,7 +158,7 @@ export async function GET(req: NextRequest) {
 
   if (type === "service") {
     const services = await prisma.service.findMany({
-      where: contains ? { active: true, OR: [{ title: contains }, { slug: contains }, { description: contains }] } : { active: true },
+      where: contains ? { tenantId, active: true, OR: [{ title: contains }, { slug: contains }, { description: contains }] } : { tenantId, active: true },
       orderBy: [{ active: "desc" }, { sortOrder: "asc" }],
       take: 80,
     });
@@ -165,7 +167,7 @@ export async function GET(req: NextRequest) {
 
   if (type === "promotion") {
     const promotions = await prisma.promotion.findMany({
-      where: contains ? { active: true, OR: [{ title: contains }, { description: contains }] } : { active: true },
+      where: contains ? { tenantId, active: true, OR: [{ title: contains }, { description: contains }] } : { tenantId, active: true },
       orderBy: [{ active: "desc" }, { createdAt: "desc" }],
       take: 80,
     });
@@ -173,7 +175,7 @@ export async function GET(req: NextRequest) {
   }
 
   const reviews = await prisma.review.findMany({
-    where: contains ? { approved: true, OR: [{ name: contains }, { text: contains }, { product: { is: { name: contains } } }] } : { approved: true },
+    where: contains ? { tenantId, approved: true, OR: [{ name: contains }, { text: contains }, { product: { is: { name: contains } } }] } : { tenantId, approved: true },
     include: { product: { select: { name: true, slug: true, images: true } } },
     orderBy: [{ approved: "desc" }, { createdAt: "desc" }],
     take: 80,

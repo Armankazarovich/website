@@ -10,6 +10,13 @@ import { sendCustomerOrderConfirmation } from "@/lib/mail";
 import { generateInvoicePdf } from "@/lib/invoice-pdf";
 import { runWorkflows } from "@/lib/workflow-engine";
 import { enqueueTerminalOrderLifecycle, indexTerminalOrder } from "@/lib/terminal-sync";
+import { getCurrentTenantId } from "@/lib/tenant-context";
+import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
+import {
+  isOrderInventoryError,
+  resyncOrderInventory,
+  syncOrderInventoryForStatus,
+} from "@/lib/order-inventory";
 
 const statusLabels: Record<string, string> = {
   CONFIRMED: "Ваш заказ подтверждён",
@@ -46,13 +53,16 @@ const ORDER_STATUSES = new Set([
 ]);
 
 const UNIT_TYPES = new Set(["CUBE", "PIECE"]);
+const HIDDEN_CATEGORY_SORT_ORDER = 999;
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const access = await requireOrdersStaff();
   if (!access.authorized) return access.response;
+  const tenantId = getCurrentTenantId();
+  const actorId = access.session?.user?.id ?? null;
 
-  const order = await prisma.order.findUnique({
-    where: { id: params.id, deletedAt: null },
+  const order = await prisma.order.findFirst({
+    where: { id: params.id, tenantId, deletedAt: null },
     include: {
       items: true,
       user: { select: { id: true, name: true, email: true, phone: true } },
@@ -66,6 +76,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const access = await requireOrdersStaff();
   if (!access.authorized) return access.response;
+  const tenantId = getCurrentTenantId();
+  const actorId = access.session?.user?.id ?? null;
 
   const body = await req.json();
   const { status, guestName, guestPhone, guestEmail, deliveryAddress, comment, paymentMethod, removeItemIds, addItems, totalAmount, deliveryCost } = body;
@@ -105,6 +117,29 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     if (hasInvalidItem) {
       return NextResponse.json({ error: "Invalid addItems" }, { status: 400 });
     }
+    const requestedVariantIds = [...new Set(addItems.map((item: any) => String(item.variantId)))];
+    const allowedVariants = await prisma.productVariant.findMany({
+      where: {
+        id: { in: requestedVariantIds },
+        ...getPublicVariantsFilter(),
+        product: {
+          tenantId,
+          ...getPublicProductsFilter(),
+          category: {
+            tenantId,
+            showInMenu: true,
+            sortOrder: { lt: HIDDEN_CATEGORY_SORT_ORDER },
+          },
+        },
+      },
+      select: { id: true },
+    });
+    const allowedVariantIds = new Set(allowedVariants.map((variant) => variant.id));
+    const hasUnavailableVariant = requestedVariantIds.some((variantId) => !allowedVariantIds.has(variantId));
+
+    if (hasUnavailableVariant) {
+      return NextResponse.json({ error: "Variant is unavailable" }, { status: 400 });
+    }
   }
 
   const updateData: Record<string, any> = {};
@@ -120,21 +155,27 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
   // При финальном статусе — получаем telegramMessageId ДО обновления, чтобы удалить сообщение
   let telegramMsgToDelete: string | null = null;
+  const existingOrder = await prisma.order.findFirst({
+    where: { id: params.id, tenantId, deletedAt: null },
+    select: { id: true, telegramMessageId: true, status: true },
+  });
+  if (!existingOrder) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
   if (status && FINAL_STATUSES.includes(status)) {
-    const current = await prisma.order.findUnique({
-      where: { id: params.id },
-      select: { telegramMessageId: true },
-    });
-    telegramMsgToDelete = current?.telegramMessageId ?? null;
+    telegramMsgToDelete = existingOrder.telegramMessageId ?? null;
     if (telegramMsgToDelete) {
       updateData.telegramMessageId = null; // Очищаем поле
     }
   }
 
   // Удалить позиции
+  const orderChangedItems = Boolean(removeItemIds?.length || addItems?.length);
+  let order;
+  try {
+    order = await prisma.$transaction(async (prisma) => {
   if (removeItemIds?.length) {
     await prisma.orderItem.deleteMany({
-      where: { id: { in: removeItemIds }, orderId: params.id },
+      where: { id: { in: removeItemIds }, orderId: existingOrder.id },
     });
   }
 
@@ -142,7 +183,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (addItems?.length) {
     await prisma.orderItem.createMany({
       data: addItems.map((item: any) => ({
-        orderId: params.id,
+        orderId: existingOrder.id,
         variantId: String(item.variantId),
         productName: String(item.productName),
         variantSize: String(item.variantSize),
@@ -153,11 +194,31 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     });
   }
 
-  const order = await prisma.order.update({
-    where: { id: params.id },
+  const updated = await prisma.order.update({
+    where: { id: existingOrder.id },
     data: updateData,
     include: { items: true },
   });
+
+      const inventoryOptions = {
+        tenantId,
+        source: "admin-order-update",
+        userId: actorId,
+      };
+      if (orderChangedItems) {
+        await resyncOrderInventory(prisma, updated, inventoryOptions);
+      } else if (status) {
+        await syncOrderInventoryForStatus(prisma, updated, inventoryOptions);
+      }
+
+      return updated;
+    });
+  } catch (err) {
+    if (isOrderInventoryError(err)) {
+      return NextResponse.json({ error: err.message, details: err.details }, { status: err.status });
+    }
+    throw err;
+  }
 
   indexTerminalOrder({
     id: order.id,
@@ -179,6 +240,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     runWorkflows("order_status_changed", {
       orderId: order.id,
       orderNumber: order.orderNumber,
+      tenantId,
       status,
       guestName: order.guestName,
       guestPhone: order.guestPhone,
@@ -207,6 +269,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       body: statusDescriptions[status] || "",
       url: `/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
       icon: "/icons/icon-192x192.png",
+    }, {
+      tenantId,
+      source: "ORDER",
+      sourceUserId: actorId,
+      recipientLabel: order.guestName || order.guestEmail || order.guestPhone || null,
+      entityType: "ORDER",
+      entityId: order.id,
+      entityLabel: `Order #${order.orderNumber}`,
+      entityHref: `/admin/orders/${order.id}`,
+      metadata: {
+        eventKey: "order.status.customer",
+        orderNumber: order.orderNumber,
+        status,
+      },
     }).catch(console.error);
   }
 
@@ -230,6 +306,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       body: order.guestName || "Клиент",
       url: `/admin/orders/${order.id}`,
       icon: "/icons/icon-192x192.png",
+    }, {
+      tenantId,
+      source: "ORDER",
+      sourceUserId: actorId,
+      recipientRole: "STAFF",
+      entityType: "ORDER",
+      entityId: order.id,
+      entityLabel: `Order #${order.orderNumber}`,
+      entityHref: `/admin/orders/${order.id}`,
+      metadata: {
+        eventKey: "order.status.staff",
+        orderNumber: order.orderNumber,
+        status,
+      },
     }).catch(console.error);
   }
 
@@ -328,14 +418,23 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const access = await requireOrdersAdmin();
   if (!access.authorized) return access.response;
+  const tenantId = getCurrentTenantId();
   const { searchParams } = new URL(req.url);
   const permanent = searchParams.get("permanent") === "true";
+  const order = await prisma.order.findFirst({
+    where: { id: params.id, tenantId },
+    select: { id: true, deletedAt: true },
+  });
+  if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   if (permanent) {
-    await prisma.order.delete({ where: { id: params.id } });
+    if (!order.deletedAt) {
+      return NextResponse.json({ error: "Order must be moved to trash before permanent delete" }, { status: 400 });
+    }
+    await prisma.order.delete({ where: { id: order.id } });
   } else {
     await prisma.order.update({
-      where: { id: params.id },
+      where: { id: order.id },
       data: { deletedAt: new Date() },
     });
   }
@@ -346,8 +445,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const access = await requireOrdersAdmin();
   if (!access.authorized) return access.response;
+  const tenantId = getCurrentTenantId();
+  const order = await prisma.order.findFirst({
+    where: { id: params.id, tenantId, deletedAt: { not: null } },
+    select: { id: true },
+  });
+  if (!order) return NextResponse.json({ error: "Not found" }, { status: 404 });
   await prisma.order.update({
-    where: { id: params.id },
+    where: { id: order.id },
     data: { deletedAt: null },
   });
   return NextResponse.json({ success: true });

@@ -22,7 +22,7 @@ const settingGroups = [
     description: "Главная, блоки сайта, баннеры, тексты, SEO и внешний вид.",
     items: [
       { title: "Настройки сайта", href: "/admin/site", icon: Globe, text: "Контакты, SEO, аналитика, футер, виджеты." },
-      { title: "Конструктор магазина", href: "/admin/site/constructor", icon: Wand2, text: "Паспорт запуска, тип бизнеса, PWA, каталог, Арай и преддеплой." },
+      { title: "Редактор сайта", href: "/admin/site/constructor", icon: Wand2, text: "Блоки, страницы, превью и правки уже созданного сайта." },
       { title: "Оформление", href: "/admin/appearance", icon: Brush, text: "Палитра, карточки, мобильный вид, ARAY на сайте." },
       { title: "Медиабиблиотека", href: "/admin/media", icon: Images, text: "Фото, документы, alt-тексты и бизнес-медиа." },
     ],

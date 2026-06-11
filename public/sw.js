@@ -211,8 +211,8 @@ self.addEventListener('push', function(event) {
   var title = data.title || 'Арай';
   var options = {
     body: data.body || '',
-    icon: '/api/pwa/icon?s=192&v=aray-production-20260508',
-    badge: '/api/pwa/icon?s=72&v=aray-production-20260508',
+    icon: '/api/pwa/icon?s=192&v=pilorus-brand-header-20260526',
+    badge: '/api/pwa/icon?s=72&v=pilorus-brand-header-20260526',
     data: { url: data.url || '/' },
     vibrate: [200, 100, 200]
   };
