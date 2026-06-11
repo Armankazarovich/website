@@ -200,9 +200,9 @@ async function main() {
   // Слот сохранён в БД и админке — клиент может заполнить новым номером.
   const phone3 = await prisma.siteSettings.findUnique({ where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key: "phone3" } } });
   if (!phone3) {
-    await upsertSetting("phone3", "8-977-606-80-20");
-    await upsertSetting("phone3_link", "+79776068020");
-    console.log("[data-migrate] ✓ phone3 добавлен");
+    await upsertSetting("phone3", "");
+    await upsertSetting("phone3_link", "");
+    console.log("[data-migrate] ✓ phone3 initialized empty");
   }
 
   // 20.04.2026: одноразовая очистка старого phone2 (идемпотентно — проверяем точное значение)
@@ -647,7 +647,7 @@ async function main() {
       phone2_link: "+74951350203",
       phone3: "",
       phone3_link: "",
-      address: "г. Химки, ул. Заводская 2А, стр.13",
+      address: "Химки, ул. Заводская 2А, стр.28",
       company_name: "ООО «ДЕРЕВОЛИДЕР»",
       legal_full_name: "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ «ДЕРЕВОЛИДЕР»",
       inn: "7733291699",

@@ -105,7 +105,7 @@ export default async function ServiceDetailPage({ params }: Props) {
 
   if (!service) notFound();
 
-  const phone = getSetting(siteSettings, "phone_link") || "+79850670888";
+  const phone = getSetting(siteSettings, "phone_link") || "+74993720441";
   const images = getServiceImageUrls(service.image);
   const schema = {
     "@context": "https://schema.org",

@@ -433,7 +433,7 @@ export default function AdminSitePage() {
               <Field
                 label="Телефон 3 (для tel: ссылки)"
                 settingKey="phone3_link"
-                placeholder="+79776068020"
+                placeholder="+74951350203"
               />
               <Field
                 label="Email"
@@ -454,7 +454,7 @@ export default function AdminSitePage() {
               <Field
                 label="Адрес (текст)"
                 settingKey="address"
-                placeholder="г. Химки, ул. Заводская 2А, стр.13"
+                placeholder="Химки, ул. Заводская 2А, стр.28"
               />
               <Field
                 label="Ссылка на Яндекс.Карты"
@@ -1057,7 +1057,7 @@ export default function AdminSitePage() {
                           Номер телефона
                         </label>
                         <input
-                          value={settings["whatsapp_number"] ?? "+79850670888"}
+                          value={settings["whatsapp_number"] ?? "+74993720441"}
                           onChange={(e) =>
                             set("whatsapp_number", e.target.value)
                           }
@@ -1090,7 +1090,7 @@ export default function AdminSitePage() {
                       <span className="text-foreground font-mono">
                         wa.me/
                         {(
-                          settings["whatsapp_number"] ?? "+79850670888"
+                          settings["whatsapp_number"] ?? "+74993720441"
                         ).replace(/\D/g, "")}
                       </span>
                     </div>
@@ -1266,7 +1266,7 @@ export default function AdminSitePage() {
               {
                 key: "social_whatsapp",
                 label: "WhatsApp",
-                placeholder: "+79850670888",
+                placeholder: "+74993720441",
                 color: "text-[#25D366]",
                 Icon: () => (
                   <svg

@@ -11,7 +11,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   business_type: "lumber",
   terminal_profile: "lumber",
   terminal_enabled_modules: "",
-  address: "г. Химки, ул. Заводская 2А, стр.13",
+  address: "Химки, ул. Заводская 2А, стр.28",
   address_map: "https://yandex.ru/maps/-/CHqJJGqe",
   working_hours: "Пн-Пт: 09:00-18:00, Сб: 09:00-15:00",
   company_name: "ООО «ДЕРЕВОЛИДЕР»",
@@ -48,7 +48,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   telegram_message: "Здравствуйте! Хочу сделать заказ.",
   seo_title: "ПилоРус — пиломатериалы от производителя в Химках",
   seo_description:
-    "Производство и продажа пиломатериалов в Химках. Доска, брус, вагонка, блок-хаус, фанера. Доставка по Москве и МО за 1-3 дня. ☎ 8-985-067-08-88",
+    "Производство и продажа пиломатериалов в Химках. Доска, брус, вагонка, блок-хаус, фанера. Доставка по Москве и МО за 1-3 дня. ☎ +7 (499) 372-04-41",
   palettes_enabled: "timber,forest,ocean,midnight,slate,crimson,sber,avito,amazon",
   photo_aspect_ratio: "3/4",
   card_style: "classic",

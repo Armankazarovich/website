@@ -75,7 +75,7 @@ export default async function ServicesPage() {
     ? `https://t.me/${telegramUsername.replace("@", "")}?text=${encodeURIComponent(telegramMessage)}`
     : null;
 
-  const phone = getSetting(siteSettings, "phone_link") || "+79850670888";
+  const phone = getSetting(siteSettings, "phone_link") || "+74993720441";
   const servicesSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",

@@ -42,8 +42,8 @@ export interface HeaderCategory {
 
 // v3 - 2 phones (phone2 removed 20.04.2026 per client request)
 const DEFAULT_PHONES: PhoneItem[] = [
-  { display: "8-985-067-08-88", tel: "+79850670888" },
-  { display: "8-977-606-80-20", tel: "+79776068020" },
+  { display: "+7 (499) 372-04-41", tel: "+74993720441" },
+  { display: "+7 (495) 135-02-03", tel: "+74951350203" },
 ];
 
 interface DynamicTypeInfo {
@@ -323,7 +323,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                     {/* Адрес */}
                     <div className="px-4 py-2.5 border-t border-border bg-muted/30 text-xs text-muted-foreground flex items-center gap-1.5">
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                      г. Химки, ул. Заводская 2А, стр.13
+                      Химки, ул. Заводская 2А, стр.28
                     </div>
                   </div>
                 )}
@@ -639,7 +639,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                           <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                           <div>
                             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Адрес</p>
-                            <p className="mt-1 text-sm leading-snug text-foreground">г. Химки, ул. Заводская 2А, стр.13</p>
+                            <p className="mt-1 text-sm leading-snug text-foreground">Химки, ул. Заводская 2А, стр.28</p>
                           </div>
                         </div>
                         <div className="flex gap-3 rounded-xl bg-muted/35 px-3 py-2.5">

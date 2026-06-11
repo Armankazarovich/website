@@ -28,7 +28,7 @@ export default async function CabinetDashboard() {
   if (!session?.user?.id) redirect("/login");
 
   const settings = await getSiteSettings();
-  const phoneLink = getSetting(settings, "phone_link") || "+79850670888";
+  const phoneLink = getSetting(settings, "phone_link") || "+74993720441";
   const phoneDisplay = getSetting(settings, "phone") || fmtPhone(phoneLink);
 
   // Step index для mini-stepper активного заказа
