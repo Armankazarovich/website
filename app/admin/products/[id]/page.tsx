@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   Save, Trash2, Plus, Upload, ImageIcon,
   Check, CheckCircle, Loader2, Wand2, PenTool, Images, ExternalLink,
-  ChevronLeft, ChevronRight, ChevronDown, X, GripVertical, Search, Star, Keyboard,
+  ChevronLeft, ChevronRight, ChevronDown, X, GripVertical, Search, Star, Keyboard, EyeOff,
   Calculator, Copy, Sparkles, TrendingUp, TrendingDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -825,6 +825,7 @@ export default function AdminProductEditPage() {
   };
 
   const readiness = calcReadiness({ name, categoryId, slug, images, variants, shortDescription, description });
+  const publicationReady = active && readiness.percent === 100;
   const saveStatus = saved ? (
     <>
       <Check className="mr-1 inline h-3.5 w-3.5 text-primary" />
@@ -908,16 +909,25 @@ export default function AdminProductEditPage() {
           </div>
         </div>
         <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
-          {!isNew && slug && (
+          {!isNew && slug && active && (
             <a
               href={`/product/${slug}`}
               target="_blank"
-              title={active ? "Открыть товар на сайте" : "Открыть публичный адрес черновика"}
+              title="Открыть товар на сайте"
               className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-primary/[0.08] sm:flex-none"
             >
               <ExternalLink className="w-3.5 h-3.5" />
-              {active ? "На сайте" : "Предпросмотр"}
+              На сайте
             </a>
+          )}
+          {!isNew && slug && !active && (
+            <span
+              title="Публичная страница недоступна, пока товар скрыт"
+              className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-sm font-medium text-amber-300 sm:flex-none"
+            >
+              <EyeOff className="w-3.5 h-3.5" />
+              Скрыт с сайта
+            </span>
           )}
           {!isNew && (
             <button
@@ -954,13 +964,19 @@ export default function AdminProductEditPage() {
       </section>
 
       {/* ── Readiness Bar (тонкая строка прогресса готовности для менеджера) ── */}
-      {!isNew && readiness.percent === 100 && (
+      {!isNew && !active && (
+        <div className="flex items-center gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+          <EyeOff className="w-3.5 h-3.5 shrink-0" />
+          <span>Товар скрыт с сайта · публичная страница недоступна</span>
+        </div>
+      )}
+      {!isNew && publicationReady && (
         <div className="flex items-center gap-2 px-3 py-1.5 text-xs text-muted-foreground">
           <Check className="w-3.5 h-3.5 text-primary" />
           <span>Товар готов к публикации · SEO и Директ корректны</span>
         </div>
       )}
-      {!isNew && readiness.percent < 100 && (
+      {!isNew && active && readiness.percent < 100 && (
         <div className="flex items-center gap-3 px-3 py-2 rounded-xl border border-border bg-primary/[0.03]">
           <div className="relative w-8 h-8 shrink-0">
             <svg className="w-8 h-8 -rotate-90" viewBox="0 0 40 40">
