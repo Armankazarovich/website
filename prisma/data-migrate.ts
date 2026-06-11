@@ -638,6 +638,25 @@ async function main() {
     console.log("[data-migrate] WhatsApp setting update skipped:", e.message);
   }
 
+  try {
+    const retiredDraftProducts = await prisma.product.updateMany({
+      where: {
+        tenantId: DEFAULT_TENANT_ID,
+        slug: { in: ["bad-krasivyy", "bad-krasivy", "bad-krasivyj"] },
+        active: true,
+      },
+      data: {
+        active: false,
+        featured: false,
+      },
+    });
+    if (retiredDraftProducts.count > 0) {
+      console.log(`[data-migrate] Retired draft storefront products: ${retiredDraftProducts.count}`);
+    }
+  } catch (e: any) {
+    console.log("[data-migrate] Draft storefront product cleanup skipped:", e.message);
+  }
+
   console.log("[data-migrate] Готово.");
   try {
     const pilorusLegalSettings20260611: Record<string, string> = {

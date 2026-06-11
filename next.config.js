@@ -1,6 +1,11 @@
 const ignoredWatchPaths =
   /([\\/](?:node_modules|\.git|\.next|backups|System Volume Information)([\\/]|$))|([\\/](?:pagefile\.sys|DumpStack\.log\.tmp)$)|(^D:[\\/](?:pagefile\.sys|DumpStack\.log\.tmp)$)/i;
 const isProduction = process.env.NODE_ENV === 'production';
+const liveNoStoreHeaders = [
+  { key: 'Cache-Control', value: 'no-store, no-cache, must-revalidate, proxy-revalidate' },
+  { key: 'Pragma', value: 'no-cache' },
+  { key: 'Expires', value: '0' },
+];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -11,6 +16,28 @@ const nextConfig = {
   },
   async headers() {
     return [
+      {
+        // Live workspaces must never reuse a stale shell after a deploy.
+        source: '/admin/:path*',
+        headers: liveNoStoreHeaders,
+      },
+      {
+        source: '/cabinet/:path*',
+        headers: liveNoStoreHeaders,
+      },
+      {
+        source: '/checkout/:path*',
+        headers: liveNoStoreHeaders,
+      },
+      {
+        source: '/login',
+        headers: liveNoStoreHeaders,
+      },
+      {
+        // Admin APIs are always live data.
+        source: '/api/admin/:path*',
+        headers: liveNoStoreHeaders,
+      },
       {
         // Манифесты — без кэша (обновляются сразу)
         source: '/:path(manifest\\.json|admin-manifest\\.json)',

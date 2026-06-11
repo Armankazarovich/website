@@ -1,7 +1,7 @@
 // PiloRus service worker: safe offline mode + background refresh.
 // Public pages use fast network-first. Admin, cabinet and checkout stay live-only.
 
-var CACHE_VERSION = 'aray-pilorus-v1';
+var CACHE_VERSION = 'aray-pilorus-v2-20260611';
 var STATIC_CACHE = CACHE_VERSION + '-static';
 var IMAGE_CACHE = CACHE_VERSION + '-images';
 var PAGE_CACHE = CACHE_VERSION + '-pages';
