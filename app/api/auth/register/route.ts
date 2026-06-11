@@ -14,6 +14,7 @@ const schema = z.object({
   email: z.string().email(),
   phone: z.string().optional(),
   password: z.string().min(6),
+  legalConsent: z.boolean().refine((value) => value, "consent required"),
 });
 
 export async function POST(req: NextRequest) {

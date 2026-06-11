@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Phone, Check } from "lucide-react";
 import { PHONE_LINK } from "@/lib/phone-constants";
 import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
@@ -10,6 +11,7 @@ export function ContactForm({ phoneLink }: { phoneLink?: string } = {}) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
+  const [legalConsent, setLegalConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -17,6 +19,10 @@ export function ContactForm({ phoneLink }: { phoneLink?: string } = {}) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!phone.trim()) { setError("Укажите телефон"); return; }
+    if (!legalConsent) {
+      setError("Подтвердите согласие на обработку персональных данных");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -24,7 +30,12 @@ export function ContactForm({ phoneLink }: { phoneLink?: string } = {}) {
       const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), message: message.trim() }),
+        body: JSON.stringify({
+          name: name.trim(),
+          phone: phone.trim(),
+          message: message.trim(),
+          legalConsent,
+        }),
       });
       if (!res.ok) throw new Error();
       trackArayMetrikaGoal("aray_lead_sent", { source: "contact_form" });
@@ -92,6 +103,22 @@ export function ContactForm({ phoneLink }: { phoneLink?: string } = {}) {
               className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
             />
           </div>
+
+          <label className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={legalConsent}
+              onChange={(e) => setLegalConsent(e.target.checked)}
+              required
+              className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+            />
+            <span>
+              Я соглашаюсь на обработку персональных данных и принимаю{" "}
+              <Link href="/privacy" className="text-primary hover:underline">
+                политику конфиденциальности
+              </Link>
+            </span>
+          </label>
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 

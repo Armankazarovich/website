@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type FormEvent } from "react";
+import Link from "next/link";
 import {
   Bot,
   CheckCircle2,
@@ -217,6 +218,7 @@ export function ProductSellerPanel({
   const [mode, setMode] = useState<RequestMode>("question");
   const [message, setMessage] = useState("");
   const [contact, setContact] = useState("");
+  const [legalConsent, setLegalConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const modeLabel = useMemo(
@@ -255,6 +257,10 @@ export function ProductSellerPanel({
       toast({ title: "Напишите вопрос или контакт", description: "Так менеджер быстрее поймёт, что нужно клиенту." });
       return;
     }
+    if (!legalConsent) {
+      toast({ title: "Нужно согласие", description: "Подтвердите обработку персональных данных перед отправкой." });
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -269,6 +275,7 @@ export function ProductSellerPanel({
           productTitle: productName,
           productSlug,
           productSku,
+          legalConsent,
         }),
       });
 
@@ -281,6 +288,7 @@ export function ProductSellerPanel({
       toast({ title: "Заявка по товару сохранена", description: "Она попадёт менеджеру и в CRM." });
       askAray(cleanMessage || cleanContact);
       setMessage("");
+      setLegalConsent(false);
     } catch (error) {
       toast({
         title: "Заявка не ушла",
@@ -432,6 +440,21 @@ export function ProductSellerPanel({
             Отправить
           </button>
         </div>
+        <label className="flex items-start gap-2 text-[11px] leading-5 text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={legalConsent}
+            onChange={(event) => setLegalConsent(event.target.checked)}
+            required
+            className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+          />
+          <span>
+            Я соглашаюсь на обработку персональных данных и принимаю{" "}
+            <Link href="/privacy" className="text-primary hover:underline">
+              политику конфиденциальности
+            </Link>
+          </span>
+        </label>
         <p className="flex items-start gap-1.5 text-[11px] leading-5 text-muted-foreground">
           <Mail className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
           Заявка сохраняется как входящий лид: дальше её можно вести через почту, рассылку, мессенджер, звонок или видео.

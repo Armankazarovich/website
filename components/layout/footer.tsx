@@ -209,7 +209,7 @@ export function Footer({ settings = {}, categories = [] }: FooterProps) {
 
       <div className="border-t border-zinc-200 dark:border-zinc-800 mt-4">
         <div className="container py-4 flex flex-col sm:flex-row justify-between items-center gap-2 text-sm text-zinc-500 dark:text-zinc-600">
-          <p>{s("footer_copyright") || `© ${new Date().getFullYear()} ООО «ПИТИ» (ПилоРус). Все права защищены.`}</p>
+          <p>{s("footer_copyright") || `© ${new Date().getFullYear()} ПилоРус. Все права защищены.`}</p>
           <div className="flex items-center gap-3 flex-wrap justify-center sm:justify-end">
             <span>ИНН {s("inn") || "7733291699"} / ОГРН {s("ogrn") || "1167746624902"}</span>
             <Link href="/privacy" className="hover:text-zinc-800 dark:hover:text-zinc-400 transition-colors underline underline-offset-2">

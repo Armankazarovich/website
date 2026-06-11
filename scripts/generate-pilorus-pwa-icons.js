@@ -6,39 +6,12 @@ const sharp = require("sharp");
 const root = path.resolve(__dirname, "..");
 const publicDir = path.join(root, "public");
 const iconsDir = path.join(publicDir, "icons");
-const sourceLogo = path.join(publicDir, "logo.png");
+const sourceLogo = path.join(publicDir, "logo.svg");
 const iconSizes = [32, 72, 96, 128, 144, 152, 192, 384, 512];
 const faviconSizes = [16, 32, 48];
 
-function iconBackground(size) {
-  return Buffer.from(`
-<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <defs>
-    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#20100a"/>
-      <stop offset="0.52" stop-color="#100b08"/>
-      <stop offset="1" stop-color="#07120c"/>
-    </linearGradient>
-    <radialGradient id="warm" cx="32%" cy="24%" r="75%">
-      <stop offset="0" stop-color="#f97316" stop-opacity="0.30"/>
-      <stop offset="0.45" stop-color="#f59e0b" stop-opacity="0.12"/>
-      <stop offset="1" stop-color="#100b08" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#f97316" stop-opacity="0.34"/>
-      <stop offset="0.55" stop-color="#22c55e" stop-opacity="0.18"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0.08"/>
-    </linearGradient>
-  </defs>
-  <rect width="${size}" height="${size}" fill="url(#base)"/>
-  <rect width="${size}" height="${size}" fill="url(#warm)"/>
-  <path d="M ${size * 0.08} ${size * 0.78} C ${size * 0.32} ${size * 0.64}, ${size * 0.58} ${size * 0.83}, ${size * 0.92} ${size * 0.57}" fill="none" stroke="#f97316" stroke-opacity="0.24" stroke-width="${Math.max(1, size * 0.018)}"/>
-  <rect x="${size * 0.055}" y="${size * 0.055}" width="${size * 0.89}" height="${size * 0.89}" rx="${size * 0.14}" fill="none" stroke="url(#edge)" stroke-width="${Math.max(1, size * 0.018)}"/>
-</svg>`);
-}
-
 async function renderIconBuffer(size) {
-  const logoSize = Math.round(size * 0.74);
+  const logoSize = Math.round(size * 0.92);
   const logo = await sharp(sourceLogo)
     .resize(logoSize, logoSize, {
       fit: "contain",
@@ -47,10 +20,15 @@ async function renderIconBuffer(size) {
     .png()
     .toBuffer();
 
-  return sharp(iconBackground(size))
+  return sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  })
     .composite([{ input: logo, gravity: "center" }])
-    .flatten({ background: { r: 16, g: 11, b: 8 } })
-    .removeAlpha()
     .png({ compressionLevel: 9, adaptiveFiltering: true })
     .toBuffer();
 }

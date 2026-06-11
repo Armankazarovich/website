@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { Star, Loader2, AlertCircle, CheckCircle, Camera, X } from "lucide-react";
 import Image from "next/image";
 import { useSession } from "next-auth/react";
@@ -39,6 +40,7 @@ export function ReviewForm({
   const [email, setEmail] = useState(resolvedEmail);
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
+  const [legalConsent, setLegalConsent] = useState(false);
   const [honeypot, setHoneypot] = useState(""); // hidden field — bots fill it
   const [formStartTime] = useState(Date.now()); // track how fast form is submitted
   const [images, setImages] = useState<string[]>([]);
@@ -95,6 +97,11 @@ export function ReviewForm({
       return;
     }
 
+    if (!legalConsent) {
+      setError("Подтвердите согласие на обработку персональных данных");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -130,6 +137,7 @@ export function ReviewForm({
           rating,
           text: text.trim(),
           images: uploadedUrls,
+          legalConsent,
           website: honeypot, // honeypot — bots fill this
           _t: formStartTime, // timing check
         }),
@@ -151,6 +159,7 @@ export function ReviewForm({
       setLoading(false);
       setRating(5);
       setText("");
+      setLegalConsent(false);
       setImages([]);
 
       // Reset form after 8 seconds
@@ -360,6 +369,22 @@ export function ReviewForm({
           "Отправить отзыв"
         )}
       </button>
+
+      <label className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={legalConsent}
+          onChange={(event) => setLegalConsent(event.target.checked)}
+          required
+          className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+        />
+        <span>
+          Я соглашаюсь на обработку персональных данных и принимаю{" "}
+          <Link href="/privacy" className="text-primary hover:underline">
+            политику конфиденциальности
+          </Link>
+        </span>
+      </label>
 
       {/* Info message */}
       <p className="text-xs text-muted-foreground text-center">

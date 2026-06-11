@@ -4,7 +4,7 @@ import { getSiteSettings, getSetting, DEFAULT_SETTINGS } from "@/lib/site-settin
 
 export const metadata: Metadata = {
   title: "Пользовательское соглашение и политика конфиденциальности",
-  description: "Условия использования сайта pilo-rus.ru, политика конфиденциальности и обработки персональных данных ООО ПИТИ (ПилоРус).",
+  description: "Условия использования сайта pilo-rus.ru, обработки заказов и персональных данных ПилоРус.",
   openGraph: {
     title: "Пользовательское соглашение — ПилоРус",
     url: "https://pilo-rus.ru/terms",
@@ -32,20 +32,27 @@ export default async function TermsPage() {
   }
   const phoneLink = getSetting(settings, "phone_link") || DEFAULT_SETTINGS.phone_link;
   const phoneDisplay = getSetting(settings, "phone") || DEFAULT_SETTINGS.phone;
+  const email = getSetting(settings, "email") || DEFAULT_SETTINGS.email;
+  const address = getSetting(settings, "address") || DEFAULT_SETTINGS.address;
+  const companyName = getSetting(settings, "company_name") || DEFAULT_SETTINGS.company_name;
+  const legalFullName = getSetting(settings, "legal_full_name") || companyName;
+  const inn = getSetting(settings, "inn") || DEFAULT_SETTINGS.inn;
+  const ogrn = getSetting(settings, "ogrn") || DEFAULT_SETTINGS.ogrn;
+  const kpp = getSetting(settings, "kpp") || DEFAULT_SETTINGS.kpp;
   return (
     <div className="container py-12 max-w-3xl">
       <div className="flex items-start gap-3 mb-3">
         <BackButton href="/" label="Главная" className="mt-1 mb-0 shrink-0" />
         <h1 className="font-display font-bold text-3xl">Пользовательское соглашение</h1>
       </div>
-      <p className="text-muted-foreground mb-10">Редакция от 1 апреля 2025 года</p>
+      <p className="text-muted-foreground mb-10">Редакция от 11 июня 2026 года</p>
 
       <div className="prose prose-sm dark:prose-invert max-w-none space-y-8">
 
         <section>
           <h2 className="font-display font-bold text-xl mb-3">1. Общие положения</h2>
           <p className="text-muted-foreground leading-relaxed">
-            Настоящее Соглашение регулирует отношения между ООО «ПИТИ» (далее — «Компания», ОГРН/ИНН по данным ЕГРЮЛ, адрес: Московская обл., г. Химки, ул. Заводская, д. 2А, стр. 28) и пользователем сайта pilo-rus.ru (далее — «Сайт»).
+            Настоящее Соглашение регулирует отношения между {legalFullName} (далее — «Компания», ОГРН {ogrn}, ИНН {inn}, адрес: {address}) и пользователем сайта pilo-rus.ru (далее — «Сайт»).
           </p>
           <p className="text-muted-foreground leading-relaxed mt-2">
             Используя Сайт, вы подтверждаете, что ознакомились с настоящим Соглашением и принимаете его условия в полном объёме.
@@ -55,7 +62,7 @@ export default async function TermsPage() {
         <section>
           <h2 className="font-display font-bold text-xl mb-3">2. Предмет соглашения</h2>
           <p className="text-muted-foreground leading-relaxed">
-            Сайт предоставляет информацию о продукции ООО «ПИТИ», позволяет оформить заявку на покупку пиломатериалов, воспользоваться калькулятором расчёта объёма и стоимости, а также связаться с менеджерами компании.
+            Сайт предоставляет информацию о продукции {companyName}, позволяет оформить заявку на покупку пиломатериалов, воспользоваться калькулятором расчёта объёма и стоимости, а также связаться с менеджерами компании.
           </p>
         </section>
 
@@ -133,10 +140,12 @@ export default async function TermsPage() {
         <section>
           <h2 className="font-display font-bold text-xl mb-3">8. Контакты</h2>
           <div className="text-muted-foreground space-y-1">
-            <p><strong className="text-foreground">Компания:</strong> ООО «ПИТИ»</p>
-            <p><strong className="text-foreground">Адрес:</strong> Московская обл., г. Химки, ул. Заводская, д. 2А, стр. 28</p>
+            <p><strong className="text-foreground">Компания:</strong> {legalFullName}</p>
+            <p><strong className="text-foreground">ОГРН:</strong> {ogrn}</p>
+            <p><strong className="text-foreground">ИНН:</strong> {inn} / <strong className="text-foreground">КПП:</strong> {kpp}</p>
+            <p><strong className="text-foreground">Адрес:</strong> {address}</p>
             <p><strong className="text-foreground">Email:</strong>{" "}
-              <a href="mailto:info@pilo-rus.ru" className="text-primary hover:underline">info@pilo-rus.ru</a>
+              <a href={`mailto:${email}`} className="text-primary hover:underline">{email}</a>
             </p>
             <p><strong className="text-foreground">Телефон:</strong>{" "}
               <a href={`tel:${phoneLink}`} className="text-primary hover:underline">{phoneDisplay}</a>

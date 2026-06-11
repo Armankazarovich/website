@@ -127,17 +127,22 @@ function CheckoutRegisterForm({ onSuccess }: { onSuccess: () => void }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [legalConsent, setLegalConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!legalConsent) {
+      setError("Подтвердите согласие на обработку персональных данных");
+      return;
+    }
     setLoading(true);
     setError("");
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, legalConsent }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -172,6 +177,21 @@ function CheckoutRegisterForm({ onSuccess }: { onSuccess: () => void }) {
         placeholder="Пароль (минимум 6 символов)"
         className="w-full px-3 py-3 sm:py-2 rounded-xl border border-border bg-background text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
+      <label className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={legalConsent}
+          onChange={(e) => setLegalConsent(e.target.checked)}
+          required
+          className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+        />
+        <span>
+          Я соглашаюсь на обработку персональных данных и принимаю{" "}
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+            политику конфиденциальности
+          </a>
+        </span>
+      </label>
       {error && <p className="text-destructive text-xs">{error}</p>}
       <button
         type="submit"
@@ -501,13 +521,13 @@ export default function CheckoutPage() {
 
       const attribution = loadAttribution();
       const { legalConsent, ...orderData } = data;
-      void legalConsent;
 
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...orderData,
+          legalConsent,
           comment,
           items: visibleItems.map((item) => ({
             variantId: item.variantId,

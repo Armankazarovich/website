@@ -1014,7 +1014,7 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                   Личный кабинет
                 </Link>
 
-                <p className="text-center text-[10px] text-muted-foreground/40 pt-1">ООО ПИТИ · Химки, МО · {new Date().getFullYear()}</p>
+                <p className="text-center text-[10px] text-muted-foreground/40 pt-1">ПилоРус · Химки, МО · {new Date().getFullYear()}</p>
               </div>
             </motion.div>
           </>

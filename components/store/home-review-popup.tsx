@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import { Star, Loader2, AlertCircle, CheckCircle, Camera, X, MessageSquarePlus } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { PopupPortal } from "@/components/ui/popup-portal";
@@ -22,6 +23,7 @@ export function HomeReviewPopup() {
   const [email, setEmail] = useState("");
   const [rating, setRating] = useState(5);
   const [text, setText] = useState("");
+  const [legalConsent, setLegalConsent] = useState(false);
   const [honeypot, setHoneypot] = useState("");
   const [formStartTime] = useState(Date.now());
   const [images, setImages] = useState<string[]>([]);
@@ -83,6 +85,7 @@ export function HomeReviewPopup() {
     const submitEmail = email.trim() || resolvedEmail;
     if (!submitAuthorName) { setError("Пожалуйста, введите ваше имя"); return; }
     if (text.trim().length < 10) { setError("Текст отзыва должен быть минимум 10 символов"); return; }
+    if (!legalConsent) { setError("Подтвердите согласие на обработку персональных данных"); return; }
     setLoading(true);
     try {
       const uploadedUrls: string[] = [];
@@ -106,6 +109,7 @@ export function HomeReviewPopup() {
           rating,
           text: text.trim(),
           images: uploadedUrls,
+          legalConsent,
           website: honeypot,
           _t: formStartTime,
         }),
@@ -133,6 +137,7 @@ export function HomeReviewPopup() {
         setEmail("");
         setRating(5);
         setText("");
+        setLegalConsent(false);
         setImages([]);
         setError("");
       }, 300);
@@ -343,6 +348,22 @@ export function HomeReviewPopup() {
                   tabIndex={-1}
                   autoComplete="off"
                 />
+
+                <label className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={legalConsent}
+                    onChange={(event) => setLegalConsent(event.target.checked)}
+                    required
+                    className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+                  />
+                  <span>
+                    Я соглашаюсь на обработку персональных данных и принимаю{" "}
+                    <Link href="/privacy" className="text-primary hover:underline">
+                      политику конфиденциальности
+                    </Link>
+                  </span>
+                </label>
 
                 {/* Submit */}
                 <button

@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
       productSku,
       preferredDate,
       preferredTime,
+      legalConsent,
     } = await req.json();
 
     const cleanPhone = typeof phone === "string" ? phone.trim() : "";
@@ -34,6 +35,13 @@ export async function POST(req: NextRequest) {
 
     if (!leadPhone && !contactEmail && !cleanMessage) {
       return NextResponse.json({ error: "Укажите телефон, email или вопрос" }, { status: 400 });
+    }
+
+    if (legalConsent !== true) {
+      return NextResponse.json(
+        { error: "Подтвердите согласие на обработку персональных данных" },
+        { status: 400 },
+      );
     }
 
     const sourceLabel =

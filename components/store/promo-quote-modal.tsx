@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CheckCircle, Loader2, Package, Phone } from "lucide-react";
 import { PHONE_LINK } from "@/lib/phone-constants";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ export function PromoQuoteModal({ open, onClose, phoneLink }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", volume: "", message: "" });
+  const [legalConsent, setLegalConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validate = () => {
@@ -27,6 +29,7 @@ export function PromoQuoteModal({ open, onClose, phoneLink }: Props) {
     if (!form.name.trim() || form.name.length < 2) errs.name = "Введите имя";
     if (!form.phone.trim() || form.phone.replace(/\D/g, "").length < 10) errs.phone = "Введите телефон";
     if (!form.volume.trim()) errs.volume = "Укажите примерный объём";
+    if (!legalConsent) errs.legalConsent = "Подтвердите согласие на обработку персональных данных";
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -37,6 +40,7 @@ export function PromoQuoteModal({ open, onClose, phoneLink }: Props) {
     setTimeout(() => {
       setSuccess(false);
       setForm({ name: "", phone: "", volume: "", message: "" });
+      setLegalConsent(false);
       setErrors({});
     }, 300);
   };
@@ -56,6 +60,7 @@ export function PromoQuoteModal({ open, onClose, phoneLink }: Props) {
           volume: form.volume.trim(),
           message: form.message.trim(),
           promoType: "volume-discount",
+          legalConsent,
         }),
       });
       if (!res.ok) throw new Error();
@@ -159,6 +164,23 @@ export function PromoQuoteModal({ open, onClose, phoneLink }: Props) {
             <p className="text-sm text-destructive text-center">{errors.submit}</p>
           )}
 
+          <label className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={legalConsent}
+              onChange={(event) => setLegalConsent(event.target.checked)}
+              required
+              className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+            />
+            <span>
+              Я соглашаюсь на обработку персональных данных и принимаю{" "}
+              <Link href="/privacy" target="_blank" className="text-primary hover:underline">
+                политику конфиденциальности
+              </Link>
+            </span>
+          </label>
+          {errors.legalConsent && <p className="text-xs text-destructive">{errors.legalConsent}</p>}
+
           <Button
             type="submit"
             disabled={submitting}
@@ -174,12 +196,6 @@ export function PromoQuoteModal({ open, onClose, phoneLink }: Props) {
             )}
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground">
-            Отправляя форму, вы соглашаетесь с{" "}
-            <a href="/privacy" target="_blank" className="underline hover:text-foreground">
-              политикой конфиденциальности
-            </a>
-          </p>
         </form>
       )}
     </SidePanel>

@@ -49,6 +49,9 @@ const orderSchema = z.object({
   address: z.string().min(5),
   paymentMethod: z.enum(["cash", "invoice"]),
   comment: z.string().optional(),
+  legalConsent: z
+    .boolean()
+    .refine((value) => value, "Подтвердите согласие на обработку персональных данных"),
   items: z.array(
     z.object({
       variantId: z.string(),

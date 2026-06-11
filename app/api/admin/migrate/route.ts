@@ -103,12 +103,20 @@ export async function GET(req: NextRequest) {
     results.push(`✅ Delivery promo text fixed via SQL (rows: ${updated})`);
   } catch (e: any) { results.push(`⚠️ Delivery promo fix: ${e.message}`); }
 
-  // Fix site settings: correct ИНН, ОГРН, working hours
+  // Fix site settings: keep current PiloRus legal/contact defaults.
   try {
     const settingsToFix = [
-      { key: "inn", value: "5047121641" },
-      { key: "ogrn", value: "1235000042474" },
-      { key: "working_hours", value: "Ежедневно: 09:00–18:00" },
+      { key: "company_name", value: "ООО «ДЕРЕВОЛИДЕР»" },
+      { key: "legal_full_name", value: "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ «ДЕРЕВОЛИДЕР»" },
+      { key: "inn", value: "7733291699" },
+      { key: "ogrn", value: "1167746624902" },
+      { key: "kpp", value: "773301001" },
+      { key: "phone", value: "+7 (499) 372-04-41" },
+      { key: "phone_link", value: "+74993720441" },
+      { key: "phone2", value: "+7 (495) 135-02-03" },
+      { key: "phone2_link", value: "+74951350203" },
+      { key: "address", value: "Химки, ул. Заводская 2А, стр.28" },
+      { key: "working_hours", value: "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00" },
     ];
     for (const s of settingsToFix) {
       const existing = await getSiteSetting(s.key);

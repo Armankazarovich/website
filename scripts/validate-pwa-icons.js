@@ -101,8 +101,8 @@ async function main() {
 
     const info = await pngInfo(relativePath);
     check(
-      `${relativePath} is ${size}x${size} solid PNG`,
-      info.width === size && info.height === size && !info.hasAlpha && info.bytes > 0,
+      `${relativePath} is ${size}x${size} transparent PNG`,
+      info.width === size && info.height === size && info.hasAlpha && info.bytes > 0,
       `size=${info.width}x${info.height}, alpha=${info.hasAlpha}, bytes=${info.bytes}`,
     );
   }
@@ -131,7 +131,7 @@ async function main() {
   const pwaContext = read("lib/pwa-install-context.ts");
   check(
     "PWA site icon cache version is current",
-    /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-pilorus-logo-20260610"/.test(pwaContext) &&
+    /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-pilorus-clean-mark-20260611"/.test(pwaContext) &&
       /PWA_ARAY_ICON_VERSION\s*=\s*"pilorus-brand-header-20260526"/.test(pwaContext),
     "Bump the site icon version whenever generated icons change.",
   );

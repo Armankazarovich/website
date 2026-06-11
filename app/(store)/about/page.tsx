@@ -66,7 +66,7 @@ export default async function AboutPage() {
         <h1 className="font-display text-3xl font-bold leading-tight sm:text-4xl">О производстве</h1>
       </div>
       <p className="mb-8 max-w-2xl text-base leading-relaxed text-muted-foreground sm:mb-10 sm:text-lg">
-        ООО «ПИТИ» — производитель пиломатериалов в Подмосковье. Работаем напрямую
+        {companyName} — производитель пиломатериалов в Подмосковье. Работаем напрямую
         с потребителями уже более 10 лет.
       </p>
 
@@ -92,7 +92,7 @@ export default async function AboutPage() {
             <h2 className="mb-3 font-display text-xl font-bold sm:mb-4 sm:text-2xl">Наша история</h2>
             <div className="space-y-3 text-sm leading-relaxed text-muted-foreground sm:text-base">
               <p>
-                ООО «ПИТИ» работает на рынке пиломатериалов более 10 лет. За это время
+                {companyName} работает на рынке пиломатериалов более 10 лет. За это время
                 мы выстроили надёжные отношения с клиентами — строительными компаниями,
                 частными застройщиками и розничными покупателями.
               </p>

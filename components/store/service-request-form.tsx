@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { CalendarCheck, Check, Phone, Send } from "lucide-react";
 import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
 
@@ -20,6 +21,7 @@ export function ServiceRequestForm({
   const [preferredDate, setPreferredDate] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
   const [message, setMessage] = useState("");
+  const [legalConsent, setLegalConsent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -28,6 +30,10 @@ export function ServiceRequestForm({
     event.preventDefault();
     if (!phone.trim()) {
       setError("Укажите телефон");
+      return;
+    }
+    if (!legalConsent) {
+      setError("Подтвердите согласие на обработку персональных данных");
       return;
     }
 
@@ -46,6 +52,7 @@ export function ServiceRequestForm({
           serviceSlug,
           preferredDate,
           preferredTime,
+          legalConsent,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -165,6 +172,22 @@ export function ServiceRequestForm({
           />
         </div>
       </div>
+
+      <label className="mt-4 flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={legalConsent}
+          onChange={(event) => setLegalConsent(event.target.checked)}
+          required
+          className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+        />
+        <span>
+          Я соглашаюсь на обработку персональных данных и принимаю{" "}
+          <Link href="/privacy" className="text-primary hover:underline">
+            политику конфиденциальности
+          </Link>
+        </span>
+      </label>
 
       {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 

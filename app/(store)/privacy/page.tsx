@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { BackButton } from "@/components/ui/back-button";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: "Политика конфиденциальности",
-  description: "Политика конфиденциальности ООО «ПИТИ» (ПилоРус). Правила обработки персональных данных.",
+  description: "Политика конфиденциальности ПилоРус. Правила обработки персональных данных, cookie и заявок на сайте.",
   alternates: { canonical: "https://pilo-rus.ru/privacy" },
   robots: { index: false, follow: true },
 };
@@ -14,6 +13,14 @@ export default async function PrivacyPage() {
   const settings = await getSiteSettings();
   const phoneLink = getSetting(settings, "phone_link") || "+74993720441";
   const phoneDisplay = getSetting(settings, "phone") || "+7 (499) 372-04-41";
+  const email = getSetting(settings, "email") || "info@pilo-rus.ru";
+  const address = getSetting(settings, "address") || "Химки, ул. Заводская 2А, стр.28";
+  const companyName = getSetting(settings, "company_name") || "ООО «ДЕРЕВОЛИДЕР»";
+  const legalFullName = getSetting(settings, "legal_full_name") || companyName;
+  const inn = getSetting(settings, "inn") || "7733291699";
+  const ogrn = getSetting(settings, "ogrn") || "1167746624902";
+  const kpp = getSetting(settings, "kpp") || "773301001";
+
   return (
     <div className="container max-w-3xl py-12">
       <div className="flex items-start gap-3 mb-2">
@@ -23,7 +30,7 @@ export default async function PrivacyPage() {
         </h1>
       </div>
       <p className="text-muted-foreground mb-10">
-        ООО «ПИТИ» (торговая марка ПилоРус) · ИНН 504712164 · Актуальна с 01.01.2025
+        {companyName} (торговая марка ПилоРус) · ИНН {inn} · Актуальна с 11.06.2026
       </p>
 
       <div className="space-y-8 text-sm leading-relaxed text-foreground/90">
@@ -31,9 +38,9 @@ export default async function PrivacyPage() {
         <section>
           <h2 className="font-display font-semibold text-xl mb-3">1. Общие положения</h2>
           <div className="space-y-2 text-muted-foreground">
-            <p>1.1. Настоящая Политика конфиденциальности (далее — «Политика») определяет порядок обработки персональных данных пользователей сайта pilo-rus.ru (далее — «Сайт») компанией ООО «ПИТИ» (далее — «Оператор»).</p>
+            <p>1.1. Настоящая Политика конфиденциальности (далее — «Политика») определяет порядок обработки персональных данных пользователей сайта pilo-rus.ru (далее — «Сайт») компанией {legalFullName} (далее — «Оператор»).</p>
             <p>1.2. Оператор обрабатывает персональные данные в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных».</p>
-            <p>1.3. Используя Сайт, вы выражаете согласие с настоящей Политикой и условиями обработки ваших персональных данных. Если вы не согласны с Политикой, пожалуйста, покиньте Сайт.</p>
+            <p>1.3. Отправляя форму на Сайте, оформляя заказ, регистрируясь или оставляя отзыв, пользователь подтверждает согласие на обработку переданных данных на условиях настоящей Политики.</p>
           </div>
         </section>
 
@@ -47,8 +54,9 @@ export default async function PrivacyPage() {
               <li>Адрес электронной почты</li>
               <li>Адрес доставки</li>
               <li>Наименование организации, ИНН, КПП (для юридических лиц)</li>
+              <li>Текст обращения, параметры заказа, выбранные товары и отзывы</li>
             </ul>
-            <p>2.2. Автоматически при посещении сайта могут собираться технические данные: IP-адрес, тип браузера, данные об устройстве, страницы посещений, файлы cookie.</p>
+            <p>2.2. Автоматически при посещении сайта могут собираться технические данные: IP-адрес, тип браузера, данные об устройстве, страницы посещений, источник перехода, UTM-метки и файлы cookie.</p>
           </div>
         </section>
 
@@ -62,7 +70,9 @@ export default async function PrivacyPage() {
               <li>Оформление бухгалтерских документов (счет, накладная)</li>
               <li>Рассылка информации об акциях и специальных предложениях (при согласии)</li>
               <li>Улучшение работы сайта и пользовательского опыта</li>
+              <li>Аналитика эффективности рекламы и качества сервиса</li>
             </ul>
+            <p>3.2. Правовые основания обработки: согласие пользователя, исполнение заказа или договора, выполнение требований законодательства РФ и законный интерес Оператора по поддержке работы сайта и обработке обращений.</p>
           </div>
         </section>
 
@@ -76,7 +86,8 @@ export default async function PrivacyPage() {
               <li><strong>Аналитические:</strong> помогают нам понять, как посетители используют сайт</li>
               <li><strong>Функциональные:</strong> запоминают ваши предпочтения (тема оформления)</li>
             </ul>
-            <p>4.3. Вы можете отключить cookie в настройках браузера, однако это может повлиять на работу некоторых функций сайта.</p>
+            <p>4.3. Для аналитики и оценки рекламных переходов на Сайте может использоваться Яндекс Метрика. Оператор не передает в Метрику намеренно введенные пользователем ФИО, телефон, email или адрес доставки как идентификаторы посетителя.</p>
+            <p>4.4. Вы можете отключить cookie в настройках браузера, однако это может повлиять на работу некоторых функций сайта.</p>
           </div>
         </section>
 
@@ -85,6 +96,7 @@ export default async function PrivacyPage() {
           <div className="space-y-2 text-muted-foreground">
             <p>5.1. Оператор не передаёт персональные данные третьим лицам без согласия субъекта, за исключением случаев, предусмотренных законодательством РФ.</p>
             <p>5.2. Для доставки заказов данные об адресе доставки могут быть переданы транспортным компаниям-партнёрам.</p>
+            <p>5.3. Для приема заявок, уведомлений, учета продаж, аналитики и поддержки сайта могут использоваться технические сервисы, которым передаются только данные, необходимые для соответствующей операции.</p>
           </div>
         </section>
 
@@ -116,10 +128,11 @@ export default async function PrivacyPage() {
           <div className="space-y-2 text-muted-foreground">
             <p>По вопросам, связанным с обработкой персональных данных, обращайтесь:</p>
             <ul className="list-none space-y-1 ml-2">
-              <li><strong>Оператор:</strong> ООО «ПИТИ»</li>
-              <li><strong>ИНН:</strong> 504712164 / <strong>КПП:</strong> 504701001</li>
-              <li><strong>Адрес:</strong> Московская обл., г. Химки, Заводская 2А, стр.28</li>
-              <li><strong>Email:</strong> <a href="mailto:info@pilo-rus.ru" className="text-primary hover:underline">info@pilo-rus.ru</a></li>
+              <li><strong>Оператор:</strong> {legalFullName}</li>
+              <li><strong>ОГРН:</strong> {ogrn}</li>
+              <li><strong>ИНН:</strong> {inn} / <strong>КПП:</strong> {kpp}</li>
+              <li><strong>Адрес:</strong> {address}</li>
+              <li><strong>Email:</strong> <a href={`mailto:${email}`} className="text-primary hover:underline">{email}</a></li>
               <li><strong>Телефон:</strong> <a href={`tel:${phoneLink}`} className="text-primary hover:underline">{phoneDisplay}</a></li>
             </ul>
           </div>

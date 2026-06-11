@@ -308,6 +308,7 @@ const regSchema = z.object({
   phone: z.string().optional(),
   email: z.string().email("Неверный email"),
   password: z.string().min(6, "Минимум 6 символов"),
+  legalConsent: z.boolean().refine((value) => value, "Подтвердите согласие перед регистрацией"),
 });
 type RegForm = z.infer<typeof regSchema>;
 
@@ -325,6 +326,7 @@ function RegisterPanel({ onSwitch }: { onSwitch: () => void }) {
     formState: { errors },
   } = useForm<RegForm>({
     resolver: zodResolver(regSchema),
+    defaultValues: { legalConsent: false },
   });
 
   const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -468,6 +470,23 @@ function RegisterPanel({ onSwitch }: { onSwitch: () => void }) {
           <div className="bg-destructive/10 border border-destructive/30 rounded-xl px-4 py-3">
             <p className="text-sm text-destructive">{error}</p>
           </div>
+        )}
+
+        <label className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+          <input
+            type="checkbox"
+            {...register("legalConsent")}
+            className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+          />
+          <span>
+            Я соглашаюсь на обработку персональных данных и принимаю{" "}
+            <Link href="/privacy" className="text-primary hover:underline">
+              политику конфиденциальности
+            </Link>
+          </span>
+        </label>
+        {errors.legalConsent && (
+          <p className="text-xs text-destructive">{errors.legalConsent.message}</p>
         )}
 
         <Button

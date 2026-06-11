@@ -44,9 +44,16 @@ export async function POST(req: NextRequest) {
     const volume = sanitize(body.volume, 200);
     const message = sanitize(body.message, 1000);
     const promoType = sanitize(body.promoType, 50);
+    const legalConsent = body.legalConsent === true;
 
     if (!name || name.length < 2) {
       return NextResponse.json({ error: "Укажите имя" }, { status: 400 });
+    }
+    if (!legalConsent) {
+      return NextResponse.json(
+        { error: "Подтвердите согласие на обработку персональных данных" },
+        { status: 400 },
+      );
     }
     const phone = normalizePhone(phoneRaw);
     if (!phone) {

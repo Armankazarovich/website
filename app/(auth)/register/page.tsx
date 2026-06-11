@@ -18,6 +18,7 @@ const schema = z.object({
   phone: z.string().optional(),
   password: z.string().min(6, "Минимум 6 символов"),
   confirmPassword: z.string(),
+  legalConsent: z.boolean().refine((value) => value, "Подтвердите согласие перед регистрацией"),
 }).refine((d) => d.password === d.confirmPassword, {
   message: "Пароли не совпадают",
   path: ["confirmPassword"],
@@ -52,6 +53,7 @@ export default function RegisterPage() {
 
   const { register, handleSubmit, setValue, formState: { errors } } = useForm<Form>({
     resolver: zodResolver(schema),
+    defaultValues: { legalConsent: false },
   });
 
   const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -71,6 +73,7 @@ export default function RegisterPage() {
         email: data.email,
         phone: data.phone || undefined,
         password: data.password,
+        legalConsent: data.legalConsent,
       }),
     });
     const json = await res.json();
@@ -232,6 +235,21 @@ export default function RegisterPage() {
             </div>
           )}
 
+          <label className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
+            <input
+              type="checkbox"
+              {...register("legalConsent")}
+              className="mt-0.5 h-4 w-4 rounded border-border text-primary"
+            />
+            <span>
+              Я соглашаюсь на обработку персональных данных и принимаю{" "}
+              <Link href="/privacy" className="text-primary hover:underline">
+                политику конфиденциальности
+              </Link>
+            </span>
+          </label>
+          {errors.legalConsent && <p className="text-xs text-destructive">{errors.legalConsent.message}</p>}
+
           {/* Кнопка */}
           <Button
             type="submit"
@@ -244,13 +262,6 @@ export default function RegisterPage() {
             }
           </Button>
 
-          {/* Соглашение */}
-          <p className="text-xs text-muted-foreground text-center leading-relaxed">
-            Регистрируясь, вы соглашаетесь с{" "}
-            <Link href="/privacy" className="text-primary hover:underline">
-              политикой конфиденциальности
-            </Link>
-          </p>
         </form>
 
         {/* Разделитель */}

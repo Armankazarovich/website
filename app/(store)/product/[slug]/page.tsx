@@ -166,6 +166,7 @@ export default async function ProductPage({ params }: Props) {
   const phonesList = getPhones(siteSettings);
   const firstPhoneLink = phonesList[0]?.tel || getSetting(siteSettings, "phone_link");
   const firstPhoneDisplay = phonesList[0]?.display || getSetting(siteSettings, "phone");
+  const companyName = getSetting(siteSettings, "company_name") || "ООО «ДЕРЕВОЛИДЕР»";
 
   const intro = productIntro(product.shortDescription || product.description);
   const productEditTarget = getProductEditTarget(product.id);
@@ -234,7 +235,7 @@ export default async function ProductPage({ params }: Props) {
       ...(highPrice !== undefined ? { "highPrice": highPrice } : {}),
       "offerCount": product.variants.length,
       "availability": productAvailability.schemaAvailability,
-      "seller": { "@type": "Organization", "name": "ООО ПИТИ (ПилоРус)" },
+      "seller": { "@type": "Organization", "name": `${companyName} (ПилоРус)` },
     },
   };
 

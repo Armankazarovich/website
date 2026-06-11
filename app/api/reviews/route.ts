@@ -53,6 +53,13 @@ export async function POST(req: NextRequest) {
     const cleanText = typeof text === "string" ? text.trim() : "";
 
     // Validation
+    if (body.legalConsent !== true) {
+      return NextResponse.json(
+        { error: "Подтвердите согласие на обработку персональных данных" },
+        { status: 400 }
+      );
+    }
+
     if (!finalAuthorName) {
       return NextResponse.json(
         { error: "Введите имя, чтобы оставить отзыв" },
