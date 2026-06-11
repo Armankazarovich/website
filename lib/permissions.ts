@@ -12,6 +12,7 @@ export type Section =
   | "delivery"
   | "products"
   | "categories"
+  | "suppliers"
   | "inventory"
   | "import"
   | "clients"
@@ -61,6 +62,7 @@ const SECTION_ROLES: Record<Section, Role[]> = {
   delivery: ["MANAGER", "COURIER", "WAREHOUSE"],
   products: ["MANAGER", "WAREHOUSE", "SELLER"],
   categories: [], // ADMIN only
+  suppliers: ["MANAGER", "WAREHOUSE", "SELLER"],
   inventory: ["MANAGER", "WAREHOUSE"],
   import: ["MANAGER", "WAREHOUSE"],
   clients: ["MANAGER"],
@@ -130,6 +132,7 @@ export function pathToSection(path: string): Section | null {
     "/admin/delivery": "delivery",
     "/admin/products": "products",
     "/admin/categories": "categories",
+    "/admin/suppliers": "suppliers",
     "/admin/inventory": "inventory",
     "/admin/import": "import",
     "/admin/clients": "clients",

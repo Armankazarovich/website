@@ -37,6 +37,7 @@ const ADMIN_NAV_SECTIONS: Record<string, Array<{ label: string; hrefs: string[] 
   products: [
     { label: "Карточки и цены", hrefs: ["/admin/products", "/admin/products/new", "/admin/products/audit"] },
     { label: "Структура каталога", hrefs: ["/admin/categories", "/admin/product-types", "/catalog"] },
+    { label: "Поставщики", hrefs: ["/admin/suppliers"] },
     { label: "Склад / остатки", hrefs: ["/admin/inventory"] },
     { label: "Медиа и защита", hrefs: ["/admin/media", "/admin/watermark"] },
     { label: "Импорт", hrefs: ["/admin/import"] },

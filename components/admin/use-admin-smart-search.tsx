@@ -9,6 +9,7 @@ import {
   FileDown,
   Globe,
   Hash,
+  Handshake,
   Images,
   Mail,
   Megaphone,
@@ -212,6 +213,7 @@ const SEARCH_CONTEXTS: SearchContext[] = [
     nextStep: "Проверить готовность товара",
     quick: [
       { href: "/admin/products/new", title: "Новый товар", subtitle: "Создать карточку", icon: Plus, roles: CATALOG_ROLES },
+      { href: "/admin/suppliers", title: "Поставщики", subtitle: "Продавцы и предложения", icon: Handshake, roles: CATALOG_ROLES },
       { href: "/admin/categories", title: "Категории", subtitle: "Дерево каталога", icon: Tag, roles: ADMIN_ROLES },
       { href: "/admin/inventory", title: "Склад", subtitle: "Остатки и движение", icon: Warehouse, roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"] },
       { href: "/admin/import", title: "Импорт", subtitle: "CSV и Excel", icon: FileDown, roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"] },

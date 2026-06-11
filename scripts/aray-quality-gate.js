@@ -136,6 +136,7 @@ run("Admin UI integrity guard", "node", ["scripts/validate-admin-ui-integrity.js
 run("Admin responsive guard", "node", ["scripts/validate-admin-responsive.js"]);
 run("Admin performance guard", "node", ["scripts/validate-admin-performance.js"]);
 run("Cart and checkout flow guard", "node", ["scripts/validate-cart-checkout-flow.js"]);
+run("Multivendor foundation guard", "node", ["scripts/validate-multivendor-foundation.js"]);
 run("PWA icon guard", "node", ["scripts/validate-pwa-icons.js"]);
 run("Release readiness guard", "node", ["scripts/validate-release-readiness.js"]);
 run("Store stories guard", "node", ["scripts/validate-store-stories.js"]);

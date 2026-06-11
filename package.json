@@ -47,6 +47,7 @@
   "constructor:check": "node scripts/validate-store-constructor-blueprints.js",
   "cart:check": "node scripts/validate-cart-checkout-flow.js",
   "cart:check:live": "node scripts/validate-cart-checkout-flow.js --live-required",
+  "multivendor:check": "node scripts/validate-multivendor-foundation.js",
   "pwa:icons": "node scripts/generate-pilorus-pwa-icons.js",
   "pwa:check": "node scripts/validate-pwa-icons.js",
   "browser:cart:check": "node scripts/validate-browser-cart-flow.js --start-server",

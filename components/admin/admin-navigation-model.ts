@@ -192,7 +192,7 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     keywords: ["каталог", "товар", "товары", "склад", "категория"],
     placeholder: "Товар, категория, slug, склад или импорт...",
     nextStep: "Проверить готовность товара",
-    quickHrefs: ["/admin/products/new", "/admin/categories", "/admin/product-types", "/admin/inventory", "/admin/import", "/admin/media"],
+    quickHrefs: ["/admin/products/new", "/admin/suppliers", "/admin/categories", "/admin/product-types", "/admin/inventory", "/admin/import", "/admin/media"],
     mobilePriority: 30,
   },
   "/admin/products/new": {
@@ -223,6 +223,15 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     placeholder: "Тип товара, SEO, описание, фильтр или категория...",
     nextStep: "Проверить фильтры каталога, видимость и SEO для посадочных страниц",
     quickHrefs: ["/admin/products", "/admin/categories", "/admin/products/audit", "/admin/promotion"],
+  },
+  "/admin/suppliers": {
+    title: "Поставщики",
+    subtitle: "Продавцы, прайсы и предложения",
+    searchHint: "Поставщики и предложения",
+    keywords: ["поставщики", "продавцы", "мультивендор", "прайсы", "предложения", "маркетплейс", "биржа"],
+    placeholder: "Поставщик, продавец, товар, цена, остаток или город...",
+    nextStep: "Проверить предложения поставщиков и выбрать, чем закрыть заказ",
+    quickHrefs: ["/admin/suppliers", "/admin/products", "/admin/products/import-prices", "/admin/import", "/admin/inventory"],
   },
   "/admin/inventory": {
     title: "Склад",

@@ -236,6 +236,15 @@ check(
   "Manifest, PiloRus site icon, and ARAY icon endpoints must exist.",
 );
 
+check(
+  "Multivendor supplier foundation exists",
+  includesAll(read("prisma/schema.prisma"), ["model Supplier", "model SupplierOffer", "@@unique([tenantId, supplierId, variantId])"]) &&
+    allExist(["app/admin/suppliers/page.tsx", "app/api/admin/suppliers/route.ts", "app/api/admin/supplier-offers/route.ts"]) &&
+    read("components/admin/admin-navigation-registry.ts").includes("/admin/suppliers") &&
+    Boolean(packageJson.scripts?.["multivendor:check"]),
+  "PiloRus marketplace launch needs suppliers, variant offers, admin routes and a guard before seller onboarding.",
+);
+
 const cartFly = read("lib/cart-fly.ts");
 check(
   "Cart fly animation has resilient target lookup",
