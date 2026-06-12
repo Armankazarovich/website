@@ -3,11 +3,12 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ExternalLink, Filter, Package, Phone, Search, ShieldCheck, Truck } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Clock3, ExternalLink, Filter, Package, Phone, Search, ShieldCheck, Truck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentTenantId } from "@/lib/tenant-context";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { ProductCard } from "@/components/store/product-card";
+import { VendorContactActions } from "@/components/store/vendor-contact-actions";
 
 type Props = {
   params: { slug: string };
@@ -62,10 +63,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!supplier) return { title: "Продавец не найден" };
   const description =
     supplier.publicDescription ||
-    `${supplier.name}: витрина продавца на ПилоРус, товары, цены, доставка и контакты.`;
+    `${supplier.name}: поставщик на ПилоРус, ассортимент, цены, доставка и контакты.`;
 
   return {
-    title: `${supplier.name} - витрина продавца на ПилоРус`,
+    title: `${supplier.name} - поставщик на ПилоРус`,
     description,
     alternates: { canonical: `https://pilo-rus.ru/vendors/${supplier.slug}` },
     openGraph: {
@@ -275,24 +276,32 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                {supplier.featuredSeller ? <span className="rounded-full border border-primary/35 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">Продавец N1</span> : null}
-                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-300">Проверяется ПилоРус</span>
+                {supplier.featuredSeller ? <span className="rounded-full border border-primary/35 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">Поставщик №1</span> : null}
+                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-300">Условия проверены</span>
               </div>
               <h1 className="mt-3 font-display text-3xl font-bold text-foreground sm:text-4xl">{supplier.name}</h1>
               <p className="mt-3 max-w-3xl text-base leading-7 text-muted-foreground">
-                {supplier.publicDescription || "Витрина продавца внутри ПилоРус: товары, цены, остатки, доставка и контакты после проверки."}
+                {supplier.publicDescription || `${supplier.name} помогает подобрать пиломатериалы, фанеру и стройматериалы для ремонта, строительства и снабжения. Смотрите товары, уточняйте наличие и отправляйте запрос менеджеру.`}
               </p>
+              <div className="mt-5">
+                <VendorContactActions
+                  sellerName={supplier.name}
+                  sellerUrl={`https://pilo-rus.ru/vendors/${supplier.slug}`}
+                  phone={supplier.phone}
+                  specialization={supplier.specialization}
+                />
+              </div>
             </div>
           </div>
         </div>
 
         <div className="rounded-2xl border border-border bg-card p-6">
-          <h2 className="font-display text-xl font-semibold text-foreground">Информация продавца</h2>
+          <h2 className="font-display text-xl font-semibold text-foreground">О продавце</h2>
           <div className="mt-4 grid gap-3 text-sm">
             <InfoRow icon={Package} label="Специализация" value={supplier.specialization || "Пиломатериалы и стройматериалы"} />
             <InfoRow icon={Truck} label="Доставка" value={supplier.deliverySummary || "Условия доставки уточняются при заявке"} />
             <InfoRow icon={Phone} label="Телефон" value={supplier.phone || "Контакт через ПилоРус"} />
-            <InfoRow icon={ShieldCheck} label="Статус" value={supplier.featuredSeller ? "ПилоРус - продавец N1" : "Подключенный продавец"} />
+            <InfoRow icon={ShieldCheck} label="Статус" value={supplier.featuredSeller ? "Официальный поставщик ПилоРус" : "Поставщик на ПилоРус"} />
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
             {supplier.phone ? (
@@ -311,17 +320,37 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
         </div>
       </section>
 
+      <section className="mt-6">
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          <StoryCard
+            icon={BadgeCheck}
+            title="Подбор по задаче"
+            text="Напишите, что строите и какой нужен объем. Менеджер подберет размеры и позиции."
+          />
+          <StoryCard
+            icon={Truck}
+            title="Доставка и самовывоз"
+            text="Уточните адрес, сроки и разгрузку. Подскажем удобный вариант поставки."
+          />
+          <StoryCard
+            icon={Clock3}
+            title="Быстрый ответ"
+            text="Отправьте запрос из витрины, чтобы не искать контакты и не собирать список вручную."
+          />
+        </div>
+      </section>
+
       <section className="mt-8">
         <div className="mb-5 grid gap-3 md:grid-cols-3">
-          <StoreMetric label="Позиций продавца" value={allSellerOffers.length} hint="активные предложения" />
-          <StoreMetric label="Категорий" value={categories.length} hint="можно фильтровать" />
+          <StoreMetric label="Позиций в продаже" value={allSellerOffers.length} hint="актуальный ассортимент" />
+          <StoreMetric label="Категорий" value={categories.length} hint="удобно выбирать" />
           <StoreMetric label="Цена от" value={formatMoney(minPrice) || "по запросу"} hint={`обновлено: ${formatDate(lastUpdated)}`} />
         </div>
 
         <div className="mb-5 rounded-2xl border border-border bg-card p-4">
           <form action={`/vendors/${supplier.slug}`} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.35fr)_auto_auto] lg:items-end">
             <label className="grid gap-1 text-sm">
-              <span className="font-medium text-foreground">Поиск по товарам продавца</span>
+              <span className="font-medium text-foreground">Найти товар у продавца</span>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
@@ -333,7 +362,7 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
               </div>
             </label>
             <label className="grid gap-1 text-sm">
-              <span className="font-medium text-foreground">Категории продавца</span>
+              <span className="font-medium text-foreground">Категории</span>
               <select
                 name="category"
                 defaultValue={activeCategory}
@@ -377,10 +406,10 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
 
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Предложения</p>
-            <h2 className="mt-2 font-display text-2xl font-bold text-foreground">Товары и цены продавца</h2>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Ассортимент</p>
+            <h2 className="mt-2 font-display text-2xl font-bold text-foreground">Товары и цены</h2>
           </div>
-          <span className="text-sm text-muted-foreground">{sellerProducts.length} карточек / {offers.length} позиций</span>
+          <span className="text-sm text-muted-foreground">{sellerProducts.length} товаров / {offers.length} размеров</span>
         </div>
 
         {sellerProducts.length === 0 ? (
@@ -428,6 +457,26 @@ function StoreMetric({ label, value, hint }: { label: string; value: string | nu
       <p className="mt-2 font-display text-2xl font-bold text-foreground">{value}</p>
       <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
     </div>
+  );
+}
+
+function StoryCard({
+  icon: Icon,
+  title,
+  text,
+}: {
+  icon: typeof BadgeCheck;
+  title: string;
+  text: string;
+}) {
+  return (
+    <article className="min-w-[260px] flex-1 rounded-2xl border border-border bg-card p-4 sm:min-w-[320px]">
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary">
+        <Icon className="h-5 w-5" />
+      </div>
+      <h3 className="mt-3 font-display text-lg font-semibold text-foreground">{title}</h3>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p>
+    </article>
   );
 }
 

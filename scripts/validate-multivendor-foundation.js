@@ -69,19 +69,28 @@ check(
 
 check(
   "Public vendor storefront routes exist",
-  exists("app/(store)/vendors/page.tsx") &&
+    exists("app/(store)/vendors/page.tsx") &&
     exists("app/(store)/vendors/[slug]/page.tsx") &&
-    includesAll(read("app/(store)/vendors/page.tsx"), ["Продавцы ПилоРус", "supplierStorefrontHref"]) &&
+    includesAll(read("app/(store)/vendors/page.tsx"), ["Поставщики ПилоРус", "supplierStorefrontHref"]) &&
     includesAll(read("app/(store)/vendors/[slug]/page.tsx"), [
       "getSupplier",
       "ProductCard",
-      "Товары и цены продавца",
-      "Поиск по товарам продавца",
-      "Категории продавца",
+      "VendorContactActions",
+      "Товары и цены",
+      "Найти товар у продавца",
+      "Подбор по задаче",
       "StoreMetric",
       "vendorHref",
     ]),
   "Public seller pages must exist before vendor PWA and scan layers are added.",
+);
+
+check(
+  "Public seller pages use business language",
+  !["Модерация", "Скан сайтов", "Через превью", "preview", "Preview", "слой", "инструмент"].some((value) =>
+    read("app/(store)/vendors/page.tsx").includes(value) || read("app/(store)/vendors/[slug]/page.tsx").includes(value),
+  ),
+  "Buyer-facing vendor pages must read like a finished business storefront, not an internal admin tool.",
 );
 
 check(
