@@ -7,6 +7,7 @@ import { ArrowLeft, ExternalLink, Filter, Package, Phone, Search, ShieldCheck, T
 import { prisma } from "@/lib/prisma";
 import { getCurrentTenantId } from "@/lib/tenant-context";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
+import { ProductCard } from "@/components/store/product-card";
 
 type Props = {
   params: { slug: string };
@@ -184,6 +185,59 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
       "seller": { "@type": "Organization", "name": supplier.name },
     };
   });
+  const sellerProductMap = new Map<
+    string,
+    {
+      id: string;
+      slug: string;
+      name: string;
+      category: string;
+      shortDescription: string | null;
+      description: string | null;
+      images: string[];
+      cardTags: string[];
+      saleUnit: "CUBE" | "PIECE" | "BOTH";
+      variants: Array<{
+        id: string;
+        size: string;
+        pricePerCube: number | null;
+        pricePerPiece: number | null;
+        piecesPerCube: number | null;
+        inStock: boolean;
+        stockQty: number | null;
+        lowStockThreshold: number | null;
+      }>;
+    }
+  >();
+  for (const offer of offers) {
+    const product = offer.variant.product;
+    const current =
+      sellerProductMap.get(product.id) ||
+      {
+        id: product.id,
+        slug: product.slug,
+        name: product.name,
+        category: product.category.name,
+        shortDescription: product.shortDescription,
+        description: product.description,
+        images: product.images,
+        cardTags: product.cardTags,
+        saleUnit: product.saleUnit,
+        variants: [],
+      };
+    current.variants.push({
+      id: offer.variant.id,
+      size: offer.variant.size,
+      pricePerCube: priceValue(offer.pricePerCube) ?? priceValue(offer.variant.pricePerCube),
+      pricePerPiece: priceValue(offer.pricePerPiece) ?? priceValue(offer.variant.pricePerPiece),
+      piecesPerCube: offer.variant.piecesPerCube,
+      inStock: offer.variant.inStock && offer.active,
+      stockQty: offer.stockQty ?? offer.variant.stockQty,
+      lowStockThreshold: offer.variant.lowStockThreshold,
+    });
+    sellerProductMap.set(product.id, current);
+  }
+  const sellerProducts = [...sellerProductMap.values()];
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -326,10 +380,10 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Предложения</p>
             <h2 className="mt-2 font-display text-2xl font-bold text-foreground">Товары и цены продавца</h2>
           </div>
-          <span className="text-sm text-muted-foreground">{offers.length} позиций</span>
+          <span className="text-sm text-muted-foreground">{sellerProducts.length} карточек / {offers.length} позиций</span>
         </div>
 
-        {offers.length === 0 ? (
+        {sellerProducts.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-8 text-center">
             <Package className="mx-auto h-8 w-8 text-primary" />
             <h3 className="mt-4 font-display text-xl font-semibold text-foreground">{allSellerOffers.length > 0 ? "По фильтру ничего не найдено" : "Предложения готовятся"}</h3>
@@ -344,42 +398,22 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {offers.map((offer) => {
-              const product = offer.variant.product;
-              const pricePiece = formatMoney(offer.pricePerPiece);
-              const priceCube = formatMoney(offer.pricePerCube);
-              const image = product.images[0];
-              return (
-                <article key={offer.id} className="overflow-hidden rounded-2xl border border-border bg-card">
-                  <Link href={`/product/${product.slug}`} className="block bg-background">
-                    <div className="aspect-[4/3] overflow-hidden">
-                      {image ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={image} alt={product.name} className="h-full w-full object-cover transition-transform duration-300 hover:scale-[1.03]" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">Фото готовится</div>
-                      )}
-                    </div>
-                  </Link>
-                  <div className="p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">{product.category.name}</p>
-                    <Link href={`/product/${product.slug}`} className="mt-2 block font-display text-lg font-semibold leading-tight text-foreground hover:text-primary">
-                      {product.name}
-                    </Link>
-                    <p className="mt-1 text-sm text-muted-foreground">{offer.variant.size}</p>
-                    <div className="mt-4 grid gap-2 text-sm">
-                      <PriceLine label="м3" value={priceCube} />
-                      <PriceLine label="шт" value={pricePiece} />
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {offer.preferred ? <Badge>Приоритет</Badge> : null}
-                      <Badge>{offer.stockQty ?? "?"} шт</Badge>
-                      <Badge>{offer.leadTimeDays ? `${offer.leadTimeDays} дн.` : "срок уточнить"}</Badge>
-                    </div>
-                  </div>
-                </article>
-              );
-            })}
+            {sellerProducts.map((product) => (
+              <ProductCard
+                key={product.id}
+                id={product.id}
+                slug={product.slug}
+                name={product.name}
+                category={product.category}
+                shortDescription={product.shortDescription}
+                description={product.description}
+                images={product.images}
+                cardTags={product.cardTags}
+                saleUnit={product.saleUnit}
+                variants={product.variants}
+                featured={supplier.featuredSeller}
+              />
+            ))}
           </div>
         )}
       </section>
@@ -416,22 +450,5 @@ function InfoRow({
         <p className="font-semibold text-foreground">{value}</p>
       </div>
     </div>
-  );
-}
-
-function PriceLine({ label, value }: { label: string; value: string | null }) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2">
-      <span className="text-muted-foreground">Цена за {label}</span>
-      <span className="font-semibold text-foreground">{value || "по запросу"}</span>
-    </div>
-  );
-}
-
-function Badge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-flex min-h-[26px] items-center rounded-full border border-border bg-background px-2.5 text-xs font-semibold text-muted-foreground">
-      {children}
-    </span>
   );
 }

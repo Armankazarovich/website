@@ -29,6 +29,7 @@ import {
   supplierStorefrontHref,
 } from "@/lib/supplier-profile";
 import { SupplierFeedPreviewClient } from "./supplier-feed-preview-client";
+import { SupplierSiteScanPreviewClient } from "./supplier-site-scan-preview-client";
 
 export const dynamic = "force-dynamic";
 
@@ -278,6 +279,13 @@ export default async function AdminSuppliersPage({
       price: formatMoney(variant.pricePerCube ?? variant.pricePerPiece),
     })),
   );
+  const supplierPreviewOptions = suppliers.map((supplier) => ({
+    id: supplier.id,
+    name: supplier.name,
+    slug: supplier.slug,
+    sourceUrl: supplier.sourceUrl,
+    website: supplier.website,
+  }));
 
   return (
     <div className="admin-page-frame admin-page-frame-fluid pb-16">
@@ -348,15 +356,13 @@ export default async function AdminSuppliersPage({
 
       {canWrite ? (
         <div className="mt-6">
-          <SupplierFeedPreviewClient
-            suppliers={suppliers.map((supplier) => ({
-              id: supplier.id,
-              name: supplier.name,
-              slug: supplier.slug,
-              sourceUrl: supplier.sourceUrl,
-              website: supplier.website,
-            }))}
-          />
+          <SupplierSiteScanPreviewClient suppliers={supplierPreviewOptions} />
+        </div>
+      ) : null}
+
+      {canWrite ? (
+        <div className="mt-6">
+          <SupplierFeedPreviewClient suppliers={supplierPreviewOptions} />
         </div>
       ) : null}
 

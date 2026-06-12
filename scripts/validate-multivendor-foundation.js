@@ -74,6 +74,7 @@ check(
     includesAll(read("app/(store)/vendors/page.tsx"), ["Продавцы ПилоРус", "supplierStorefrontHref"]) &&
     includesAll(read("app/(store)/vendors/[slug]/page.tsx"), [
       "getSupplier",
+      "ProductCard",
       "Товары и цены продавца",
       "Поиск по товарам продавца",
       "Категории продавца",
@@ -81,6 +82,15 @@ check(
       "vendorHref",
     ]),
   "Public seller pages must exist before vendor PWA and scan layers are added.",
+);
+
+check(
+  "Seller site scan preview exists without applying changes",
+  exists("app/api/admin/suppliers/site-scan-preview/route.ts") &&
+    exists("app/admin/suppliers/supplier-site-scan-preview-client.tsx") &&
+    includesAll(read("app/api/admin/suppliers/site-scan-preview/route.ts"), ["SITE_SCAN_ROLES", "previewOnly", "storefrontDraft", "logoCandidates", "phoneCandidates"]) &&
+    includesAll(read("app/admin/suppliers/supplier-site-scan-preview-client.tsx"), ["Preview сайта продавца", "данные не применяются", "Кандидаты логотипа"]),
+  "Seller site scan must collect storefront/profile candidates as preview only and keep existing PiloRus templates as the output layer.",
 );
 
 check(
