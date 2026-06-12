@@ -43,6 +43,8 @@ type PreviewResult = {
   matchCounts: Record<"high" | "medium" | "low" | "unmatched", number>;
   avgHighMatchPriceDiffVsPiloBestUnitPct: number | null;
   unmatchedCategories: Array<{ name: string; count: number }>;
+  highRows?: PreviewRow[];
+  highRowsLimit?: number;
   samples: {
     high: PreviewRow[];
     medium: PreviewRow[];
@@ -99,6 +101,19 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
   const [applyConfirmed, setApplyConfirmed] = useState(false);
   const [applyLoading, setApplyLoading] = useState(false);
   const [applyResult, setApplyResult] = useState<ApplyResult | null>(null);
+  const [highSearch, setHighSearch] = useState("");
+  const [visibleHighLimit, setVisibleHighLimit] = useState(25);
+
+  const highRows = result?.highRows?.length ? result.highRows : result?.samples.high || [];
+  const filteredHighRows = useMemo(() => {
+    const query = highSearch.trim().toLowerCase();
+    if (!query) return highRows;
+    return highRows.filter((row) =>
+      [row.name, row.category, row.size, row.matchedProduct, row.matchedVariantSize].some((value) => value.toLowerCase().includes(query)),
+    );
+  }, [highRows, highSearch]);
+  const visibleHighRows = filteredHighRows.slice(0, visibleHighLimit);
+  const highRowsLimit = result?.highRowsLimit || 100;
 
   function handleSupplierChange(value: string) {
     setSupplierId(value);
@@ -109,6 +124,8 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
     setSelectedFeedIds(new Set());
     setApplyConfirmed(false);
     setApplyResult(null);
+    setHighSearch("");
+    setVisibleHighLimit(25);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -119,6 +136,8 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
     setSelectedFeedIds(new Set());
     setApplyConfirmed(false);
     setApplyResult(null);
+    setHighSearch("");
+    setVisibleHighLimit(25);
     try {
       const response = await fetch("/api/admin/suppliers/feed-preview", {
         method: "POST",
@@ -128,7 +147,6 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || "Preview не удалось выполнить");
       setResult(payload);
-      setSelectedFeedIds(new Set((payload?.samples?.high || []).map((row: PreviewRow) => row.feedId).filter(Boolean)));
     } catch (err: any) {
       setError(err?.message || "Preview не удалось выполнить");
     } finally {
@@ -143,6 +161,24 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
       else next.add(feedId);
       return next;
     });
+    setApplyResult(null);
+  }
+
+  function selectVisibleHighRows() {
+    setSelectedFeedIds((current) => {
+      const next = new Set(current);
+      for (const row of visibleHighRows) {
+        if (next.size >= highRowsLimit) break;
+        next.add(row.feedId);
+      }
+      return next;
+    });
+    setApplyResult(null);
+  }
+
+  function clearSelectedHighRows() {
+    setSelectedFeedIds(new Set());
+    setApplyConfirmed(false);
     setApplyResult(null);
   }
 
@@ -267,12 +303,44 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_0.8fr]">
             <div className="rounded-xl border border-border bg-background p-4">
-              <h3 className="font-display text-base font-semibold text-foreground">Уверенные совпадения</h3>
+              <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
+                <div>
+                  <h3 className="font-display text-base font-semibold text-foreground">Уверенные совпадения</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Показано {visibleHighRows.length} из {filteredHighRows.length}; всего high в feed {result.matchCounts.high}, рабочий лимит {highRowsLimit}
+                  </p>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                  <input
+                    value={highSearch}
+                    onChange={(event) => setHighSearch(event.target.value)}
+                    placeholder="Поиск по high..."
+                    className="min-h-[38px] rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary"
+                  />
+                  <select
+                    value={visibleHighLimit}
+                    onChange={(event) => setVisibleHighLimit(Number(event.target.value))}
+                    className="min-h-[38px] rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary"
+                  >
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={selectVisibleHighRows}
+                    disabled={visibleHighRows.length === 0}
+                    className="inline-flex min-h-[38px] items-center justify-center rounded-xl border border-primary/35 bg-primary/10 px-3 text-xs font-semibold text-primary transition-colors hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-55"
+                  >
+                    Выбрать видимые
+                  </button>
+                </div>
+              </div>
               <div className="mt-3 divide-y divide-border">
-                {result.samples.high.length === 0 ? (
+                {visibleHighRows.length === 0 ? (
                   <p className="py-4 text-sm text-muted-foreground">Уверенных совпадений пока нет.</p>
                 ) : (
-                  result.samples.high.map((row) => (
+                  visibleHighRows.map((row) => (
                     <PreviewRowItem
                       key={`${row.feedId}-${row.name}`}
                       row={row}
@@ -282,7 +350,7 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
                   ))
                 )}
               </div>
-              {result.samples.high.length > 0 ? (
+              {highRows.length > 0 ? (
                 <div className="mt-4 rounded-xl border border-primary/25 bg-primary/10 p-4">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -302,7 +370,14 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
                     </label>
                   </div>
                   <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-xs text-muted-foreground">Выбрано: {selectedFeedIds.size}</p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <p className="text-xs text-muted-foreground">Выбрано: {selectedFeedIds.size} из {highRowsLimit} максимум</p>
+                      {selectedFeedIds.size > 0 ? (
+                        <button type="button" onClick={clearSelectedHighRows} className="text-xs font-semibold text-primary hover:underline">
+                          Снять выбор
+                        </button>
+                      ) : null}
+                    </div>
                     <button
                       type="button"
                       onClick={applySelected}

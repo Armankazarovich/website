@@ -547,6 +547,8 @@ export async function POST(req: Request) {
     },
     avgHighMatchPriceDiffVsPiloBestUnitPct: avgDiff,
     unmatchedCategories: topCategories(rows),
+    highRows: high.slice(0, 100),
+    highRowsLimit: 100,
     samples: {
       high: high.slice(0, 8),
       medium: medium.slice(0, 8),

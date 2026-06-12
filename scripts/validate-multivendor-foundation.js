@@ -94,8 +94,17 @@ check(
     exists("scripts/preview-vendor-yml-feed.js") &&
     exists("app/api/admin/suppliers/feed-preview/route.ts") &&
     exists("app/admin/suppliers/supplier-feed-preview-client.tsx") &&
-    includesAll(read("app/api/admin/suppliers/feed-preview/route.ts"), ["FEED_PREVIEW_ROLES", "APPLY_VENDOR_FEED_PREVIEW", "matchCounts", "unmatchedCategories"]) &&
-    includesAll(read("app/admin/suppliers/supplier-feed-preview-client.tsx"), ["Preview feed продавца", "Уверенные совпадения", "Категории без пары", "Применить выбранные"]),
+    includesAll(read("app/api/admin/suppliers/feed-preview/route.ts"), ["FEED_PREVIEW_ROLES", "APPLY_VENDOR_FEED_PREVIEW", "matchCounts", "unmatchedCategories", "highRows", "highRowsLimit"]) &&
+    includesAll(read("app/admin/suppliers/supplier-feed-preview-client.tsx"), [
+      "Preview feed продавца",
+      "Уверенные совпадения",
+      "Категории без пары",
+      "Применить выбранные",
+      "highSearch",
+      "visibleHighLimit",
+      "Выбрать видимые",
+      "Снять выбор",
+    ]),
   "Seller feed scan must show preview first and require explicit confirmation before selected high-confidence rows become supplier offers.",
 );
 
