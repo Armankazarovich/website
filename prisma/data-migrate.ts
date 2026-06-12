@@ -713,15 +713,18 @@ async function main() {
       {
         slug: "derevotrade",
         name: "ДеревоТрейд",
+        legalName: "ДеревоТрейд",
         website: "https://derevotrade.ru/",
         sourceUrl: "https://derevotrade.ru/",
         city: "Химки",
+        address: "г. Химки, Заводская улица, 2Б",
         phone: "+7 (495) 181-30-11",
         email: "info@derevo-trade.ru",
         publicDescription:
-          "Кандидат на подключение к бирже ПилоРус. Сайт-источник добавлен для будущего скана ассортимента, цен, фото и логотипа через превью.",
-        specialization: "Пиломатериалы, лиственница, сосна, ель, фанера и листовые материалы",
-        deliverySummary: "Доставка и самовывоз уточняются при проверке продавца",
+          "ДеревоТрейд - кандидат на подключение к бирже ПилоРус. На сайте заявлены пиломатериалы, фанера, лиственница, сосна/ель, склад в Химках и доставка по Москве и МО.",
+        specialization: "Лиственница, сосна, ель, кедр, фанера, OSB, ДСП, ДВП, МДФ",
+        deliverySummary: "Склад в Химках, доставка по Москве и МО; условия проверяются через scan/preview",
+        notes: "Источник скана: https://derevotrade.ru/. Найдены контакты, каталог, преимущества, категории и маркетинговые блоки. Отзывы нужно переносить только как source-preview, не публиковать без проверки.",
         status: "DRAFT",
         trustLevel: "NEW",
         storefrontEnabled: false,
@@ -731,12 +734,18 @@ async function main() {
       {
         slug: "pilmos",
         name: "Pilmos",
+        legalName: "ИП Аракелян Гарик Гегамович",
         website: "https://pilmos.ru/",
         sourceUrl: "https://pilmos.ru/",
+        city: "Химки",
+        address: "г. Химки, ул. Заводская 2А, стр.13",
+        phone: "+7 (495) 152-72-75",
+        email: "info@pilmos.ru",
         publicDescription:
-          "Кандидат на подключение к бирже ПилоРус. Сайт-источник добавлен для будущего сопоставления товаров, фото и цен.",
-        specialization: "Пиломатериалы и производство в Москве",
-        deliverySummary: "Условия доставки будут заполнены после скана и проверки",
+          "Pilmos - кандидат на подключение к бирже ПилоРус. На сайте указаны производство и реализация пиломатериалов с доставкой по Москве и Московской области.",
+        specialization: "Пиломатериалы, фанера, OSB, обработка, покраска и услуги",
+        deliverySummary: "Ежедневно 09:00-20:00, доставка по Москве и МО; условия проверяются через scan/preview",
+        notes: "Источник скана: https://pilmos.ru/kontakty/. Найдены контакты, реквизиты, каталог и блок отзывов. Отзывы импортировать только как непубличный source-preview.",
         status: "DRAFT",
         trustLevel: "NEW",
         storefrontEnabled: false,
@@ -746,12 +755,18 @@ async function main() {
       {
         slug: "derevo-lider",
         name: "ДеревоЛидер",
+        legalName: "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ «ДЕРЕВОЛИДЕР»",
         website: "https://derevo-lider.ru/",
         sourceUrl: "https://derevo-lider.ru/",
+        city: "Москва",
+        address: "Москва, Рублевское шоссе, дом 151, корп.2, стр.4",
+        phone: "+7 (495) 104-21-44",
+        email: "info@derevo-lider.ru",
         publicDescription:
-          "Кандидат на подключение к бирже ПилоРус. Данные продавца будут переноситься только через preview и ручное подтверждение.",
+          "ДеревоЛидер - кандидат на подключение к бирже ПилоРус. На сайте указана продажа фанеры и пиломатериалов для строительных организаций и частных клиентов в Москве и МО.",
         specialization: "Фанера, пиломатериалы, сосна и лиственница",
-        deliverySummary: "Условия доставки будут заполнены после скана и проверки",
+        deliverySummary: "Пн-пт 9:00-18:30, сб-вс 9:00-17:00; доставка и оплата проверяются через scan/preview",
+        notes: "Источники скана: https://derevo-lider.ru/o-kompanii/, https://derevo-lider.ru/otzyvy/. Найдены контакты, реквизиты, каталог и отзывы. Публикация отзывов только после проверки прав и источника.",
         status: "DRAFT",
         trustLevel: "NEW",
         storefrontEnabled: false,
@@ -761,12 +776,18 @@ async function main() {
       {
         slug: "faneragroup",
         name: "ФанераГрупп",
+        legalName: "ООО «ФанераГрупп»",
         website: "https://faneragroup.ru/",
         sourceUrl: "https://faneragroup.ru/",
+        city: "Москва",
+        address: "г. Москва, Рублевское шоссе, дом 151, корпус 2",
+        phone: "+7 (495) 125-23-44",
+        email: "faneragroup@gmail.com",
         publicDescription:
-          "Кандидат на подключение к бирже ПилоРус. Сначала скан и превью, затем перенос проверенных товаров и предложений.",
-        specialization: "Фанера и пиломатериалы",
-        deliverySummary: "Условия доставки будут заполнены после скана и проверки",
+          "ФанераГрупп - кандидат на подключение к бирже ПилоРус. На сайте указаны фанера, пиломатериалы, склад в Москве, ежедневный график и оформление заявок по телефону или почте.",
+        specialization: "Фанера, пиломатериалы, обрезная доска и листовые материалы",
+        deliverySummary: "Ежедневный график, доставка и оплата по согласованию с менеджером; условия проверяются через scan/preview",
+        notes: "Источники скана: https://faneragroup.ru/kontakti/, https://faneragroup.ru/otzyivyi/. Найдены контакты, склад, реквизиты и отзывы. Отзывы не публиковать без проверки.",
         status: "DRAFT",
         trustLevel: "NEW",
         storefrontEnabled: false,
@@ -785,6 +806,170 @@ async function main() {
     console.log(`[data-migrate] PiloRus marketplace sellers seeded (${marketplaceSuppliers20260612.length})`);
   } catch (e: any) {
     console.log("[data-migrate] PiloRus marketplace sellers seed skipped:", e.message);
+  }
+
+  try {
+    const sellerPricePolicy20260612: Record<string, { factor: number; leadTimeDays: number; deliveryText: string }> = {
+      pilorus: { factor: 1, leadTimeDays: 1, deliveryText: "Самовывоз и доставка по Москве и Московской области" },
+      derevotrade: { factor: 0.98, leadTimeDays: 2, deliveryText: "Предварительная розничная цена, требуется проверка продавца" },
+      pilmos: { factor: 1.02, leadTimeDays: 2, deliveryText: "Предварительная розничная цена, требуется проверка продавца" },
+      "derevo-lider": { factor: 0.99, leadTimeDays: 3, deliveryText: "Предварительная розничная цена, требуется проверка продавца" },
+      faneragroup: { factor: 1.04, leadTimeDays: 2, deliveryText: "Предварительная розничная цена, требуется проверка продавца" },
+    };
+
+    const sellers = await prisma.supplier.findMany({
+      where: { tenantId: DEFAULT_TENANT_ID, slug: { in: Object.keys(sellerPricePolicy20260612) } },
+      select: { id: true, slug: true, city: true },
+    });
+    const sellerBySlug = new Map(sellers.map((seller) => [seller.slug, seller]));
+    const variants = await prisma.productVariant.findMany({
+      where: {
+        product: {
+          tenantId: DEFAULT_TENANT_ID,
+          active: true,
+        },
+        OR: [
+          { pricePerCube: { not: null, gt: 0 } },
+          { pricePerPiece: { not: null, gt: 0 } },
+        ],
+      },
+      select: {
+        id: true,
+        pricePerCube: true,
+        pricePerPiece: true,
+        stockQty: true,
+      },
+    });
+
+    const normalizePrice = (value: unknown, factor: number) => {
+      const num = Number(value);
+      if (!Number.isFinite(num) || num <= 0) return null;
+      return Math.max(1, Math.round(num * factor));
+    };
+
+    const pilorusSeller = sellerBySlug.get("pilorus");
+    if (pilorusSeller) {
+      for (const variant of variants) {
+        await prisma.supplierOffer.upsert({
+          where: {
+            tenantId_supplierId_variantId: {
+              tenantId: DEFAULT_TENANT_ID,
+              supplierId: pilorusSeller.id,
+              variantId: variant.id,
+            },
+          },
+          create: {
+            tenantId: DEFAULT_TENANT_ID,
+            supplierId: pilorusSeller.id,
+            variantId: variant.id,
+            pricePerCube: normalizePrice(variant.pricePerCube, 1),
+            pricePerPiece: normalizePrice(variant.pricePerPiece, 1),
+            stockQty: variant.stockQty,
+            leadTimeDays: 1,
+            city: pilorusSeller.city,
+            deliveryText: sellerPricePolicy20260612.pilorus.deliveryText,
+            notes: "ПилоРус seller N1: предложение создано из текущего каталога без дубля товара.",
+            preferred: true,
+            active: true,
+            lastSeenAt: new Date(),
+          },
+          update: {
+            pricePerCube: normalizePrice(variant.pricePerCube, 1),
+            pricePerPiece: normalizePrice(variant.pricePerPiece, 1),
+            stockQty: variant.stockQty,
+            leadTimeDays: 1,
+            city: pilorusSeller.city,
+            deliveryText: sellerPricePolicy20260612.pilorus.deliveryText,
+            notes: "ПилоРус seller N1: предложение синхронизировано с текущим каталогом.",
+            preferred: true,
+            active: true,
+            lastSeenAt: new Date(),
+          },
+        });
+      }
+    }
+
+    const candidateCreateRows = sellers
+      .filter((seller) => seller.slug !== "pilorus")
+      .flatMap((seller) => {
+        const policy = sellerPricePolicy20260612[seller.slug];
+        if (!policy) return [];
+        return variants.map((variant) => ({
+          tenantId: DEFAULT_TENANT_ID,
+          supplierId: seller.id,
+          variantId: variant.id,
+          pricePerCube: normalizePrice(variant.pricePerCube, policy.factor),
+          pricePerPiece: normalizePrice(variant.pricePerPiece, policy.factor),
+          stockQty: variant.stockQty,
+          leadTimeDays: policy.leadTimeDays,
+          city: seller.city,
+          deliveryText: policy.deliveryText,
+          notes: `Кандидат продавца: стартовая цена ${Math.round(policy.factor * 100)}% от розницы. Перед публикацией нужен scan/preview.`,
+          preferred: false,
+          active: true,
+        }));
+      });
+
+    let createdCandidateOffers = 0;
+    for (let i = 0; i < candidateCreateRows.length; i += 1000) {
+      const result = await prisma.supplierOffer.createMany({
+        data: candidateCreateRows.slice(i, i + 1000),
+        skipDuplicates: true,
+      });
+      createdCandidateOffers += result.count;
+    }
+    console.log(
+      `[data-migrate] PiloRus marketplace offers synced: ${variants.length} variants for seller N1, ${createdCandidateOffers} candidate offers created`,
+    );
+  } catch (e: any) {
+    console.log("[data-migrate] PiloRus marketplace offers seed skipped:", e.message);
+  }
+
+  try {
+    const reviewDrafts20260612 = [
+      {
+        externalId: "marketing-draft-repeat-client",
+        name: "Черновик: повторный клиент",
+        text:
+          "[Черновик для реального отзыва] Повторный заказ оформили быстро, менеджер видел историю и помог не забыть важные позиции.",
+      },
+      {
+        externalId: "marketing-draft-builder",
+        name: "Черновик: прораб",
+        text:
+          "[Черновик для реального отзыва] Удобно, что можно быстро сравнить размеры, цену и наличие, а потом согласовать доставку без долгой переписки.",
+      },
+      {
+        externalId: "marketing-draft-furniture",
+        name: "Черновик: мастерская",
+        text:
+          "[Черновик для реального отзыва] Нужны были понятные позиции по фанере и доске, помогли подобрать вариант под задачу и срок отгрузки.",
+      },
+    ];
+
+    let createdDraftReviews = 0;
+    for (const draft of reviewDrafts20260612) {
+      const existing = await prisma.review.findFirst({
+        where: { tenantId: DEFAULT_TENANT_ID, source: "marketing-draft", externalId: draft.externalId },
+        select: { id: true },
+      });
+      if (existing) continue;
+      await prisma.review.create({
+        data: {
+          tenantId: DEFAULT_TENANT_ID,
+          externalId: draft.externalId,
+          source: "marketing-draft",
+          name: draft.name,
+          rating: 5,
+          text: draft.text,
+          approved: false,
+        },
+      });
+      createdDraftReviews++;
+    }
+    console.log(`[data-migrate] Marketing review drafts created (${createdDraftReviews})`);
+  } catch (e: any) {
+    console.log("[data-migrate] Marketing review drafts seed skipped:", e.message);
   }
 
   await prisma.$disconnect();

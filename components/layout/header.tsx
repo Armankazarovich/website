@@ -60,6 +60,7 @@ interface HeaderProps {
 }
 
 const infoLinks = [
+  { label: "Биржа", href: "/marketplace" },
   { label: "Доставка и оплата", href: "/delivery" },
   { label: "Акции и скидки", href: "/promotions" },
   { label: "О производстве", href: "/about" },
@@ -549,6 +550,17 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
               Каталог
             </Link>
             <Link
+              href="/marketplace"
+              className={cn(
+                "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
+                pathname === "/marketplace"
+                  ? "text-primary bg-primary/10"
+                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
+              )}
+            >
+              Биржа
+            </Link>
+            <Link
               href="/delivery"
               className={cn(
                 "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
@@ -933,6 +945,9 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
 
                   {/* Остальные ссылки */}
                   {[
+                    { label: "Биржа продавцов", href: "/marketplace", icon: (
+                      <Handshake className="h-4 w-4" />
+                    )},
                     { label: "Доставка и оплата", href: "/delivery", icon: (
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 4h13v13H1V4z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M14 9h4.5L22 13v4h-8V9z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><circle cx="5" cy="19" r="2" stroke="currentColor" strokeWidth="1.6"/><circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6"/></svg>
                     )},

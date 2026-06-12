@@ -76,11 +76,34 @@ check(
   "Public seller pages must exist before vendor PWA and scan layers are added.",
 );
 
+check(
+  "Marketplace home exists",
+  exists("app/(store)/marketplace/page.tsx") &&
+    includesAll(read("app/(store)/marketplace/page.tsx"), [
+      "ПилоРус Биржа пиломатериалов",
+      "Без дублей товара",
+      "Preview перед импортом",
+      "Предложения продавцов",
+      "supplierStorefrontHref",
+    ]),
+  "/marketplace must explain the buyer-facing exchange: sellers, offers, categories and no duplicate products.",
+);
+
 const dataMigrate = read("prisma/data-migrate.ts");
 check(
   "PiloRus and candidate sellers are seeded",
   includesAll(dataMigrate, ["slug: \"pilorus\"", "slug: \"derevotrade\"", "slug: \"pilmos\"", "slug: \"derevo-lider\"", "slug: \"faneragroup\""]),
   "Deploy data migration must remember PiloRus seller N1 and the first candidate sellers.",
+);
+check(
+  "Seller offers and review drafts are seeded safely",
+  includesAll(dataMigrate, [
+    "sellerPricePolicy20260612",
+    "PiloRus marketplace offers synced",
+    "marketing-draft",
+    "approved: false",
+  ]),
+  "Current PiloRus products must become seller offers without duplicates, and marketing review drafts must stay unpublished.",
 );
 
 const marketplaceLaw = read("docs/PILORUS_MARKETPLACE_LAW_2026-06-12.md");
@@ -106,6 +129,13 @@ check(
   "Catalog actions link to suppliers",
   includesAll(productActions, ["suppliers", "/admin/suppliers", "Handshake"]),
   "Managers should reach suppliers directly from the catalog core.",
+);
+
+const publicHeader = read("components/layout/header.tsx");
+check(
+  "Public navigation links to marketplace",
+  includesAll(publicHeader, ["href: \"/marketplace\"", "Биржа", "Биржа продавцов"]),
+  "Buyers should see the marketplace entry from desktop, tablet and mobile navigation.",
 );
 
 const failed = checks.filter((item) => !item.ok);
