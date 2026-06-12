@@ -28,6 +28,7 @@ import {
   isPublicSupplierStorefront,
   supplierStorefrontHref,
 } from "@/lib/supplier-profile";
+import { SupplierFeedPreviewClient } from "./supplier-feed-preview-client";
 
 export const dynamic = "force-dynamic";
 
@@ -344,6 +345,20 @@ export default async function AdminSuppliersPage({
           text="Витрина выходит наружу только после подтверждения, чтобы клиент не видел сырой карточки."
         />
       </div>
+
+      {canWrite ? (
+        <div className="mt-6">
+          <SupplierFeedPreviewClient
+            suppliers={suppliers.map((supplier) => ({
+              id: supplier.id,
+              name: supplier.name,
+              slug: supplier.slug,
+              sourceUrl: supplier.sourceUrl,
+              website: supplier.website,
+            }))}
+          />
+        </div>
+      ) : null}
 
       {canWrite ? (
         <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">

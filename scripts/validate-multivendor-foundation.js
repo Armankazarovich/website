@@ -89,6 +89,16 @@ check(
   "/marketplace must explain the buyer-facing exchange: sellers, offers, categories and no duplicate products.",
 );
 
+check(
+  "Vendor feed preview exists without applying changes",
+  exists("scripts/preview-vendor-yml-feed.js") &&
+    exists("app/api/admin/suppliers/feed-preview/route.ts") &&
+    exists("app/admin/suppliers/supplier-feed-preview-client.tsx") &&
+    includesAll(read("app/api/admin/suppliers/feed-preview/route.ts"), ["FEED_PREVIEW_ROLES", "NextResponse.json", "matchCounts", "unmatchedCategories"]) &&
+    includesAll(read("app/admin/suppliers/supplier-feed-preview-client.tsx"), ["Preview feed продавца", "Уверенные совпадения", "Категории без пары"]),
+  "Seller feed scan must stay preview-only before any offer import/apply layer is added.",
+);
+
 const dataMigrate = read("prisma/data-migrate.ts");
 check(
   "PiloRus and candidate sellers are seeded",
