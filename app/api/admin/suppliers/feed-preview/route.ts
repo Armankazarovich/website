@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCurrentTenantId } from "@/lib/tenant-context";
@@ -322,7 +323,7 @@ export async function POST(req: Request) {
   const tenantId = getCurrentTenantId();
   const supplierId = typeof body.supplierId === "string" ? body.supplierId.trim() : "";
   const supplier = supplierId
-    ? await prisma.supplier.findFirst({ where: { id: supplierId, tenantId }, select: { id: true, name: true, slug: true } })
+    ? await prisma.supplier.findFirst({ where: { id: supplierId, tenantId }, select: { id: true, name: true, slug: true, city: true } })
     : null;
   if (supplierId && !supplier) return NextResponse.json({ error: "Продавец не найден" }, { status: 404 });
 
@@ -425,6 +426,107 @@ export async function POST(req: Request) {
   const unmatched = rows.filter((row) => row.confidence === "unmatched");
   const diffs = high.map((row) => row.diffVsPiloBestUnitPct).filter((value): value is number => value !== null && Number.isFinite(value));
   const avgDiff = diffs.length ? Math.round((diffs.reduce((sum, value) => sum + value, 0) / diffs.length) * 10) / 10 : null;
+
+  if (body.apply === true) {
+    if (!supplier) return NextResponse.json({ error: "Выберите продавца для применения feed" }, { status: 400 });
+    if (body.applyConfirm !== "APPLY_VENDOR_FEED_PREVIEW") {
+      return NextResponse.json({ error: "Нужно явное подтверждение применения preview" }, { status: 400 });
+    }
+    const selectedFeedIds = Array.isArray(body.selectedFeedIds)
+      ? body.selectedFeedIds.filter((value): value is string => typeof value === "string" && value.length > 0).slice(0, 100)
+      : [];
+    if (selectedFeedIds.length === 0) {
+      return NextResponse.json({ error: "Выберите хотя бы одну строку feed" }, { status: 400 });
+    }
+    const selected = new Set(selectedFeedIds);
+    const applicableRows = rows.filter(
+      (row) =>
+        selected.has(row.feedId) &&
+        row.confidence === "high" &&
+        row.matchedVariantId &&
+        (row.compareUnit === "m3" || row.compareUnit === "piece") &&
+        Number.isFinite(row.price) &&
+        row.price > 0,
+    );
+    if (applicableRows.length === 0) {
+      return NextResponse.json({ error: "В выбранных строках нет уверенных совпадений для применения" }, { status: 400 });
+    }
+
+    const variantIds = applicableRows.map((row) => row.matchedVariantId);
+    const existingOffers = await prisma.supplierOffer.findMany({
+      where: { tenantId, supplierId: supplier.id, variantId: { in: variantIds } },
+      select: { variantId: true },
+    });
+    const existingVariantIds = new Set(existingOffers.map((offer) => offer.variantId));
+
+    let created = 0;
+    let updated = 0;
+    const applied: Array<{ feedId: string; variantId: string; product: string; size: string; unit: string; price: number }> = [];
+    for (const row of applicableRows) {
+      const priceData = row.compareUnit === "m3" ? { pricePerCube: row.price } : { pricePerPiece: row.price };
+      const notes = `Feed preview ${supplier.name}: ${row.name} | feedId=${row.feedId} | score=${row.score} | source=${feedUrl}`;
+      await prisma.supplierOffer.upsert({
+        where: {
+          tenantId_supplierId_variantId: {
+            tenantId,
+            supplierId: supplier.id,
+            variantId: row.matchedVariantId,
+          },
+        },
+        create: {
+          tenantId,
+          supplierId: supplier.id,
+          variantId: row.matchedVariantId,
+          ...priceData,
+          city: supplier.city,
+          deliveryText: "Цена применена из feed-preview; условия доставки требуют проверки",
+          notes,
+          active: true,
+          preferred: false,
+          lastSeenAt: new Date(),
+        },
+        update: {
+          ...priceData,
+          city: supplier.city,
+          deliveryText: "Цена обновлена из feed-preview; условия доставки требуют проверки",
+          notes,
+          active: true,
+          lastSeenAt: new Date(),
+        },
+      });
+      if (existingVariantIds.has(row.matchedVariantId)) updated++;
+      else created++;
+      applied.push({
+        feedId: row.feedId,
+        variantId: row.matchedVariantId,
+        product: row.matchedProduct,
+        size: row.matchedVariantSize,
+        unit: row.compareUnit,
+        price: row.price,
+      });
+    }
+
+    revalidatePath("/admin/suppliers");
+    revalidatePath("/catalog");
+    revalidatePath("/marketplace");
+    revalidatePath(`/vendors/${supplier.slug}`);
+    for (const slug of new Set(applicableRows.map((row) => row.matchedSlug).filter(Boolean))) {
+      revalidatePath(`/product/${slug}`);
+    }
+    revalidateTag("store-shell-data");
+
+    return NextResponse.json({
+      ok: true,
+      source: feedUrl,
+      supplier,
+      requested: selectedFeedIds.length,
+      applied: applied.length,
+      created,
+      updated,
+      skipped: selectedFeedIds.length - applied.length,
+      appliedRows: applied.slice(0, 20),
+    });
+  }
 
   return NextResponse.json({
     generatedAt: new Date().toISOString(),

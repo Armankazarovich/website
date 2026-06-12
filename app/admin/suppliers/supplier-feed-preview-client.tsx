@@ -23,6 +23,7 @@ type PreviewRow = {
   score: number;
   matchedProduct: string;
   matchedSlug: string;
+  matchedVariantId: string;
   matchedVariantSize: string;
   compareUnit: string;
   piloComparedPrice: number | null;
@@ -52,6 +53,15 @@ type PreviewResult = {
 
 type Props = {
   suppliers: SupplierOption[];
+};
+
+type ApplyResult = {
+  ok: boolean;
+  applied: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  appliedRows: Array<{ feedId: string; product: string; size: string; unit: string; price: number }>;
 };
 
 function suggestedFeedUrl(supplier?: SupplierOption) {
@@ -85,6 +95,10 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
   const [result, setResult] = useState<PreviewResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [selectedFeedIds, setSelectedFeedIds] = useState<Set<string>>(new Set());
+  const [applyConfirmed, setApplyConfirmed] = useState(false);
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [applyResult, setApplyResult] = useState<ApplyResult | null>(null);
 
   function handleSupplierChange(value: string) {
     setSupplierId(value);
@@ -92,6 +106,9 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
     setFeedUrl(suggestedFeedUrl(supplier));
     setResult(null);
     setError(null);
+    setSelectedFeedIds(new Set());
+    setApplyConfirmed(false);
+    setApplyResult(null);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -99,6 +116,9 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
     setLoading(true);
     setError(null);
     setResult(null);
+    setSelectedFeedIds(new Set());
+    setApplyConfirmed(false);
+    setApplyResult(null);
     try {
       const response = await fetch("/api/admin/suppliers/feed-preview", {
         method: "POST",
@@ -108,10 +128,49 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
       const payload = await response.json();
       if (!response.ok) throw new Error(payload?.error || "Preview не удалось выполнить");
       setResult(payload);
+      setSelectedFeedIds(new Set((payload?.samples?.high || []).map((row: PreviewRow) => row.feedId).filter(Boolean)));
     } catch (err: any) {
       setError(err?.message || "Preview не удалось выполнить");
     } finally {
       setLoading(false);
+    }
+  }
+
+  function toggleFeedId(feedId: string) {
+    setSelectedFeedIds((current) => {
+      const next = new Set(current);
+      if (next.has(feedId)) next.delete(feedId);
+      else next.add(feedId);
+      return next;
+    });
+    setApplyResult(null);
+  }
+
+  async function applySelected() {
+    if (!result || selectedFeedIds.size === 0 || !applyConfirmed) return;
+    setApplyLoading(true);
+    setError(null);
+    setApplyResult(null);
+    try {
+      const response = await fetch("/api/admin/suppliers/feed-preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          supplierId,
+          feedUrl: result.source,
+          apply: true,
+          applyConfirm: "APPLY_VENDOR_FEED_PREVIEW",
+          selectedFeedIds: [...selectedFeedIds],
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.error || "Не удалось применить выбранные строки");
+      setApplyResult(payload);
+      setApplyConfirmed(false);
+    } catch (err: any) {
+      setError(err?.message || "Не удалось применить выбранные строки");
+    } finally {
+      setApplyLoading(false);
     }
   }
 
@@ -213,9 +272,54 @@ export function SupplierFeedPreviewClient({ suppliers }: Props) {
                 {result.samples.high.length === 0 ? (
                   <p className="py-4 text-sm text-muted-foreground">Уверенных совпадений пока нет.</p>
                 ) : (
-                  result.samples.high.map((row) => <PreviewRowItem key={`${row.feedId}-${row.name}`} row={row} />)
+                  result.samples.high.map((row) => (
+                    <PreviewRowItem
+                      key={`${row.feedId}-${row.name}`}
+                      row={row}
+                      selected={selectedFeedIds.has(row.feedId)}
+                      onToggle={() => toggleFeedId(row.feedId)}
+                    />
+                  ))
                 )}
               </div>
+              {result.samples.high.length > 0 ? (
+                <div className="mt-4 rounded-xl border border-primary/25 bg-primary/10 p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Применение выбранных строк</p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                        Применяются только отмеченные уверенные строки. Товар не создается, витрина не публикуется, цена записывается в предложение продавца.
+                      </p>
+                    </div>
+                    <label className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                      <input
+                        type="checkbox"
+                        checked={applyConfirmed}
+                        onChange={(event) => setApplyConfirmed(event.target.checked)}
+                        className="h-4 w-4 rounded border-border accent-primary"
+                      />
+                      Подтверждаю применение
+                    </label>
+                  </div>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs text-muted-foreground">Выбрано: {selectedFeedIds.size}</p>
+                    <button
+                      type="button"
+                      onClick={applySelected}
+                      disabled={applyLoading || !applyConfirmed || selectedFeedIds.size === 0}
+                      className="inline-flex min-h-[38px] items-center justify-center gap-2 rounded-xl bg-primary px-4 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-55"
+                    >
+                      {applyLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                      Применить выбранные
+                    </button>
+                  </div>
+                  {applyResult ? (
+                    <div className="mt-3 rounded-xl border border-emerald-500/35 bg-emerald-500/10 p-3 text-sm text-emerald-200">
+                      Применено: {applyResult.applied}. Создано: {applyResult.created}. Обновлено: {applyResult.updated}. Пропущено: {applyResult.skipped}.
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
 
             <div className="rounded-xl border border-border bg-background p-4">
@@ -259,14 +363,35 @@ function PreviewMetric({ label, value, hint, tone = "default" }: { label: string
   );
 }
 
-function PreviewRowItem({ row, compact = false }: { row: PreviewRow; compact?: boolean }) {
+function PreviewRowItem({
+  row,
+  compact = false,
+  selected,
+  onToggle,
+}: {
+  row: PreviewRow;
+  compact?: boolean;
+  selected?: boolean;
+  onToggle?: () => void;
+}) {
   const bestCandidate = row.candidates[0];
   const matchText = row.matchedProduct ? `${row.matchedProduct} · ${row.matchedVariantSize}` : bestCandidate ? `${bestCandidate.product} · ${bestCandidate.size}` : "пары нет";
 
   return (
     <div className={cn("grid gap-2 py-3", compact ? "lg:grid-cols-[minmax(0,1.2fr)_0.8fr_0.35fr]" : "lg:grid-cols-[minmax(0,1.1fr)_1fr_0.5fr]")}>
       <div className="min-w-0">
-        <p className="truncate font-medium text-foreground">{row.name}</p>
+        <div className="flex min-w-0 items-center gap-2">
+          {onToggle ? (
+            <input
+              type="checkbox"
+              checked={Boolean(selected)}
+              onChange={onToggle}
+              className="h-4 w-4 shrink-0 rounded border-border accent-primary"
+              aria-label={`Выбрать ${row.name}`}
+            />
+          ) : null}
+          <p className="truncate font-medium text-foreground">{row.name}</p>
+        </div>
         <p className="mt-1 text-xs text-muted-foreground">{row.category || "Без категории"} · {row.size || "размер не указан"}</p>
       </div>
       <div className="min-w-0">
