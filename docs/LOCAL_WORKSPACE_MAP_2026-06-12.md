@@ -18,6 +18,8 @@ Date: 2026-06-12
 
 - `C:\Users\StormPC\Documents\New project` moved to `D:\проект\_moved_from_C\Documents\New project`.
 - `C:\Users\StormPC\Documents\New project 2` moved to `D:\проект\_moved_from_C\Documents\New project 2`.
+- `C:\Users\StormPC\.codex\archived_sessions` moved to `D:\проект\_moved_from_C\Codex\archived_sessions`.
+  A junction remains at the original path so Codex can still find the archive.
 
 These were empty stray Git project folders and are kept only as an archive.
 
@@ -31,5 +33,6 @@ This restored free space on `C:` so the browser and Codex runtime can write cach
 ## Left In Place
 
 - Browser profiles were not moved or deleted.
-- `C:\Users\StormPC\.codex` was not moved. It contains Codex runtime data and archived sessions. A large folder exists at `C:\Users\StormPC\.codex\archived_sessions`; move it only as a separate maintenance step with a symlink back if more space is needed.
+- `C:\Users\StormPC\.codex` stays on `C:` for active Codex config/runtime data.
+  `C:\Users\StormPC\.codex\archived_sessions` is now a junction to `D:\проект\_moved_from_C\Codex\archived_sessions`.
 - `C:\Users\StormPC\OpenHands` was not moved because it is a separate tool.
