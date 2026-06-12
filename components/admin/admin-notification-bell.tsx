@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 
 type FeedItemKind =
   | "new_order"
+  | "new_lead"
+  | "order_status"
   | "pending_review"
   | "pending_staff"
   | "notification_issue"
@@ -46,6 +48,8 @@ type FeedItem = {
 type FeedResponse = {
   total: number;
   newOrders: number;
+  newLeads: number;
+  orderStatuses: number;
   pendingReviews: number;
   pendingStaff: number;
   notificationIssues: number;
@@ -79,6 +83,8 @@ type PanelTab = "signals" | "journal" | "archive" | "settings";
 const EMPTY_FEED: FeedResponse = {
   total: 0,
   newOrders: 0,
+  newLeads: 0,
+  orderStatuses: 0,
   pendingReviews: 0,
   pendingStaff: 0,
   notificationIssues: 0,
@@ -89,6 +95,8 @@ const EMPTY_FEED: FeedResponse = {
 
 const KIND_META: Record<FeedItemKind, { icon: LucideIcon; className: string }> = {
   new_order: { icon: ShoppingBag, className: "text-primary" },
+  new_lead: { icon: ClipboardList, className: "text-primary" },
+  order_status: { icon: Bell, className: "text-primary" },
   pending_review: { icon: Star, className: "text-amber-500" },
   pending_staff: { icon: UserPlus, className: "text-primary" },
   notification_issue: { icon: AlertTriangle, className: "text-destructive" },

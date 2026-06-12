@@ -88,6 +88,7 @@ function pluralizeRu(n: number, forms: [string, string, string]): string {
 
 const NOTIF_ITEM_META: Record<NotifItemKind, { icon: React.ElementType; className: string }> = {
   new_order: { icon: ShoppingBag, className: "text-primary" },
+  new_lead: { icon: ClipboardList, className: "text-primary" },
   order_status: { icon: Bell, className: "text-primary" },
   pending_review: { icon: Star, className: "text-amber-500" },
   pending_staff: { icon: UserPlus, className: "text-primary" },
@@ -199,6 +200,7 @@ interface Props {
 
 type NotifItemKind =
   | "new_order"
+  | "new_lead"
   | "order_status"
   | "pending_review"
   | "pending_staff"

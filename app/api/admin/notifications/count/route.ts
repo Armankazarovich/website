@@ -9,11 +9,11 @@ export async function GET() {
     const session = await auth();
     const role = session?.user?.role;
     if (!role || !["SUPER_ADMIN","ADMIN","MANAGER","ACCOUNTANT","WAREHOUSE","SELLER","COURIER"].includes(role)) {
-      return NextResponse.json({ total: 0, newOrders: 0, orderStatuses: 0, pendingReviews: 0, pendingStaff: 0 });
+      return NextResponse.json({ total: 0, newOrders: 0, newLeads: 0, orderStatuses: 0, pendingReviews: 0, pendingStaff: 0 });
     }
     const moduleAccess = await requireArayModuleAccess({ moduleId: "core.notifications", role });
     if (!moduleAccess.authorized) {
-      return NextResponse.json({ total: 0, newOrders: 0, orderStatuses: 0, pendingReviews: 0, pendingStaff: 0, moduleDisabled: true });
+      return NextResponse.json({ total: 0, newOrders: 0, newLeads: 0, orderStatuses: 0, pendingReviews: 0, pendingStaff: 0, moduleDisabled: true });
     }
 
     const feed = await getAdminNotificationFeed(role, {
@@ -23,6 +23,6 @@ export async function GET() {
 
     return NextResponse.json(feed);
   } catch {
-    return NextResponse.json({ total: 0, newOrders: 0, orderStatuses: 0, pendingReviews: 0, pendingStaff: 0 });
+    return NextResponse.json({ total: 0, newOrders: 0, newLeads: 0, orderStatuses: 0, pendingReviews: 0, pendingStaff: 0 });
   }
 }

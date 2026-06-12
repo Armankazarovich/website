@@ -76,6 +76,7 @@ check(
       "getSupplier",
       "ProductCard",
       "VendorContactActions",
+      "VendorLeadForm",
       "Товары и цены",
       "Найти товар у продавца",
       "Подбор по задаче",
@@ -83,6 +84,30 @@ check(
       "vendorHref",
     ]),
   "Public seller pages must exist before vendor PWA and scan layers are added.",
+);
+
+check(
+  "Seller storefront lead capture creates CRM signal",
+  exists("components/store/vendor-lead-form.tsx") &&
+    exists("app/api/vendors/[slug]/lead/route.ts") &&
+    includesAll(read("components/store/vendor-lead-form.tsx"), [
+      "vendor-request",
+      "legalConsent",
+      "/api/vendors/${sellerSlug}/lead",
+      "Отправить запрос",
+    ]) &&
+    includesAll(read("app/api/vendors/[slug]/lead/route.ts"), [
+      "prisma.lead.create",
+      "prisma.leadActivity.create",
+      "recordNotificationCenterEvent",
+      "vendor_storefront",
+      "seller:${supplier.slug}",
+      "supplier-id:${supplier.id}",
+      "/admin/crm?leadId=",
+    ]) &&
+    includesAll(read("lib/notification-settings.ts"), ["new_lead", "Новая заявка"]) &&
+    includesAll(read("lib/admin-notification-feed.ts"), ["newLeads", "leadEventWhere", "kind: \"new_lead\""]),
+  "A buyer request from a seller storefront must become a tagged CRM lead and an internal admin signal tied to that seller.",
 );
 
 check(

@@ -9,6 +9,7 @@ import { getCurrentTenantId } from "@/lib/tenant-context";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { ProductCard } from "@/components/store/product-card";
 import { VendorContactActions } from "@/components/store/vendor-contact-actions";
+import { VendorLeadForm } from "@/components/store/vendor-lead-form";
 
 type Props = {
   params: { slug: string };
@@ -339,6 +340,10 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
           />
         </div>
       </section>
+
+      <div className="mt-6">
+        <VendorLeadForm sellerName={supplier.name} sellerSlug={supplier.slug} phone={supplier.phone} />
+      </div>
 
       <section className="mt-8">
         <div className="mb-5 grid gap-3 md:grid-cols-3">

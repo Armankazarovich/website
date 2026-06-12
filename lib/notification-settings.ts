@@ -32,6 +32,7 @@ export const NOTIFICATION_ROLE_LABELS: Record<StaffNotificationRole, string> = {
 
 export type NotificationEventKey =
   | "new_order"
+  | "new_lead"
   | "pending_review"
   | "pending_staff"
   | "notification_issue"
@@ -56,6 +57,13 @@ export const NOTIFICATION_EVENT_DEFINITIONS: NotificationEventDefinition[] = [
     description: "Появился заказ, который нужно принять в работу.",
     defaultRoles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "SELLER", "WAREHOUSE", "COURIER"],
     defaultChannels: ["SYSTEM", "PUSH", "TELEGRAM"],
+  },
+  {
+    key: "new_lead",
+    label: "Новая заявка",
+    description: "Покупатель оставил запрос с сайта или витрины продавца.",
+    defaultRoles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "SELLER"],
+    defaultChannels: ["SYSTEM", "ARAY"],
   },
   {
     key: "pending_review",
