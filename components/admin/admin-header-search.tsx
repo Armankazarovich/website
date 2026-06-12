@@ -211,7 +211,7 @@ export function AdminHeaderSearch({ role, onCompactSearch, disabledModuleIds }: 
               <p className="mt-1 text-xs text-muted-foreground">
                 {trimmedQuery.length === 1
                   ? "Введите еще символ или номер заказа."
-                  : "Попробуйте номер заказа, телефон, имя, товар или раздел."}
+                  : "Попробуйте номер заказа, телефон, имя, продавца, товар или раздел."}
               </p>
             </div>
           )}

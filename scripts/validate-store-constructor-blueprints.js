@@ -171,12 +171,12 @@ includesAll("components/admin/admin-navigation-registry.ts", [
 
 includesAll("components/admin/admin-navigation-model.ts", [
   '"/admin/site/constructor"',
-  "Редактор сайта",
+  "Редактор витрины",
 ]);
 
 includesAll("app/admin/business/settings/page.tsx", [
   'href: "/admin/site/constructor"',
-  "Редактор сайта",
+  "Редактор витрины",
 ]);
 
 includesAll("app/admin/site/constructor/page.tsx", [

@@ -22,8 +22,8 @@ const settingGroups = [
     title: "Витрина и контент",
     description: "Главная, блоки сайта, баннеры, тексты, SEO и внешний вид.",
     items: [
-      { title: "Настройки сайта", href: "/admin/site", icon: Globe, text: "Контакты, SEO, аналитика, футер, виджеты." },
-      { title: "Редактор сайта", href: "/admin/site/constructor", icon: Wand2, text: "Блоки, страницы, превью и правки уже созданного сайта." },
+      { title: "Настройки витрины", href: "/admin/site", icon: Globe, text: "Контакты, SEO, аналитика, футер, виджеты." },
+      { title: "Редактор витрины", href: "/admin/site/constructor", icon: Wand2, text: "Блоки, страницы, превью и правки текущего сайта." },
       { title: "Оформление", href: "/admin/appearance", icon: Brush, text: "Палитра, карточки, мобильный вид, ARAY на сайте." },
       { title: "Медиабиблиотека", href: "/admin/media", icon: Images, text: "Фото, документы, alt-тексты и бизнес-медиа." },
     ],
@@ -35,9 +35,9 @@ const settingGroups = [
       { title: "Каталог товаров", href: "/admin/products", icon: Package, text: "Товары, цены, фото, варианты и публикация." },
       { title: "Категории", href: "/admin/categories", icon: Boxes, text: "Разделы, меню, футер, подкатегории и SEO." },
       { title: "Типы товаров", href: "/admin/product-types", icon: Tags, text: "Фильтры каталога, тексты разделов, SEO и индексация." },
-      { title: "Поставщики", href: "/admin/suppliers", icon: Handshake, text: "Продавцы, прайсы, предложения и будущий мультивендор." },
+      { title: "Продавцы / Поставщики", href: "/admin/suppliers", icon: Handshake, text: "Витрины продавцов, прайсы, предложения и мультивендор." },
       { title: "Склад / Остатки", href: "/admin/inventory", icon: Search, text: "Остатки, пороги, наличие и быстрые правки." },
-      { title: "Импорт / Экспорт", href: "/admin/import", icon: Wand2, text: "Excel, CSV, Google Таблицы и будущий перенос сайта." },
+      { title: "Импорт / Экспорт", href: "/admin/import", icon: Wand2, text: "Excel, CSV, Google Таблицы и безопасный перенос каталога." },
     ],
   },
   {
@@ -59,7 +59,7 @@ export default function BusinessSettingsPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary/80">Управление бизнесом</p>
           <h1 className="mt-2 font-display text-2xl font-bold text-foreground">Настройки бизнеса</h1>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-            Всё, что относится к сайту, магазину, каталогу и продажам. Я смогу настраивать эти блоки пошагово, а ручные настройки остаются рядом.
+            Всё, что относится к витрине, бирже, каталогу и продажам. Я смогу настраивать эти блоки пошагово, а ручные настройки остаются рядом.
           </p>
         </div>
         <Link
@@ -67,16 +67,16 @@ export default function BusinessSettingsPage() {
           className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
         >
           <Globe className="h-4 w-4" />
-          Открыть настройки сайта
+          Открыть настройки витрины
         </Link>
       </div>
 
       <div className="admin-alert admin-alert-info flex items-start gap-3 p-4 text-sm leading-6">
         <Info className="mt-0.5 h-4 w-4 shrink-0" />
         <div>
-          <p className="font-semibold text-foreground">ARAY-мастер для автозаполнения закреплен в конструкторе.</p>
+          <p className="font-semibold text-foreground">ARAY-мастер для автозаполнения закреплен в редакторе витрины.</p>
           <p className="mt-1 text-muted-foreground">
-            Сейчас ручные настройки остаются рядом, а новый раздел «Конструктор магазина» держит контракт запуска: тип бизнеса, тенант, каталог, Арай, PWA и проверки перед деплоем.
+            Сейчас ручные настройки остаются рядом, а редактор витрины держит контракт запуска: тип бизнеса, тенант, каталог, Арай, PWA и проверки перед деплоем.
           </p>
         </div>
       </div>

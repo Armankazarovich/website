@@ -132,7 +132,7 @@ export function AdminSearchPanel({ open, onClose, role, disabledModuleIds }: Pro
       open={open}
       onClose={handleClose}
       title="Поиск"
-      subtitle="Разделы, заказы, клиенты, товары"
+      subtitle="Разделы, товары, продавцы, заказы, клиенты"
       icon={<Search className="h-4 w-4" strokeWidth={2} />}
       iconTone={ARAY_ICON_TONE}
       maxWidth="520px"
@@ -242,7 +242,7 @@ export function AdminSearchPanel({ open, onClose, role, disabledModuleIds }: Pro
                 <p className="mx-auto mt-1 max-w-sm text-xs leading-5 text-muted-foreground">
                   {query.trim().length === 1
                     ? "Введите еще символ или номер заказа."
-                    : "Попробуйте номер заказа, телефон, имя клиента, название товара или раздел админки."}
+                    : "Попробуйте номер заказа, телефон, имя клиента, продавца, название товара или раздел админки."}
                 </p>
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   {queryHints.slice(0, 3).map((hint) => (

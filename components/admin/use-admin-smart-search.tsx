@@ -130,6 +130,8 @@ const GLOBAL_HINTS_BY_HREF: Record<string, string> = {
   "/admin/orders": "Очередь и история",
   "/admin/clients": "База покупателей",
   "/admin/products": "Каталог и карточки",
+  "/admin/suppliers": "Продавцы, прайсы и предложения",
+  "/admin/promotion": "Direct, SEO и запуск рекламы",
   "/admin/business/settings": "Сайт, витрина, SEO",
   "/cabinet": "Сводка кабинета",
   "/cabinet/orders": "Активные и история",
@@ -145,11 +147,11 @@ const USER_QUICK: QuickDescriptor[] = [
 ];
 
 const DEFAULT_ADMIN_QUICK: QuickDescriptor[] = [
-  { href: "/admin/orders/new", title: "Терминал", subtitle: "Создать заказ", icon: Receipt, roles: STAFF_ROLES },
-  { href: "/admin/orders", title: "Заказы", subtitle: "Очередь и история", icon: ShoppingBag, roles: STAFF_ROLES },
   { href: "/admin/products", title: "Каталог", subtitle: "Товары и карточки", icon: Package, roles: CATALOG_ROLES },
+  { href: "/admin/suppliers", title: "Продавцы", subtitle: "Витрины и предложения", icon: Handshake, roles: CATALOG_ROLES },
+  { href: "/admin/orders", title: "Заказы", subtitle: "Очередь и история", icon: ShoppingBag, roles: STAFF_ROLES },
+  { href: "/admin/promotion", title: "Direct / SEO", subtitle: "Реклама и готовность", icon: Megaphone, roles: SALES_ROLES },
   { href: "/admin/analytics", title: "Аналитика", subtitle: "Продажи и динамика", icon: BarChart2, roles: ["SUPER_ADMIN", "ADMIN", "ACCOUNTANT"] },
-  { href: "/admin/business/settings", title: "Настройки бизнеса", subtitle: "Сайт, витрина, SEO", icon: Settings, roles: SALES_ROLES },
 ];
 
 const SEARCH_CONTEXTS: SearchContext[] = [
@@ -213,7 +215,7 @@ const SEARCH_CONTEXTS: SearchContext[] = [
     nextStep: "Проверить готовность товара",
     quick: [
       { href: "/admin/products/new", title: "Новый товар", subtitle: "Создать карточку", icon: Plus, roles: CATALOG_ROLES },
-      { href: "/admin/suppliers", title: "Поставщики", subtitle: "Продавцы и предложения", icon: Handshake, roles: CATALOG_ROLES },
+      { href: "/admin/suppliers", title: "Продавцы", subtitle: "Витрины и предложения", icon: Handshake, roles: CATALOG_ROLES },
       { href: "/admin/categories", title: "Категории", subtitle: "Дерево каталога", icon: Tag, roles: ADMIN_ROLES },
       { href: "/admin/inventory", title: "Склад", subtitle: "Остатки и движение", icon: Warehouse, roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"] },
       { href: "/admin/import", title: "Импорт", subtitle: "CSV и Excel", icon: FileDown, roles: ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"] },
@@ -263,16 +265,16 @@ const SEARCH_CONTEXTS: SearchContext[] = [
   {
     match: "/admin/settings",
     label: "Настройки",
-    placeholder: "Настройка, ARAY, команда, терминал, сайт или помощь...",
+    placeholder: "Витрина, бизнес, команда, доступы, терминал или система...",
     nextStep: "Открыть нужный раздел настроек",
     quick: [
-      { href: "/admin/aray", title: "ARAY", subtitle: "Помощник, голос и лимиты", icon: ArayIcon, roles: SALES_ROLES },
+      { href: "/admin/site", title: "Витрина", subtitle: "Контакты, SEO и страницы", icon: Globe, roles: ADMIN_ROLES },
       { href: "/admin/business/settings", title: "Бизнес", subtitle: "Сайт и продажи", icon: Settings, roles: SALES_ROLES },
-      { href: "/admin/terminals", title: "Терминалы", subtitle: "Устройства и касса", icon: Monitor, roles: ADMIN_ROLES },
       { href: "/admin/staff", title: "Команда", subtitle: "Сотрудники", icon: Users, roles: ADMIN_ROLES },
-      { href: "/admin/site", title: "Сайт", subtitle: "Витрина", icon: Globe, roles: ADMIN_ROLES },
+      { href: "/admin/director", title: "Роли", subtitle: "Доступы и группы", icon: Users, roles: STAFF_ROLES },
+      { href: "/admin/health", title: "Проверка", subtitle: "Состояние системы", icon: Settings, roles: ADMIN_ROLES },
     ],
-    hints: ["арай", "терминал", "команда", "сайт", "уведомления"],
+    hints: ["витрина", "команда", "роли", "сайт", "уведомления"],
   },
   {
     match: "/admin/finance",
@@ -289,10 +291,10 @@ const SEARCH_CONTEXTS: SearchContext[] = [
   {
     match: "/admin",
     label: "Рабочий стол",
-    placeholder: "Найти заказ, клиента, товар или раздел...",
+    placeholder: "Найти товар, продавца, заказ, клиента, рекламу или раздел...",
     nextStep: "Проверить рабочий стол по реальным сигналам",
     quick: DEFAULT_ADMIN_QUICK,
-    hints: ["арай", "терминал", "новый заказ", "каталог"],
+    hints: ["продавцы", "каталог", "заказ", "реклама"],
   },
   {
     match: "/cabinet",
@@ -481,7 +483,7 @@ export function useAdminSmartSearch({
   }, [activeContext, role, visibleSections]);
 
   const queryHints = useMemo(() => {
-    const fallback = role === "USER" ? ["мои заказы", "каталог", "профиль"] : ["арай", "терминал", "заказ", "каталог"];
+    const fallback = role === "USER" ? ["мои заказы", "каталог", "профиль"] : ["продавцы", "каталог", "заказ", "реклама"];
     return Array.from(new Set([...activeContext.hints, ...fallback])).slice(0, 5);
   }, [activeContext, role]);
 

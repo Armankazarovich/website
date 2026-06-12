@@ -260,6 +260,29 @@ Manual audit progress:
 - `Fixed` PWA icons and Direct legal readiness on 2026-06-11: regenerated PiloRus PWA/favicons from the clean transparent `logo.svg` mark instead of the detailed full logo tile, bumped the site icon cache version, and updated the release guard. Cleaned public legal identity for launch: `/privacy`, `/terms`, schema.org, `/about`, home FAQ/about text, product JSON-LD seller, footer/header fallbacks, and the legacy admin migrate helper now use `ООО «ДЕРЕВОЛИДЕР»`, OGRN/INN/KPP and the existing PiloRus address `Химки, ул. Заводская 2А, стр.28`. Added explicit personal-data consent to public contact, service, product request, promo, checkout registration, account drawer registration, registration page, product review and home review forms; matching public APIs now reject missing consent for contacts, orders, promo requests, registration, and reviews. Verified old `ООО «ПИТИ»`/old phones are no longer found in public code, and checked against official Yandex Direct requirements for page correctness and seller/contact data. Verified with `npx tsc --noEmit --pretty false`, `npm run design:check`, `npm run pwa:check`, `npm run direct:check`, `npm run text:check`, `npm run cart:check`, `npm run release:check`, and `npm run release:smoke`.
 - `Needs mapped sync` pil-mos catalog parity on 2026-06-11: found a reliable public source at `https://pil-mos.ru/wp-json/wc/store/products`; it returned 176 products while current PiloRus admin API returned 60 products, and automatic slug/name matching found 0 safe matches. No mass catalog import was applied in this Marketing pass because it would create a second catalog beside the current one instead of safely updating existing products. Next Catalog Core follow-up should build an explicit pil-mos -> PiloRus mapping/import preview before applying assortment and price changes, with prices equal or up to 2% lower as requested.
 
+### 8. Marketplace Direction And Vendor Core
+
+Status: started.
+
+Pages:
+- `/admin`
+- `/admin/products`
+- `/admin/suppliers`
+- `/admin/promotion`
+- `/admin/analytics`
+- `/admin/settings`
+- service-only ARAY routes
+
+What to verify:
+- daily admin navigation starts from marketplace work, not old site-builder work;
+- sellers/vendors are discoverable from menu, search, mobile menu, account drawer, and catalog quick actions;
+- ARAY builder/project/release routes stay available for owner/service use but do not distract normal PiloRus operators;
+- the next Vendor Core layer can build on `/admin/suppliers` without renaming confusion.
+
+Manual audit progress:
+- `Fixed` marketplace direction on 2026-06-12: created `docs/PILORUS_MARKETPLACE_LAW_2026-06-12.md` as the project law. It fixes PiloRus as the timber marketplace etalon, keeps future sport nutrition/biohacking on separate domains and servers, defines timber monetization as monthly service/ads-first, defines sport nutrition as future commission/referral-friendly, and sets the Vendor Core order.
+- `Fixed` admin navigation packaging on 2026-06-12: changed visible admin language from generic shop/constructor toward marketplace terms. The products group is now `Биржа`, suppliers are shown as `Продавцы / Поставщики`, current site editing is `Редактор витрины`, and old ARAY launch/builder/project/release routes are service/search/direct-only instead of normal daily menu paths. Header search, side search, mobile menu, account drawer context, business settings, quick actions, nav rail subtitles, and the constructor guard now prioritize catalog, sellers, orders, Direct/SEO, analytics, roles, and current storefront settings. Verified with `npm run constructor:check`, `npm run nav:check`, `npm run multivendor:check`, `npx tsc --noEmit --pretty false`, `npm run design:check`, and `npm run text:check`.
+
 ## Status Labels
 
 - `OK`: opened, data loaded, safe action works, reload works, no obvious layout break.
@@ -273,4 +296,4 @@ Start the next clean chat with this file and the first manual audit target:
 
 `D:\проект\pilorus\website\docs\ARAY_ADMIN_SECTION_AUDIT_QUEUE_2026-06-09.md`
 
-Next section to audit manually: Catalog Core pil-mos assortment/price parity, starting with a mapped import preview from the WooCommerce Store API.
+Next section to audit manually: Vendor Core on top of `/admin/suppliers`, then Catalog Core pil-mos assortment/price parity with a mapped import preview from the WooCommerce Store API.

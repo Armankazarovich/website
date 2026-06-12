@@ -2,24 +2,24 @@ import type { NavItem } from "@/components/admin/admin-navigation-registry";
 
 export const ADMIN_NAV_GROUP_ORDER = [
   "main",
-  "sales",
   "products",
+  "sales",
   "marketing",
   "finance",
-  "arayCms",
   "settings",
   "help",
   "personal",
+  "arayCms",
 ];
 
 export const ADMIN_NAV_GROUP_DESCRIPTIONS: Record<string, string> = {
   main: "рабочий стол, сводка дня, риски и быстрые действия",
   sales: "заказы, терминал, клиенты, доставка, CRM и задачи",
-  products: "каталог, карточки, цены, склад, медиа и импорт",
+  products: "биржа, каталог, продавцы, цены, склад, медиа и импорт",
   marketing: "Direct, SEO, акции, сторис, отзывы, контент и аналитика",
   finance: "деньги, расходы, платежи и финансовая картина",
-  arayCms: "создание сайтов, проекты, брифы, превью и служебная CMS",
-  settings: "готовый сайт, бизнес, команда и системные настройки",
+  arayCms: "служебные инструменты ARAY для будущих копий и запусков",
+  settings: "витрина ПилоРус, бизнес, команда и системные настройки",
   help: "гайды, обучение, база знаний и быстрые подсказки",
   personal: "профиль клиента, заказы, история и подписки",
 };
@@ -37,7 +37,7 @@ const ADMIN_NAV_SECTIONS: Record<string, Array<{ label: string; hrefs: string[] 
   products: [
     { label: "Карточки и цены", hrefs: ["/admin/products", "/admin/products/new", "/admin/products/audit"] },
     { label: "Структура каталога", hrefs: ["/admin/categories", "/admin/product-types", "/catalog"] },
-    { label: "Поставщики", hrefs: ["/admin/suppliers"] },
+    { label: "Продавцы и предложения", hrefs: ["/admin/suppliers"] },
     { label: "Склад / остатки", hrefs: ["/admin/inventory"] },
     { label: "Медиа и защита", hrefs: ["/admin/media", "/admin/watermark"] },
     { label: "Импорт", hrefs: ["/admin/import"] },
@@ -53,12 +53,12 @@ const ADMIN_NAV_SECTIONS: Record<string, Array<{ label: string; hrefs: string[] 
     { label: "Финансы", hrefs: ["/admin/finance"] },
   ],
   arayCms: [
-    { label: "Создать проект", hrefs: ["/admin/aray/orders", "/admin/aray/briefs", "/admin/aray/builder"] },
-    { label: "Сайты и проекты", hrefs: ["/admin/site/benchmarks", "/admin/site/releases"] },
+    { label: "Запуск проектов позже", hrefs: ["/admin/aray/orders", "/admin/aray/briefs", "/admin/aray/builder"] },
+    { label: "Сайты и релизы позже", hrefs: ["/admin/site/benchmarks", "/admin/site/releases"] },
     { label: "Служебное CMS", hrefs: ["/admin/aray", "/admin/aray/partners", "/admin/aray/requisites", "/admin/aray/brand-kit", "/admin/aray/arc"] },
   ],
   settings: [
-    { label: "Готовый сайт", hrefs: ["/admin/site", "/admin/site/constructor", "/admin/appearance"] },
+    { label: "Витрина ПилоРус", hrefs: ["/admin/site", "/admin/site/constructor", "/admin/appearance"] },
     { label: "Группы и бизнес", hrefs: ["/admin/director", "/admin/business/settings", "/admin/staff"] },
     { label: "Рабочие места", hrefs: ["/admin/terminals"] },
     { label: "Система", hrefs: ["/admin/settings", "/admin/health"] },

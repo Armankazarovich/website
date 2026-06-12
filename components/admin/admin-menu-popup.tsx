@@ -48,9 +48,9 @@ const GROUP_ICONS: Record<string, React.ElementType> = {
 };
 const ADMIN_QUICK_HREFS = [
   "/admin",
-  "/admin/aray/orders",
-  "/admin/orders/new",
-  "/admin/business/settings",
+  "/admin/products",
+  "/admin/suppliers",
+  "/admin/promotion",
 ];
 const USER_QUICK_HREFS = [
   "/cabinet",
@@ -64,6 +64,9 @@ const QUICK_HINTS_BY_HREF: Record<string, string> = {
   "/admin/aray/orders": "Скан, заявка, превью и запуск",
   "/admin/aray/briefs": "Цели клиента, товары, фото и доступы",
   "/admin/aray/builder": "Блоки, черновик и конструктор",
+  "/admin/products": "Каталог и карточки",
+  "/admin/suppliers": "Продавцы, прайсы и предложения",
+  "/admin/promotion": "SEO и реклама",
   "/admin/orders/new": "Терминал и новый заказ",
   "/admin/orders": "Очередь и история",
   "/admin/business/settings": "Сайт, витрина, SEO",
