@@ -37,6 +37,20 @@ check(
   schema.includes("@@unique([tenantId, supplierId, variantId])"),
   "One supplier should have one active price row per product variant.",
 );
+check(
+  "Supplier storefront profile fields exist",
+  includesAll(schema, [
+    "sourceUrl   String?",
+    "logoUrl     String?",
+    "publicDescription String?",
+    "specialization String?",
+    "deliverySummary String?",
+    "storefrontEnabled Boolean",
+    "featuredSeller Boolean",
+    "marketplaceRank Int",
+  ]),
+  "Vendor Core needs seller source URL, logo, storefront copy, publication flag and marketplace ordering.",
+);
 
 check(
   "Supplier admin APIs exist",
@@ -49,8 +63,31 @@ check(
 const suppliersPage = read("app/admin/suppliers/page.tsx");
 check(
   "Supplier admin page supports create supplier and offer",
-  includesAll(suppliersPage, ["createSupplierAction", "createOfferAction", "Поставщики и предложения", "tenantId_supplierId_variantId"]),
-  "/admin/suppliers must be a usable first layer, not a placeholder.",
+  includesAll(suppliersPage, ["createSupplierAction", "createOfferAction", "Продавцы и предложения", "tenantId_supplierId_variantId", "Сайт для скана", "Включить публичную витрину"]),
+  "/admin/suppliers must manage sellers, storefronts, scan sources and offers.",
+);
+
+check(
+  "Public vendor storefront routes exist",
+  exists("app/(store)/vendors/page.tsx") &&
+    exists("app/(store)/vendors/[slug]/page.tsx") &&
+    includesAll(read("app/(store)/vendors/page.tsx"), ["Продавцы ПилоРус", "supplierStorefrontHref"]) &&
+    includesAll(read("app/(store)/vendors/[slug]/page.tsx"), ["getSupplier", "Товары и цены продавца"]),
+  "Public seller pages must exist before vendor PWA and scan layers are added.",
+);
+
+const dataMigrate = read("prisma/data-migrate.ts");
+check(
+  "PiloRus and candidate sellers are seeded",
+  includesAll(dataMigrate, ["slug: \"pilorus\"", "slug: \"derevotrade\"", "slug: \"pilmos\"", "slug: \"derevo-lider\"", "slug: \"faneragroup\""]),
+  "Deploy data migration must remember PiloRus seller N1 and the first candidate sellers.",
+);
+
+const marketplaceLaw = read("docs/PILORUS_MARKETPLACE_LAW_2026-06-12.md");
+check(
+  "Marketplace law protects one catalog item with many seller offers",
+  includesAll(marketplaceLaw, ["Один товар в каталоге, много предложений продавцов", "preview/matching", "Vendor Self-Service Import"]),
+  "Vendor imports must match existing catalog products before creating new product candidates.",
 );
 
 const navRegistry = read("components/admin/admin-navigation-registry.ts");

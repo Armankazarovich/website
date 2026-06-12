@@ -126,13 +126,21 @@ model Supplier {
   phone       String?
   email       String?
   website     String?
+  sourceUrl   String?
+  logoUrl     String?
   city        String?
   address     String?
   contactName String?
+  publicDescription String?
+  specialization String?
+  deliverySummary String?
   notes       String?
   status      SupplierStatus     @default(DRAFT)
   trustLevel  SupplierTrustLevel @default(NEW)
   active      Boolean            @default(true)
+  storefrontEnabled Boolean      @default(false)
+  featuredSeller Boolean         @default(false)
+  marketplaceRank Int            @default(100)
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   offers      SupplierOffer[]
@@ -140,7 +148,9 @@ model Supplier {
   @@unique([tenantId, slug])
   @@index([tenantId])
   @@index([tenantId, active])
+  @@index([tenantId, storefrontEnabled])
   @@index([status])
+  @@index([marketplaceRank])
   @@index([name])
 }
 

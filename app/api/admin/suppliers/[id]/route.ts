@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getCurrentTenantId } from "@/lib/tenant-context";
+import { cleanExternalUrl, cleanPositiveInt, cleanPublicAssetUrl, hasRawValue } from "@/lib/supplier-profile";
 
 const SUPPLIER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
 const SUPPLIER_WRITE_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"];
@@ -15,6 +16,10 @@ function cleanString(value: unknown, maxLength: number) {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, maxLength) : null;
+}
+
+function invalidUrlResponse(label: string) {
+  return NextResponse.json({ error: `${label}: укажите корректную http(s)-ссылку или оставьте поле пустым` }, { status: 400 });
 }
 
 async function checkSupplierAccess(write = false) {
@@ -78,8 +83,28 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 
   const data: Record<string, unknown> = {};
-  for (const key of ["name", "legalName", "inn", "phone", "email", "website", "city", "address", "contactName", "notes"] as const) {
+  for (const key of ["name", "legalName", "inn", "phone", "email", "city", "address", "contactName", "notes", "publicDescription", "specialization", "deliverySummary"] as const) {
     if (key in body) data[key] = cleanString(body[key], key === "notes" ? 1200 : key === "address" ? 240 : 160);
+  }
+  if ("publicDescription" in body) data.publicDescription = cleanString(body.publicDescription, 800);
+  if ("deliverySummary" in body) data.deliverySummary = cleanString(body.deliverySummary, 320);
+  if ("specialization" in body) data.specialization = cleanString(body.specialization, 240);
+  if ("website" in body) {
+    const website = cleanExternalUrl(body.website);
+    if (hasRawValue(body.website) && !website) return invalidUrlResponse("Сайт продавца");
+    data.website = website;
+  }
+  if ("sourceUrl" in body) {
+    const sourceUrl = cleanExternalUrl(body.sourceUrl);
+    if (hasRawValue(body.sourceUrl) && !sourceUrl) return invalidUrlResponse("Сайт для скана");
+    data.sourceUrl = sourceUrl;
+  }
+  if ("logoUrl" in body) {
+    const logoUrl = cleanPublicAssetUrl(body.logoUrl);
+    if (hasRawValue(body.logoUrl) && !logoUrl) {
+      return NextResponse.json({ error: "Логотип: укажите /путь-к-файлу или корректную http(s)-ссылку" }, { status: 400 });
+    }
+    data.logoUrl = logoUrl;
   }
   if ("name" in data) {
     if (typeof data.name !== "string" || !data.name.trim()) {
@@ -97,6 +122,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     data.trustLevel = trustLevel;
   }
   if ("active" in body) data.active = body.active === false ? false : true;
+  if ("storefrontEnabled" in body) data.storefrontEnabled = body.storefrontEnabled === true;
+  if ("featuredSeller" in body) data.featuredSeller = body.featuredSeller === true;
+  if ("marketplaceRank" in body) data.marketplaceRank = cleanPositiveInt(body.marketplaceRank, 100);
 
   const result = await prisma.supplier.updateMany({
     where: { id: params.id, tenantId },
@@ -110,6 +138,8 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   });
 
   revalidatePath("/admin/suppliers");
+  if (supplier?.slug) revalidatePath(`/vendors/${supplier.slug}`);
+  revalidatePath("/vendors");
   return NextResponse.json(serializeSupplier(supplier));
 }
 
@@ -122,5 +152,6 @@ export async function DELETE(_: Request, { params }: { params: { id: string } })
   });
   if (result.count === 0) return NextResponse.json({ error: "Поставщик не найден" }, { status: 404 });
   revalidatePath("/admin/suppliers");
+  revalidatePath("/vendors");
   return NextResponse.json({ ok: true });
 }

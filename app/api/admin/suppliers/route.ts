@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slug";
 import { getCurrentTenantId } from "@/lib/tenant-context";
+import { cleanExternalUrl, cleanPositiveInt, cleanPublicAssetUrl, hasRawValue } from "@/lib/supplier-profile";
 
 const SUPPLIER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
 const SUPPLIER_WRITE_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"];
@@ -21,6 +22,10 @@ function cleanString(value: unknown, maxLength: number) {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
   return trimmed ? trimmed.slice(0, maxLength) : null;
+}
+
+function invalidUrlResponse(label: string) {
+  return NextResponse.json({ error: `${label}: укажите корректную http(s)-ссылку или оставьте поле пустым` }, { status: 400 });
 }
 
 async function checkSupplierAccess(write = false) {
@@ -100,6 +105,14 @@ export async function POST(req: Request) {
   const status = rawStatus && STATUSES.includes(rawStatus as any) ? rawStatus : "DRAFT";
   const trustLevel = rawTrust && TRUST_LEVELS.includes(rawTrust as any) ? rawTrust : "NEW";
   const slug = await makeUniqueSupplierSlug(cleanString(body.slug, 120) || name, tenantId);
+  const website = cleanExternalUrl(body.website);
+  const sourceUrl = cleanExternalUrl(body.sourceUrl) || website;
+  const logoUrl = cleanPublicAssetUrl(body.logoUrl);
+  if (hasRawValue(body.website) && !website) return invalidUrlResponse("Сайт продавца");
+  if (hasRawValue(body.sourceUrl) && !sourceUrl) return invalidUrlResponse("Сайт для скана");
+  if (hasRawValue(body.logoUrl) && !logoUrl) {
+    return NextResponse.json({ error: "Логотип: укажите /путь-к-файлу или корректную http(s)-ссылку" }, { status: 400 });
+  }
 
   const supplier = await prisma.supplier.create({
     data: {
@@ -110,18 +123,28 @@ export async function POST(req: Request) {
       inn: cleanString(body.inn, 20),
       phone: cleanString(body.phone, 60),
       email: cleanString(body.email, 120),
-      website: cleanString(body.website, 180),
+      website,
+      sourceUrl,
+      logoUrl,
       city: cleanString(body.city, 120),
       address: cleanString(body.address, 240),
       contactName: cleanString(body.contactName, 120),
+      publicDescription: cleanString(body.publicDescription, 800),
+      specialization: cleanString(body.specialization, 240),
+      deliverySummary: cleanString(body.deliverySummary, 320),
       notes: cleanString(body.notes, 1200),
       status: status as any,
       trustLevel: trustLevel as any,
       active: body.active === false ? false : true,
+      storefrontEnabled: body.storefrontEnabled === true,
+      featuredSeller: body.featuredSeller === true,
+      marketplaceRank: cleanPositiveInt(body.marketplaceRank, 100),
     },
     include: { _count: { select: { offers: true } }, offers: true },
   });
 
   revalidatePath("/admin/suppliers");
+  revalidatePath("/vendors");
+  revalidatePath(`/vendors/${supplier.slug}`);
   return NextResponse.json(serializeSupplier(supplier), { status: 201 });
 }

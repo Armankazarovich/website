@@ -690,6 +690,103 @@ async function main() {
     console.log("[data-migrate] PiloRus contacts/legal settings update skipped:", e.message);
   }
 
+  try {
+    const marketplaceSuppliers20260612 = [
+      {
+        slug: "pilorus",
+        name: "ПилоРус",
+        website: "https://pilo-rus.ru/",
+        sourceUrl: "https://pilo-rus.ru/",
+        logoUrl: "/logo.svg",
+        city: "Химки",
+        phone: "+7 (499) 372-04-41",
+        publicDescription:
+          "ПилоРус - продавец N1 и эталонная витрина биржи пиломатериалов. Основной каталог, проверенные цены, заявки и доставка идут через эту витрину.",
+        specialization: "Пиломатериалы, фанера, стройматериалы и доставка по Москве и МО",
+        deliverySummary: "Самовывоз и доставка по Москве и Московской области",
+        status: "ACTIVE",
+        trustLevel: "PRIORITY",
+        storefrontEnabled: true,
+        featuredSeller: true,
+        marketplaceRank: 1,
+      },
+      {
+        slug: "derevotrade",
+        name: "ДеревоТрейд",
+        website: "https://derevotrade.ru/",
+        sourceUrl: "https://derevotrade.ru/",
+        city: "Химки",
+        phone: "+7 (495) 181-30-11",
+        email: "info@derevo-trade.ru",
+        publicDescription:
+          "Кандидат на подключение к бирже ПилоРус. Сайт-источник добавлен для будущего скана ассортимента, цен, фото и логотипа через превью.",
+        specialization: "Пиломатериалы, лиственница, сосна, ель, фанера и листовые материалы",
+        deliverySummary: "Доставка и самовывоз уточняются при проверке продавца",
+        status: "DRAFT",
+        trustLevel: "NEW",
+        storefrontEnabled: false,
+        featuredSeller: false,
+        marketplaceRank: 20,
+      },
+      {
+        slug: "pilmos",
+        name: "Pilmos",
+        website: "https://pilmos.ru/",
+        sourceUrl: "https://pilmos.ru/",
+        publicDescription:
+          "Кандидат на подключение к бирже ПилоРус. Сайт-источник добавлен для будущего сопоставления товаров, фото и цен.",
+        specialization: "Пиломатериалы и производство в Москве",
+        deliverySummary: "Условия доставки будут заполнены после скана и проверки",
+        status: "DRAFT",
+        trustLevel: "NEW",
+        storefrontEnabled: false,
+        featuredSeller: false,
+        marketplaceRank: 30,
+      },
+      {
+        slug: "derevo-lider",
+        name: "ДеревоЛидер",
+        website: "https://derevo-lider.ru/",
+        sourceUrl: "https://derevo-lider.ru/",
+        publicDescription:
+          "Кандидат на подключение к бирже ПилоРус. Данные продавца будут переноситься только через preview и ручное подтверждение.",
+        specialization: "Фанера, пиломатериалы, сосна и лиственница",
+        deliverySummary: "Условия доставки будут заполнены после скана и проверки",
+        status: "DRAFT",
+        trustLevel: "NEW",
+        storefrontEnabled: false,
+        featuredSeller: false,
+        marketplaceRank: 40,
+      },
+      {
+        slug: "faneragroup",
+        name: "ФанераГрупп",
+        website: "https://faneragroup.ru/",
+        sourceUrl: "https://faneragroup.ru/",
+        publicDescription:
+          "Кандидат на подключение к бирже ПилоРус. Сначала скан и превью, затем перенос проверенных товаров и предложений.",
+        specialization: "Фанера и пиломатериалы",
+        deliverySummary: "Условия доставки будут заполнены после скана и проверки",
+        status: "DRAFT",
+        trustLevel: "NEW",
+        storefrontEnabled: false,
+        featuredSeller: false,
+        marketplaceRank: 50,
+      },
+    ];
+
+    for (const supplier of marketplaceSuppliers20260612) {
+      await (prisma as any).supplier.upsert({
+        where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: supplier.slug } },
+        create: { tenantId: DEFAULT_TENANT_ID, active: true, ...supplier },
+        update: supplier,
+      });
+    }
+    console.log(`[data-migrate] PiloRus marketplace sellers seeded (${marketplaceSuppliers20260612.length})`);
+  } catch (e: any) {
+    console.log("[data-migrate] PiloRus marketplace sellers seed skipped:", e.message);
+  }
+
   await prisma.$disconnect();
 }
 

@@ -6,9 +6,11 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock3,
+  ExternalLink,
   Handshake,
   Package,
   Plus,
+  ScanSearch,
   ShieldCheck,
   Star,
   Truck,
@@ -18,6 +20,14 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/slug";
 import { getCurrentTenantId } from "@/lib/tenant-context";
+import {
+  cleanExternalUrl,
+  cleanPositiveInt,
+  cleanPublicAssetUrl,
+  hasRawValue,
+  isPublicSupplierStorefront,
+  supplierStorefrontHref,
+} from "@/lib/supplier-profile";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +35,7 @@ const SUPPLIER_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"
 const SUPPLIER_WRITE_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE"];
 
 const statusLabels: Record<string, string> = {
-  DRAFT: "Черновик",
+  DRAFT: "Кандидат",
   ACTIVE: "Активен",
   PAUSED: "Пауза",
   BLOCKED: "Заблокирован",
@@ -84,6 +94,16 @@ async function createSupplierAction(formData: FormData) {
   const name = cleanString(formData.get("name"), 160);
   if (!name) redirect("/admin/suppliers?error=supplier-name");
 
+  const website = cleanExternalUrl(formData.get("website"));
+  const sourceUrl = cleanExternalUrl(formData.get("sourceUrl")) || website;
+  const logoUrl = cleanPublicAssetUrl(formData.get("logoUrl"));
+  const storefrontEnabled = formData.get("storefrontEnabled") === "on";
+
+  if (hasRawValue(formData.get("website")) && !website) redirect("/admin/suppliers?error=supplier-url");
+  if (hasRawValue(formData.get("sourceUrl")) && !sourceUrl) redirect("/admin/suppliers?error=supplier-url");
+  if (hasRawValue(formData.get("logoUrl")) && !logoUrl) redirect("/admin/suppliers?error=supplier-logo");
+  if (storefrontEnabled && formData.get("publishConfirm") !== "on") redirect("/admin/suppliers?error=publish-confirm");
+
   await prisma.supplier.create({
     data: {
       tenantId,
@@ -93,17 +113,27 @@ async function createSupplierAction(formData: FormData) {
       inn: cleanString(formData.get("inn"), 20),
       phone: cleanString(formData.get("phone"), 60),
       email: cleanString(formData.get("email"), 120),
+      website,
+      sourceUrl,
+      logoUrl,
       city: cleanString(formData.get("city"), 120),
       address: cleanString(formData.get("address"), 240),
       contactName: cleanString(formData.get("contactName"), 120),
+      publicDescription: cleanString(formData.get("publicDescription"), 800),
+      specialization: cleanString(formData.get("specialization"), 240),
+      deliverySummary: cleanString(formData.get("deliverySummary"), 320),
       notes: cleanString(formData.get("notes"), 1200),
-      status: "ACTIVE",
+      status: storefrontEnabled ? "ACTIVE" : "DRAFT",
       trustLevel: "NEW",
       active: true,
+      storefrontEnabled,
+      featuredSeller: formData.get("featuredSeller") === "on",
+      marketplaceRank: cleanPositiveInt(formData.get("marketplaceRank"), 100),
     },
   });
 
   revalidatePath("/admin/suppliers");
+  revalidatePath("/vendors");
   redirect("/admin/suppliers?created=supplier");
 }
 
@@ -184,17 +214,20 @@ function formatMoney(value: unknown) {
   if (value === null || value === undefined) return "нет";
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return "нет";
-  return new Intl.NumberFormat("ru-RU").format(num) + " ₽";
+  return `${new Intl.NumberFormat("ru-RU").format(num)} ₽`;
 }
 
 function messageFor(searchParams: Record<string, string | string[] | undefined>) {
   const created = searchParams.created;
   const error = searchParams.error;
-  if (created === "supplier") return { type: "success", text: "Поставщик добавлен. Можно заводить предложения по товарам." };
-  if (created === "offer") return { type: "success", text: "Предложение поставщика сохранено и доступно в админке." };
-  if (error === "supplier-name") return { type: "error", text: "Укажи название поставщика." };
-  if (error === "offer-link") return { type: "error", text: "Выбери поставщика и размер товара." };
-  if (error === "offer-price") return { type: "error", text: "Укажи цену поставщика за м3 или за штуку." };
+  if (created === "supplier") return { type: "success", text: "Продавец добавлен. Теперь можно завести его предложения, а после проверки включить витрину." };
+  if (created === "offer") return { type: "success", text: "Предложение продавца сохранено и доступно в админке." };
+  if (error === "supplier-name") return { type: "error", text: "Укажи название продавца." };
+  if (error === "supplier-url") return { type: "error", text: "Проверь ссылку: нужен корректный адрес сайта с http или https." };
+  if (error === "supplier-logo") return { type: "error", text: "Логотип должен быть внутренним путем /... или корректной http(s)-ссылкой." };
+  if (error === "publish-confirm") return { type: "error", text: "Для публикации витрины поставь подтверждение: карточка продавца готова к показу." };
+  if (error === "offer-link") return { type: "error", text: "Выбери продавца и размер товара." };
+  if (error === "offer-price") return { type: "error", text: "Укажи цену продавца за м3 или за штуку." };
   return null;
 }
 
@@ -212,7 +245,7 @@ export default async function AdminSuppliersPage({
     prisma.supplier.findMany({
       where: { tenantId },
       include: { _count: { select: { offers: true } } },
-      orderBy: [{ active: "desc" }, { updatedAt: "desc" }],
+      orderBy: [{ featuredSeller: "desc" }, { marketplaceRank: "asc" }, { active: "desc" }, { updatedAt: "desc" }],
     }),
     prisma.supplierOffer.findMany({
       where: { tenantId },
@@ -232,8 +265,11 @@ export default async function AdminSuppliersPage({
   ]);
 
   const activeSuppliers = suppliers.filter((supplier) => supplier.active && supplier.status === "ACTIVE").length;
+  const publicStorefronts = suppliers.filter(isPublicSupplierStorefront).length;
+  const scanCandidates = suppliers.filter((supplier) => supplier.sourceUrl && !supplier.storefrontEnabled).length;
   const preferredOffers = offers.filter((offer) => offer.preferred).length;
   const stockOffers = offers.filter((offer) => offer.active && (offer.stockQty ?? 0) > 0).length;
+  const checkedSuppliers = suppliers.filter((supplier) => supplier.trustLevel === "CHECKED" || supplier.trustLevel === "PRIORITY").length;
   const variantOptions = products.flatMap((product) =>
     product.variants.map((variant) => ({
       id: variant.id,
@@ -246,10 +282,10 @@ export default async function AdminSuppliersPage({
     <div className="admin-page-frame admin-page-frame-fluid pb-16">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary/80">Мультивендор</p>
-          <h1 className="mt-2 font-display text-2xl font-bold text-foreground">Поставщики и предложения</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary/80">Vendor Core</p>
+          <h1 className="mt-2 font-display text-2xl font-bold text-foreground">Продавцы и предложения</h1>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Первый слой маркетплейса: ПилоРус остается единой витриной, а внутри админки мы видим продавцов, их цены, остатки и приоритетные предложения.
+            ПилоРус - продавец N1 и эталонная витрина. Новые продавцы подключаются как проверенные страницы внутри биржи: профиль, сайт-источник, логотип, товары, цены и доставка.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -259,6 +295,13 @@ export default async function AdminSuppliersPage({
           >
             <Package className="h-4 w-4" />
             Каталог
+          </Link>
+          <Link
+            href="/vendors"
+            className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground transition-colors hover:bg-accent"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Витрины
           </Link>
           <Link
             href="/admin/products/import-prices"
@@ -278,10 +321,28 @@ export default async function AdminSuppliersPage({
       ) : null}
 
       <div className="mt-6 grid gap-3 md:grid-cols-4">
-        <MetricCard icon={Handshake} label="Поставщики" value={suppliers.length} hint={`${activeSuppliers} активных`} />
+        <MetricCard icon={Handshake} label="Продавцы" value={suppliers.length} hint={`${activeSuppliers} активных`} />
+        <MetricCard icon={ExternalLink} label="Витрины" value={publicStorefronts} hint={`${scanCandidates} ждут скан`} />
         <MetricCard icon={Package} label="Предложения" value={offers.length} hint={`${preferredOffers} приоритетных`} />
-        <MetricCard icon={Warehouse} label="С остатком" value={stockOffers} hint="по поставщикам" />
-        <MetricCard icon={ShieldCheck} label="Проверка" value={suppliers.filter((s) => s.trustLevel === "CHECKED" || s.trustLevel === "PRIORITY").length} hint="доверенные" />
+        <MetricCard icon={Warehouse} label="С остатком" value={stockOffers} hint={`${checkedSuppliers} проверенных`} />
+      </div>
+
+      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+        <StatusNote
+          icon={Star}
+          title="ПилоРус - продавец N1"
+          text="Главная витрина и эталон качества. Все новые продавцы подключаются рядом, но не ломают основной каталог."
+        />
+        <StatusNote
+          icon={ScanSearch}
+          title="Скан продавца"
+          text="Следующий слой: сайт-источник даст логотип, фото, товары, цены и описания через превью перед переносом."
+        />
+        <StatusNote
+          icon={ShieldCheck}
+          title="Публикация под контролем"
+          text="Витрина выходит наружу только после подтверждения, чтобы клиент не видел сырой карточки."
+        />
       </div>
 
       {canWrite ? (
@@ -289,10 +350,10 @@ export default async function AdminSuppliersPage({
           <section className="rounded-xl border border-border bg-card p-5">
             <div className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-primary" />
-              <h2 className="font-display text-lg font-semibold text-foreground">Добавить поставщика</h2>
+              <h2 className="font-display text-lg font-semibold text-foreground">Добавить продавца</h2>
             </div>
             <form action={createSupplierAction} className="mt-4 grid gap-3">
-              <Input name="name" label="Название" required placeholder="Лесная база Химки" />
+              <Input name="name" label="Название" required placeholder="ПилоРус" />
               <Input name="legalName" label="Юр. название" placeholder="ООО / ИП" />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input name="inn" label="ИНН" placeholder="10 или 12 цифр" />
@@ -302,9 +363,32 @@ export default async function AdminSuppliersPage({
                 <Input name="phone" label="Телефон" placeholder="+7 ..." />
                 <Input name="email" label="Почта" placeholder="sales@example.ru" />
               </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input name="website" label="Сайт продавца" placeholder="https://example.ru/" />
+                <Input name="sourceUrl" label="Сайт для скана" placeholder="https://example.ru/" />
+              </div>
+              <Input name="logoUrl" label="Логотип" placeholder="/uploads/sellers/logo.png или https://..." />
               <Input name="contactName" label="Контакт" placeholder="Имя менеджера" />
+              <Input name="specialization" label="Специализация витрины" placeholder="Фанера, доска, брус, лиственница" />
+              <Input name="deliverySummary" label="Доставка на витрине" placeholder="Самовывоз, доставка по Москве и МО" />
+              <Textarea name="publicDescription" label="Описание для публичной витрины" placeholder="Коротко о продавце, ассортименте и условиях" />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Input name="marketplaceRank" label="Порядок в бирже" inputMode="numeric" placeholder="100" />
+                <label className="flex min-h-[42px] items-center gap-3 rounded-xl border border-border bg-background px-3 text-sm text-foreground">
+                  <input name="featuredSeller" type="checkbox" className="h-4 w-4 rounded border-border accent-primary" />
+                  Продавец N1 / избранный
+                </label>
+              </div>
+              <label className="flex min-h-[42px] items-center gap-3 rounded-xl border border-border bg-background px-3 text-sm text-foreground">
+                <input name="storefrontEnabled" type="checkbox" className="h-4 w-4 rounded border-border accent-primary" />
+                Включить публичную витрину продавца
+              </label>
+              <label className="flex min-h-[42px] items-center gap-3 rounded-xl border border-border bg-background px-3 text-sm text-foreground">
+                <input name="publishConfirm" type="checkbox" className="h-4 w-4 rounded border-border accent-primary" />
+                Подтверждаю: карточка продавца готова к показу
+              </label>
               <Textarea name="notes" label="Заметка" placeholder="Условия, скидки, график отгрузки" />
-              <SubmitButton label="Добавить поставщика" />
+              <SubmitButton label="Добавить продавца" />
             </form>
           </section>
 
@@ -315,9 +399,9 @@ export default async function AdminSuppliersPage({
             </div>
             <form action={createOfferAction} className="mt-4 grid gap-3">
               <label className="grid gap-1 text-sm">
-                <span className="font-medium text-foreground">Поставщик</span>
+                <span className="font-medium text-foreground">Продавец</span>
                 <select name="supplierId" required className="min-h-[42px] rounded-xl border border-border bg-background px-3 text-foreground outline-none focus:border-primary">
-                  <option value="">Выбрать поставщика</option>
+                  <option value="">Выбрать продавца</option>
                   {suppliers.map((supplier) => (
                     <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
                   ))}
@@ -355,31 +439,72 @@ export default async function AdminSuppliersPage({
 
       <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <section className="rounded-xl border border-border bg-card p-5">
-          <h2 className="font-display text-lg font-semibold text-foreground">Поставщики</h2>
+          <h2 className="font-display text-lg font-semibold text-foreground">Продавцы биржи</h2>
           <div className="mt-4 grid gap-3">
             {suppliers.length === 0 ? (
-              <EmptyState text="Поставщиков пока нет. Добавь первого, потом привяжем к нему цены и остатки." />
-            ) : suppliers.map((supplier) => (
-              <article key={supplier.id} className="rounded-xl border border-border bg-background p-4">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <h3 className="font-semibold text-foreground">{supplier.name}</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {[supplier.city, supplier.phone, supplier.email].filter(Boolean).join(" · ") || "Контакты не заполнены"}
-                    </p>
+              <EmptyState text="Продавцов пока нет. Добавь ПилоРус как продавца N1, потом подключим остальные сайты." />
+            ) : suppliers.map((supplier) => {
+              const storefrontHref = supplierStorefrontHref(supplier.slug);
+              const publicStorefront = isPublicSupplierStorefront(supplier);
+              return (
+                <article key={supplier.id} className="rounded-xl border border-border bg-background p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="flex min-w-0 gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-card text-sm font-bold text-primary">
+                        {supplier.logoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={supplier.logoUrl} alt={supplier.name} className="h-full w-full object-contain p-1" />
+                        ) : (
+                          supplier.name.slice(0, 2).toUpperCase()
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="truncate font-semibold text-foreground">
+                          {supplier.featuredSeller ? "N1 · " : null}
+                          {supplier.name}
+                        </h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {[supplier.city, supplier.phone, supplier.email].filter(Boolean).join(" · ") || "Контакты не заполнены"}
+                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {supplier.specialization || "Специализация еще не заполнена"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge tone={publicStorefront ? "primary" : "muted"}>{publicStorefront ? "Витрина" : "Кандидат"}</Badge>
+                      <Badge>{statusLabels[supplier.status] || supplier.status}</Badge>
+                      <Badge>{trustLabels[supplier.trustLevel] || supplier.trustLevel}</Badge>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge>{statusLabels[supplier.status] || supplier.status}</Badge>
-                    <Badge>{trustLabels[supplier.trustLevel] || supplier.trustLevel}</Badge>
+                  <div className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
+                    <span>{supplier._count.offers} предложений</span>
+                    <span>Порядок: {supplier.marketplaceRank}</span>
+                    <span>{supplier.sourceUrl ? "Сайт для скана есть" : "Сайт для скана не указан"}</span>
                   </div>
-                </div>
-                <div className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
-                  <span>{supplier._count.offers} предложений</span>
-                  <span>ИНН: {supplier.inn || "нет"}</span>
-                  <span>{supplier.active ? "В работе" : "Выключен"}</span>
-                </div>
-              </article>
-            ))}
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {publicStorefront ? (
+                      <Link href={storefrontHref} className="inline-flex min-h-[34px] items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 text-xs font-semibold text-primary">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Открыть витрину
+                      </Link>
+                    ) : null}
+                    {supplier.website ? (
+                      <a href={supplier.website} target="_blank" rel="noreferrer" className="inline-flex min-h-[34px] items-center gap-2 rounded-xl border border-border px-3 text-xs font-semibold text-foreground">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Сайт продавца
+                      </a>
+                    ) : null}
+                    {supplier.sourceUrl ? (
+                      <span className="inline-flex min-h-[34px] items-center gap-2 rounded-xl border border-border px-3 text-xs font-semibold text-muted-foreground">
+                        <ScanSearch className="h-3.5 w-3.5" />
+                        Скан в следующем слое
+                      </span>
+                    ) : null}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
 
@@ -387,7 +512,7 @@ export default async function AdminSuppliersPage({
           <h2 className="font-display text-lg font-semibold text-foreground">Последние предложения</h2>
           <div className="mt-4 overflow-hidden rounded-xl border border-border">
             {offers.length === 0 ? (
-              <EmptyState text="Предложений пока нет. Сохрани первую цену поставщика по товару." />
+              <EmptyState text="Предложений пока нет. Сохрани первую цену продавца по товару." />
             ) : (
               <div className="divide-y divide-border">
                 {offers.map((offer) => (
@@ -442,6 +567,30 @@ function MetricCard({
         </div>
         <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary">
           <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatusNote({
+  icon: Icon,
+  title,
+  text,
+}: {
+  icon: ElementType;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="flex gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary">
+          <Icon className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="font-semibold text-foreground">{title}</p>
+          <p className="mt-1 text-sm leading-5 text-muted-foreground">{text}</p>
         </div>
       </div>
     </div>
