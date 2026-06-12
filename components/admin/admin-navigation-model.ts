@@ -678,8 +678,16 @@ export function buildAdminNavigationGroups(
   disabledModuleIds?: DisabledModuleIds,
   surface?: AdminNavigationSurface,
 ): AdminNavigationGroup[] {
+  const hiddenMarketplaceGroups = new Set(["arayCms"]);
   const map = new Map<string, NavItem[]>();
   for (const item of getVisibleAdminNavItems(role, disabledModuleIds, surface)) {
+    if (
+      surface &&
+      hiddenMarketplaceGroups.has(item.group) &&
+      ["desktopRail", "mobileMenu", "accountDrawer"].includes(surface)
+    ) {
+      continue;
+    }
     const items = map.get(item.group) || [];
     items.push(item);
     map.set(item.group, items);

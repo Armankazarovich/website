@@ -488,7 +488,6 @@ function AdminShellInner({
                 {headerMeta.context}
               </div>
             )}
-            <AdminSiteSwitcher initialSiteId={initialActiveSiteId} canCreateAraySite={canCreateAraySite} />
             <div className="min-w-0 flex-[1.45]">
               <AdminHeaderSearch
                 role={role}
@@ -500,8 +499,6 @@ function AdminShellInner({
           }
           rightSlot={
           <div className="flex items-center gap-1.5">
-            <AdminSiteSwitcher variant="compact" initialSiteId={initialActiveSiteId} canCreateAraySite={canCreateAraySite} />
-
             {/* Поиск — компактная иконка → открывает side-panel слева */}
             <button
               onClick={() => setSearchOpen(true)}
