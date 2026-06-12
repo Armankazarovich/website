@@ -72,7 +72,14 @@ check(
   exists("app/(store)/vendors/page.tsx") &&
     exists("app/(store)/vendors/[slug]/page.tsx") &&
     includesAll(read("app/(store)/vendors/page.tsx"), ["Продавцы ПилоРус", "supplierStorefrontHref"]) &&
-    includesAll(read("app/(store)/vendors/[slug]/page.tsx"), ["getSupplier", "Товары и цены продавца"]),
+    includesAll(read("app/(store)/vendors/[slug]/page.tsx"), [
+      "getSupplier",
+      "Товары и цены продавца",
+      "Поиск по товарам продавца",
+      "Категории продавца",
+      "StoreMetric",
+      "vendorHref",
+    ]),
   "Public seller pages must exist before vendor PWA and scan layers are added.",
 );
 

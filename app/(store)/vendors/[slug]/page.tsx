@@ -3,13 +3,14 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ExternalLink, Package, Phone, ShieldCheck, Truck } from "lucide-react";
+import { ArrowLeft, ExternalLink, Filter, Package, Phone, Search, ShieldCheck, Truck } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentTenantId } from "@/lib/tenant-context";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 
 type Props = {
   params: { slug: string };
+  searchParams?: { q?: string; category?: string };
 };
 
 function formatMoney(value: unknown) {
@@ -17,6 +18,29 @@ function formatMoney(value: unknown) {
   const num = Number(value);
   if (!Number.isFinite(num) || num <= 0) return null;
   return `${new Intl.NumberFormat("ru-RU").format(num)} ₽`;
+}
+
+function normalizeParam(value: string | undefined, maxLength = 80) {
+  return typeof value === "string" ? value.trim().slice(0, maxLength) : "";
+}
+
+function formatDate(value: Date | null) {
+  if (!value) return "обновление готовится";
+  return new Intl.DateTimeFormat("ru-RU", { day: "2-digit", month: "long" }).format(value);
+}
+
+function priceValue(value: unknown) {
+  if (value === null || value === undefined) return null;
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
+function vendorHref(slug: string, params?: { q?: string; category?: string }) {
+  const query = new URLSearchParams();
+  if (params?.q) query.set("q", params.q);
+  if (params?.category) query.set("category", params.category);
+  const suffix = query.toString();
+  return `/vendors/${slug}${suffix ? `?${suffix}` : ""}`;
 }
 
 async function getSupplier(slug: string) {
@@ -54,10 +78,59 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function VendorStorefrontPage({ params }: Props) {
+export default async function VendorStorefrontPage({ params, searchParams }: Props) {
   const tenantId = getCurrentTenantId();
   const supplier = await getSupplier(params.slug);
   if (!supplier) notFound();
+  const query = normalizeParam(searchParams?.q);
+  const requestedCategory = normalizeParam(searchParams?.category, 120);
+
+  const baseOfferWhere = {
+    tenantId,
+    supplierId: supplier.id,
+    active: true,
+    variant: {
+      ...getPublicVariantsFilter(),
+      product: {
+        tenantId,
+        ...getPublicProductsFilter(),
+      },
+    },
+  };
+
+  const allSellerOffers = await prisma.supplierOffer.findMany({
+    where: baseOfferWhere,
+    select: {
+      updatedAt: true,
+      pricePerCube: true,
+      pricePerPiece: true,
+      variant: {
+        select: {
+          product: {
+            select: {
+              category: { select: { name: true, slug: true } },
+            },
+          },
+        },
+      },
+    },
+    take: 500,
+  });
+  const categoryMap = new Map<string, { name: string; slug: string; count: number }>();
+  let minPrice: number | null = null;
+  let lastUpdated: Date | null = null;
+  for (const offer of allSellerOffers) {
+    const category = offer.variant.product.category;
+    const current = categoryMap.get(category.slug) || { name: category.name, slug: category.slug, count: 0 };
+    current.count++;
+    categoryMap.set(category.slug, current);
+    for (const price of [priceValue(offer.pricePerPiece), priceValue(offer.pricePerCube)]) {
+      if (price !== null) minPrice = minPrice === null ? price : Math.min(minPrice, price);
+    }
+    if (!lastUpdated || offer.updatedAt > lastUpdated) lastUpdated = offer.updatedAt;
+  }
+  const categories = [...categoryMap.values()].sort((a, b) => a.name.localeCompare(b.name, "ru"));
+  const activeCategory = categories.some((category) => category.slug === requestedCategory) ? requestedCategory : "";
 
   const offers = await prisma.supplierOffer.findMany({
     where: {
@@ -66,9 +139,20 @@ export default async function VendorStorefrontPage({ params }: Props) {
       active: true,
       variant: {
         ...getPublicVariantsFilter(),
+        ...(query
+          ? {
+              OR: [
+                { size: { contains: query, mode: "insensitive" } },
+                { product: { name: { contains: query, mode: "insensitive" } } },
+                { product: { slug: { contains: query.toLowerCase(), mode: "insensitive" } } },
+                { product: { category: { name: { contains: query, mode: "insensitive" } } } },
+              ],
+            }
+          : {}),
         product: {
           tenantId,
           ...getPublicProductsFilter(),
+          ...(activeCategory ? { category: { slug: activeCategory } } : {}),
         },
       },
     },
@@ -85,7 +169,7 @@ export default async function VendorStorefrontPage({ params }: Props) {
       },
     },
     orderBy: [{ preferred: "desc" }, { updatedAt: "desc" }],
-    take: 80,
+    take: 96,
   });
 
   const productSchema = offers.slice(0, 20).map((offer) => {
@@ -174,6 +258,69 @@ export default async function VendorStorefrontPage({ params }: Props) {
       </section>
 
       <section className="mt-8">
+        <div className="mb-5 grid gap-3 md:grid-cols-3">
+          <StoreMetric label="Позиций продавца" value={allSellerOffers.length} hint="активные предложения" />
+          <StoreMetric label="Категорий" value={categories.length} hint="можно фильтровать" />
+          <StoreMetric label="Цена от" value={formatMoney(minPrice) || "по запросу"} hint={`обновлено: ${formatDate(lastUpdated)}`} />
+        </div>
+
+        <div className="mb-5 rounded-2xl border border-border bg-card p-4">
+          <form action={`/vendors/${supplier.slug}`} className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.35fr)_auto_auto] lg:items-end">
+            <label className="grid gap-1 text-sm">
+              <span className="font-medium text-foreground">Поиск по товарам продавца</span>
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  name="q"
+                  defaultValue={query}
+                  placeholder="доска 50x150, фанера, брус..."
+                  className="min-h-[42px] w-full rounded-xl border border-border bg-background pl-9 pr-3 text-sm text-foreground outline-none focus:border-primary"
+                />
+              </div>
+            </label>
+            <label className="grid gap-1 text-sm">
+              <span className="font-medium text-foreground">Категории продавца</span>
+              <select
+                name="category"
+                defaultValue={activeCategory}
+                className="min-h-[42px] rounded-xl border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary"
+              >
+                <option value="">Все категории</option>
+                {categories.map((category) => (
+                  <option key={category.slug} value={category.slug}>
+                    {category.name} ({category.count})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90">
+              <Filter className="h-4 w-4" />
+              Найти
+            </button>
+            {(query || activeCategory) ? (
+              <Link href={`/vendors/${supplier.slug}`} className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-accent">
+                Сбросить
+              </Link>
+            ) : null}
+          </form>
+          {categories.length > 0 ? (
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+              <Link href={vendorHref(supplier.slug, query ? { q: query } : undefined)} className={`inline-flex min-h-[34px] shrink-0 items-center rounded-full border px-3 text-xs font-semibold transition-colors ${!activeCategory ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:text-foreground"}`}>
+                Все предложения
+              </Link>
+              {categories.slice(0, 12).map((category) => (
+                <Link
+                  key={category.slug}
+                  href={vendorHref(supplier.slug, { q: query, category: category.slug })}
+                  className={`inline-flex min-h-[34px] shrink-0 items-center rounded-full border px-3 text-xs font-semibold transition-colors ${activeCategory === category.slug ? "border-primary/35 bg-primary/10 text-primary" : "border-border bg-background text-muted-foreground hover:text-foreground"}`}
+                >
+                  {category.name}
+                </Link>
+              ))}
+            </div>
+          ) : null}
+        </div>
+
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.16em] text-primary">Предложения</p>
@@ -185,10 +332,15 @@ export default async function VendorStorefrontPage({ params }: Props) {
         {offers.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card p-8 text-center">
             <Package className="mx-auto h-8 w-8 text-primary" />
-            <h3 className="mt-4 font-display text-xl font-semibold text-foreground">Предложения готовятся</h3>
+            <h3 className="mt-4 font-display text-xl font-semibold text-foreground">{allSellerOffers.length > 0 ? "По фильтру ничего не найдено" : "Предложения готовятся"}</h3>
             <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
-              Товары появятся после проверки цен, остатков и фото.
+              {allSellerOffers.length > 0 ? "Попробуйте другой запрос или откройте все предложения продавца." : "Товары появятся после проверки цен, остатков и фото."}
             </p>
+            {allSellerOffers.length > 0 ? (
+              <Link href={`/vendors/${supplier.slug}`} className="mt-4 inline-flex min-h-[40px] items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-accent">
+                Показать все предложения
+              </Link>
+            ) : null}
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -231,6 +383,16 @@ export default async function VendorStorefrontPage({ params }: Props) {
           </div>
         )}
       </section>
+    </div>
+  );
+}
+
+function StoreMetric({ label, value, hint }: { label: string; value: string | number; hint: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{label}</p>
+      <p className="mt-2 font-display text-2xl font-bold text-foreground">{value}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
     </div>
   );
 }
