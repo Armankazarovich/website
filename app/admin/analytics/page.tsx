@@ -577,32 +577,36 @@ function AnalyticsMarketingPanel({ data }: { data: AnalyticsData }) {
         <StatCard
           icon={BarChart2}
           label="Расход Direct"
-          value={formatPrice(direct.spend)}
+          value={directReady ? formatPrice(direct.spend) : "нужен доступ"}
           sub={
             directReady
               ? `${direct.clicks} кликов · ${direct.sessions} визитов · CTR ${formatPercent(direct.ctr)}`
-              : direct.error || "Direct OAuth не подключен"
+              : direct.error || "Direct OAuth не подключен: расходы появятся после входа через Яндекс"
           }
           color="bg-rose-500"
         />
         <StatCard
           icon={Target}
           label="CPC / CPA"
-          value={`${formatPrice(direct.avgCpc)} / ${formatPrice(direct.costPerConversion)}`}
-          sub={`${direct.conversions.toFixed(0)} конверсий · CR ${formatPercent(direct.conversionRate)}`}
+          value={directReady ? `${formatPrice(direct.avgCpc)} / ${formatPrice(direct.costPerConversion)}` : "после OAuth"}
+          sub={
+            directReady
+              ? `${direct.conversions.toFixed(0)} конверсий · CR ${formatPercent(direct.conversionRate)}`
+              : "Клики, цена и конверсии подтянутся из Яндекс Директа"
+          }
           color="bg-sky-500"
         />
         <StatCard
           icon={TrendingUp}
           label="ROAS Direct"
-          value={formatRatio(data.marketing.directRoas)}
-          sub={`Выручка с Direct: ${formatPrice(data.marketing.directRevenue)}`}
+          value={directReady ? formatRatio(data.marketing.directRoas) : "нет данных"}
+          sub={directReady ? `Выручка с Direct: ${formatPrice(data.marketing.directRevenue)}` : "Для окупаемости нужны расходы Direct и UTM/yclid в заказах"}
           color="bg-emerald-500"
         />
         <StatCard
           icon={Radio}
           label="Метрика"
-          value={`${metrika.visits} визитов`}
+          value={metrikaReady ? `${metrika.visits} визитов` : "нужен доступ"}
           sub={
             metrikaReady
               ? `${metrika.goalReaches} целей · конверсия ${formatPercent(metrika.conversionRate, 2)}`
@@ -774,10 +778,10 @@ function AnalyticsMarketingPanel({ data }: { data: AnalyticsData }) {
             <div className="rounded-xl border border-amber-400/30 bg-amber-400/[0.06] p-3">
               <div className="flex items-center gap-2 text-sm font-semibold text-amber-200">
                 <CircleAlert className="h-4 w-4" />
-                Метрика пока не дает данные
+                Нужен доступ к Метрике
               </div>
               <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-                Подключим счетчик и цели, тогда появятся визиты, заявки, звонки, регионы и источники.
+                Счетчик на сайте уже установлен. Чтобы видеть визиты, заявки, звонки, регионы и источники здесь, нужно один раз войти через Яндекс.
               </p>
             </div>
           )}
