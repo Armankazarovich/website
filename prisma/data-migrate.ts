@@ -18,6 +18,68 @@ async function upsertSetting(key: string, value: string) {
   });
 }
 
+async function upsertSettingIfBlank(key: string, value: string) {
+  const existing = await prisma.siteSettings.findUnique({
+    where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key } },
+  });
+  if (!existing || !existing.value.trim()) {
+    await upsertSetting(key, value);
+  }
+}
+
+async function upsertPublicUrlIfBlankOrLocal(key: string, value: string) {
+  const existing = await prisma.siteSettings.findUnique({
+    where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key } },
+  });
+  if (!existing || !existing.value.trim() || /localhost|127\.0\.0\.1/i.test(existing.value)) {
+    await upsertSetting(key, value);
+  }
+}
+
+async function ensureLaunchPromotion({
+  title,
+  description,
+}: {
+  title: string;
+  description: string;
+}) {
+  const normalizeTitle = (value: string) =>
+    value.toLowerCase().replace(/ё/g, "е").replace(/\s+/g, " ").trim();
+  const existingPromotions = await prisma.promotion.findMany({
+    where: { tenantId: DEFAULT_TENANT_ID },
+    orderBy: { createdAt: "asc" },
+  });
+  const matches = existingPromotions.filter(
+    (promotion) => normalizeTitle(promotion.title) === normalizeTitle(title),
+  );
+  const existing = matches[0] || null;
+  const data = {
+    tenantId: DEFAULT_TENANT_ID,
+    title,
+    description,
+    discount: null,
+    imageUrl: null,
+    validUntil: null,
+    active: true,
+  };
+
+  if (existing) {
+    await prisma.promotion.update({
+      where: { id: existing.id },
+      data,
+    });
+    const duplicateIds = matches.slice(1).map((promotion) => promotion.id);
+    if (duplicateIds.length) {
+      await prisma.promotion.deleteMany({
+        where: { id: { in: duplicateIds } },
+      });
+    }
+    return;
+  }
+
+  await prisma.promotion.create({ data });
+}
+
 const PRODUCT_IMAGE_EXTENSIONS = ["webp", "jpg", "jpeg", "png", "gif"] as const;
 const SIX_METER_CATEGORY_SLUGS = new Set(["sosna-el", "listvennitsa", "lipa-osina"]);
 const SIX_METER_PRODUCT_SLUGS = new Set([
@@ -185,6 +247,37 @@ const DRY_PLANED_PINE_BOARD_VARIANTS = [
 
 async function main() {
   console.log("[data-migrate] Запуск миграций данных...");
+
+  // 2026-06-13: PiloRus launch analytics and Direct base settings.
+  await upsertSetting("yandex_metrika_id", "109821205");
+  await upsertPublicUrlIfBlankOrLocal("site_url", "https://pilo-rus.ru");
+  await upsertPublicUrlIfBlankOrLocal("public_site_url", "https://pilo-rus.ru");
+  await upsertPublicUrlIfBlankOrLocal("direct_public_url", "https://pilo-rus.ru");
+  await upsertPublicUrlIfBlankOrLocal("yandex_direct_public_url", "https://pilo-rus.ru");
+  await upsertSettingIfBlank("direct_region_ids", "1");
+  await upsertSettingIfBlank("yandex_direct_region_ids", "1");
+  await upsertSetting("yandex_verification", "f585429020ab990b");
+
+  await ensureLaunchPromotion({
+    title: "Скидки при большом объеме",
+    description:
+      "Чем больше объем заказа, тем выгоднее итоговая цена. Для крупных партий менеджер рассчитает персональное предложение с учетом размеров, сорта, наличия и доставки.",
+  });
+  await ensureLaunchPromotion({
+    title: "Выгодные условия при самовывозе",
+    description:
+      "Если удобно забрать заказ со склада, поможем заранее подготовить позиции и согласуем условия отгрузки. Подходит для срочных заказов и постоянных клиентов.",
+  });
+  await ensureLaunchPromotion({
+    title: "Комплектация под проект",
+    description:
+      "Подберем доску, брус, погонаж и листовые материалы под вашу задачу одним расчетом. Это помогает не переплачивать за лишний объем и не забыть важные позиции.",
+  });
+  await ensureLaunchPromotion({
+    title: "Условия для повторных заказов",
+    description:
+      "Для клиентов, которые возвращаются за материалами, сохраняем историю заявок и быстрее готовим расчет. По повторным закупкам можно обсудить индивидуальные условия.",
+  });
 
   // ── 2026-03-29: Изменения по запросу клиента ─────────────────────────────
 

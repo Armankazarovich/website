@@ -131,7 +131,7 @@ async function main() {
   const pwaContext = read("lib/pwa-install-context.ts");
   check(
     "PWA site icon cache version is current",
-    /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-pilorus-header-logo-20260613"/.test(pwaContext) &&
+    /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-pilorus-compact-logo-20260613"/.test(pwaContext) &&
       /PWA_ARAY_ICON_VERSION\s*=\s*"pilorus-brand-header-20260526"/.test(pwaContext),
     "Bump the site icon version whenever generated icons change.",
   );

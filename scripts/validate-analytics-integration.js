@@ -54,6 +54,32 @@ const checks = [
     label: "package has analytics validation script",
     patterns: ["analytics:check", "validate-analytics-integration.js"],
   },
+  {
+    file: "components/analytics.tsx",
+    label: "public layout injects the production Yandex Metrika tag",
+    patterns: [
+      "https://mc.yandex.ru/metrika/tag.js?id=",
+      "ssr: true",
+      "webvisor: true",
+      "window.arayMetrikaGoal",
+      "ecommerce: \"dataLayer\"",
+    ],
+  },
+  {
+    file: "lib/site-settings.ts",
+    label: "PiloRus has launch Metrika counter configured by default",
+    patterns: ["yandex_metrika_id: \"109821205\""],
+  },
+  {
+    file: "prisma/data-migrate.ts",
+    label: "production data migration preserves PiloRus Metrika counter",
+    patterns: ["upsertSetting(\"yandex_metrika_id\", \"109821205\")"],
+  },
+  {
+    file: "public/yandex_f585429020ab990b.html",
+    label: "Yandex Webmaster HTML verification file is present",
+    patterns: ["Verification: f585429020ab990b"],
+  },
 ];
 
 const failures = [];

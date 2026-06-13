@@ -59,6 +59,23 @@ const checks = [
       "YANDEX_DIRECT_CLIENT_LOGIN",
     ],
   },
+  {
+    file: "lib/site-settings.ts",
+    label: "PiloRus Direct has public domain and exact launch region defaults",
+    patterns: [
+      "yandex_direct_public_url: \"https://pilo-rus.ru\"",
+      "yandex_direct_region_ids: \"1\"",
+      "direct_region_ids: \"1\"",
+    ],
+  },
+  {
+    file: "prisma/data-migrate.ts",
+    label: "production data migration preserves Direct public URL and region",
+    patterns: [
+      "upsertPublicUrlIfBlankOrLocal(\"yandex_direct_public_url\", \"https://pilo-rus.ru\")",
+      "upsertSettingIfBlank(\"yandex_direct_region_ids\", \"1\")",
+    ],
+  },
 ];
 
 const failures = [];

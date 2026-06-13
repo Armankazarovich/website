@@ -155,10 +155,10 @@ export function PartnershipModal({ open, onClose }: Props) {
               href="https://yuva-studia.ru"
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+              className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
             >
-              Yuva-studia.ru
-              <ExternalLink className="h-3.5 w-3.5" />
+              Открыть сайт Yuva-studia.ru
+              <ExternalLink className="h-4 w-4" />
             </a>
           </div>
 

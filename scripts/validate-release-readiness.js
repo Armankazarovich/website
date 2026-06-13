@@ -219,7 +219,7 @@ check(
 const pwaContext = read("lib/pwa-install-context.ts");
 check(
   "PWA icon cache version is bumped",
-  /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-pilorus-header-logo-20260613"/.test(pwaContext),
+  /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-pilorus-compact-logo-20260613"/.test(pwaContext),
   "Mobile PWA should request the fresh icon version after logo changes.",
 );
 
