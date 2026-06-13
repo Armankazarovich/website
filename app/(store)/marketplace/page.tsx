@@ -7,9 +7,9 @@ import {
   ArrowRight,
   BadgeCheck,
   Boxes,
+  ClipboardCheck,
   Handshake,
   PackageSearch,
-  ScanSearch,
   Search,
   ShieldCheck,
   Store,
@@ -124,7 +124,7 @@ export default async function MarketplacePage() {
             <StatCard icon={PackageSearch} label="Товаров в чистом каталоге" value={productsCount.toString()} />
             <StatCard icon={Handshake} label="Предложений продавцов" value={offersCount.toString()} />
             <StatCard icon={Store} label="Опубликованных витрин" value={publicSellers.length.toString()} />
-            <StatCard icon={ScanSearch} label="Сайтов ждут скан" value={candidateSellers.toString()} />
+            <StatCard icon={ClipboardCheck} label="Продавцов в подключении" value={candidateSellers.toString()} />
           </div>
         </div>
       </section>
@@ -138,8 +138,8 @@ export default async function MarketplacePage() {
           />
           <FeatureCard
             icon={BadgeCheck}
-            title="Preview перед импортом"
-            text="CSV, фид или скан сайта сначала показывают совпадения, похожие товары и новые кандидаты."
+            title="Проверка перед загрузкой"
+            text="Прайс-лист продавца сначала сопоставляется с каталогом: существующие товары, похожие позиции и новые кандидаты отделяются друг от друга."
           />
           <FeatureCard
             icon={Truck}

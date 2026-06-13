@@ -3,7 +3,23 @@ export const dynamic = "force-dynamic";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BadgeCheck, Clock3, ExternalLink, Filter, Package, Phone, Search, ShieldCheck, Truck } from "lucide-react";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  CheckCircle2,
+  ClipboardList,
+  Clock3,
+  ExternalLink,
+  Filter,
+  MessageCircle,
+  Package,
+  Phone,
+  Search,
+  ShieldCheck,
+  Star,
+  Truck,
+  type LucideIcon,
+} from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getCurrentTenantId } from "@/lib/tenant-context";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
@@ -264,8 +280,8 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
         Все продавцы
       </Link>
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_0.9fr] lg:items-stretch">
-        <div className="rounded-2xl border border-border bg-card p-6">
+      <section className="grid gap-6 lg:grid-cols-[minmax(0,1.08fr)_0.92fr] lg:items-stretch">
+        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
           <div className="flex flex-col gap-5 sm:flex-row">
             <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-border bg-background text-2xl font-bold text-primary">
               {supplier.logoUrl ? (
@@ -294,15 +310,38 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
               </div>
             </div>
           </div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <HeroTrustItem icon={Package} label="Ассортимент" value={allSellerOffers.length > 0 ? `${allSellerOffers.length} предложений` : "по заявке"} />
+            <HeroTrustItem icon={BadgeCheck} label="Категории" value={categories.length > 0 ? `${categories.length} направления` : "подберем"} />
+            <HeroTrustItem icon={Clock3} label="Обновлено" value={formatDate(lastUpdated)} />
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+              цены и наличие уточняются перед оплатой
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5">
+              <Truck className="h-3.5 w-3.5 text-primary" />
+              доставка рассчитывается по адресу
+            </span>
+          </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6">
+        <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
           <h2 className="font-display text-xl font-semibold text-foreground">О продавце</h2>
           <div className="mt-4 grid gap-3 text-sm">
             <InfoRow icon={Package} label="Специализация" value={supplier.specialization || "Пиломатериалы и стройматериалы"} />
             <InfoRow icon={Truck} label="Доставка" value={supplier.deliverySummary || "Условия доставки уточняются при заявке"} />
             <InfoRow icon={Phone} label="Телефон" value={supplier.phone || "Контакт через ПилоРус"} />
             <InfoRow icon={ShieldCheck} label="Статус" value={supplier.featuredSeller ? "Официальный поставщик ПилоРус" : "Поставщик на ПилоРус"} />
+          </div>
+          <div className="mt-5 rounded-2xl border border-border bg-background p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Как купить быстрее</p>
+            <div className="mt-3 grid gap-2">
+              <QuickPathItem icon={Search} text="Выберите товар или напишите нужный размер в поиске." />
+              <QuickPathItem icon={ClipboardList} text="Оставьте объем, адрес и удобный способ связи." />
+              <QuickPathItem icon={MessageCircle} text="Менеджер уточнит наличие, цену, срок и доставку." />
+            </div>
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
             {supplier.phone ? (
@@ -321,22 +360,44 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
         </div>
       </section>
 
-      <section className="mt-6">
-        <div className="flex gap-3 overflow-x-auto pb-2">
+      <section className="mt-6 rounded-2xl border border-border bg-card p-4 sm:p-5">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Витрина продавца</p>
+            <h2 className="mt-2 font-display text-2xl font-bold text-foreground">Быстрые сценарии для покупки</h2>
+          </div>
+          <Link href="#vendor-products" className="inline-flex min-h-[40px] items-center justify-center rounded-xl border border-border px-4 text-sm font-semibold text-foreground transition-colors hover:bg-accent">
+            Перейти к товарам
+          </Link>
+        </div>
+        <div className="flex snap-x gap-3 overflow-x-auto pb-2">
           <StoryCard
             icon={BadgeCheck}
             title="Подбор по задаче"
             text="Напишите, что строите и какой нужен объем. Менеджер подберет размеры и позиции."
+            href="#vendor-request"
+            action="Оставить запрос"
           />
           <StoryCard
             icon={Truck}
             title="Доставка и самовывоз"
             text="Уточните адрес, сроки и разгрузку. Подскажем удобный вариант поставки."
+            href="#vendor-request"
+            action="Рассчитать доставку"
           />
           <StoryCard
             icon={Clock3}
             title="Быстрый ответ"
             text="Отправьте запрос из витрины, чтобы не искать контакты и не собирать список вручную."
+            href="#vendor-request"
+            action="Написать"
+          />
+          <StoryCard
+            icon={Star}
+            title="Сравнение предложений"
+            text="Смотрите цены продавца в привычных карточках ПилоРус и выбирайте нужный размер."
+            href="#vendor-products"
+            action="Смотреть цены"
           />
         </div>
       </section>
@@ -345,7 +406,7 @@ export default async function VendorStorefrontPage({ params, searchParams }: Pro
         <VendorLeadForm sellerName={supplier.name} sellerSlug={supplier.slug} phone={supplier.phone} />
       </div>
 
-      <section className="mt-8">
+      <section id="vendor-products" className="mt-8 scroll-mt-24">
         <div className="mb-5 grid gap-3 md:grid-cols-3">
           <StoreMetric label="Позиций в продаже" value={allSellerOffers.length} hint="актуальный ассортимент" />
           <StoreMetric label="Категорий" value={categories.length} hint="удобно выбирать" />
@@ -469,18 +530,25 @@ function StoryCard({
   icon: Icon,
   title,
   text,
+  href,
+  action,
 }: {
-  icon: typeof BadgeCheck;
+  icon: LucideIcon;
   title: string;
   text: string;
+  href: string;
+  action: string;
 }) {
   return (
-    <article className="min-w-[260px] flex-1 rounded-2xl border border-border bg-card p-4 sm:min-w-[320px]">
+    <article className="min-w-[260px] flex-1 snap-start rounded-2xl border border-border bg-background p-4 sm:min-w-[320px]">
       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary">
         <Icon className="h-5 w-5" />
       </div>
       <h3 className="mt-3 font-display text-lg font-semibold text-foreground">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-muted-foreground">{text}</p>
+      <Link href={href} className="mt-4 inline-flex min-h-[36px] items-center justify-center rounded-xl border border-border px-3 text-xs font-semibold text-foreground transition-colors hover:bg-accent">
+        {action}
+      </Link>
     </article>
   );
 }
@@ -490,7 +558,7 @@ function InfoRow({
   label,
   value,
 }: {
-  icon: typeof Package;
+  icon: LucideIcon;
   label: string;
   value: string;
 }) {
@@ -503,6 +571,29 @@ function InfoRow({
         <p className="text-xs text-muted-foreground">{label}</p>
         <p className="font-semibold text-foreground">{value}</p>
       </div>
+    </div>
+  );
+}
+
+function HeroTrustItem({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-background p-3">
+      <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+        <Icon className="h-4 w-4 text-primary" />
+        {label}
+      </div>
+      <p className="mt-2 font-display text-lg font-bold text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function QuickPathItem({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
+  return (
+    <div className="flex gap-2 text-sm leading-5 text-muted-foreground">
+      <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
+        <Icon className="h-3.5 w-3.5" />
+      </span>
+      <span>{text}</span>
     </div>
   );
 }

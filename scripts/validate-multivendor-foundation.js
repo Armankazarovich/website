@@ -121,9 +121,11 @@ check(
 check(
   "Public seller pages use business language",
   !["Модерация", "Скан сайтов", "Через превью", "preview", "Preview", "слой", "инструмент"].some((value) =>
-    read("app/(store)/vendors/page.tsx").includes(value) || read("app/(store)/vendors/[slug]/page.tsx").includes(value),
+    read("app/(store)/vendors/page.tsx").includes(value) ||
+    read("app/(store)/vendors/[slug]/page.tsx").includes(value) ||
+    read("app/(store)/marketplace/page.tsx").includes(value),
   ),
-  "Buyer-facing vendor pages must read like a finished business storefront, not an internal admin tool.",
+  "Buyer-facing marketplace and vendor pages must read like finished business storefronts, not internal admin tools.",
 );
 
 check(
@@ -141,7 +143,7 @@ check(
     includesAll(read("app/(store)/marketplace/page.tsx"), [
       "ПилоРус Биржа пиломатериалов",
       "Без дублей товара",
-      "Preview перед импортом",
+      "Проверка перед загрузкой",
       "Предложения продавцов",
       "supplierStorefrontHref",
     ]),
