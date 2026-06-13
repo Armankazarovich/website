@@ -37,6 +37,22 @@ function includesAll(relPath, tokens) {
   return true;
 }
 
+function excludesAll(relPath, tokens) {
+  if (!exists(relPath)) {
+    fail(`${relPath} is missing`);
+    return false;
+  }
+
+  const source = read(relPath);
+  const present = tokens.filter((token) => source.includes(token));
+  if (present.length > 0) {
+    fail(`${relPath} should keep constructor hidden, found: ${present.join(", ")}`);
+    return false;
+  }
+
+  return true;
+}
+
 function packageScript(name) {
   if (!exists("package.json")) return false;
   const packageJson = JSON.parse(read("package.json"));
@@ -165,16 +181,18 @@ includesAll("lib/store-capability-registry.ts", [
 
 includesAll("components/admin/admin-navigation-registry.ts", [
   'href: "/admin/site/constructor"',
+  'label: "Служебный конструктор"',
   'moduleId: "constructor.store-builder"',
+  'surfaces: ["direct"]',
   '"/api/admin/site-constructor/blueprints"',
 ]);
 
 includesAll("components/admin/admin-navigation-model.ts", [
   '"/admin/site/constructor"',
-  "Редактор витрины",
+  "Служебный конструктор",
 ]);
 
-includesAll("app/admin/business/settings/page.tsx", [
+excludesAll("app/admin/business/settings/page.tsx", [
   'href: "/admin/site/constructor"',
   "Редактор витрины",
 ]);

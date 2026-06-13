@@ -96,18 +96,18 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     keywords: ["арай", "aray", "рабочий стол", "сводка", "показатели"],
     placeholder: "Найти заказ, клиента, товар или раздел...",
     nextStep: "Проверить рабочий стол по реальным сигналам",
-    quickHrefs: ["/admin/products", "/admin/suppliers", "/admin/orders", "/admin/promotion", "/admin/analytics"],
+    quickHrefs: ["/admin/products", "/admin/orders", "/admin/promotion", "/admin/analytics", "/admin/site"],
   },
   "/admin/director": {
     title: "Роли и доступы",
-    subtitle: "Продавцы, партнеры, менеджеры и права",
-    searchHint: "Роли, продавцы, партнеры и видимость разделов",
-    keywords: ["группы", "пользователи", "продавцы", "поставщики", "партнеры", "менеджеры", "роли", "доступы", "разделы", "автоматизация", "права"],
-    placeholder: "Продавец, роль, партнер, менеджер, доступ или правило...",
-    nextStep: "Показать роли пользователей и права для каждой зоны биржи",
+    subtitle: "Команда, менеджеры и права",
+    searchHint: "Роли, сотрудники и видимость разделов",
+    keywords: ["группы", "пользователи", "менеджеры", "роли", "доступы", "разделы", "автоматизация", "права"],
+    placeholder: "Сотрудник, роль, менеджер, доступ или правило...",
+    nextStep: "Показать роли пользователей и права для запуска сайта",
     quickTitle: "Роли и доступы",
     quickSubtitle: "Права и роли",
-    quickHrefs: ["/admin/director", "/admin/suppliers", "/admin/staff", "/admin/crm", "/admin/tasks", "/admin/finance"],
+    quickHrefs: ["/admin/director", "/admin/staff", "/admin/crm", "/admin/tasks", "/admin/finance"],
   },
   "/admin/orders/new": {
     title: "Терминал",
@@ -192,7 +192,7 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     keywords: ["каталог", "товар", "товары", "склад", "категория"],
     placeholder: "Товар, категория, slug, склад или импорт...",
     nextStep: "Проверить готовность товара",
-    quickHrefs: ["/admin/products/new", "/admin/suppliers", "/admin/categories", "/admin/product-types", "/admin/inventory", "/admin/import", "/admin/media"],
+    quickHrefs: ["/admin/products/new", "/admin/categories", "/admin/product-types", "/admin/inventory", "/admin/import", "/admin/media"],
     mobilePriority: 30,
   },
   "/admin/products/new": {
@@ -225,13 +225,13 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     quickHrefs: ["/admin/products", "/admin/categories", "/admin/products/audit", "/admin/promotion"],
   },
   "/admin/suppliers": {
-    title: "Продавцы / поставщики",
-    subtitle: "Витрины, прайсы и предложения",
-    searchHint: "Продавцы, поставщики и предложения",
-    keywords: ["поставщики", "продавцы", "мультивендор", "прайсы", "предложения", "маркетплейс", "биржа"],
-    placeholder: "Поставщик, продавец, товар, цена, остаток или город...",
-    nextStep: "Проверить предложения поставщиков и выбрать, чем закрыть заказ",
-    quickHrefs: ["/admin/suppliers", "/admin/products", "/admin/products/import-prices", "/admin/import", "/admin/inventory"],
+    title: "Поставщики",
+    subtitle: "Служебный запас",
+    searchHint: "Служебные поставщики",
+    keywords: ["поставщики", "прайсы"],
+    placeholder: "Поставщик, товар, цена или остаток...",
+    nextStep: "Открыть только если нужен служебный список поставщиков",
+    quickHrefs: ["/admin/products", "/admin/products/import-prices", "/admin/import", "/admin/inventory"],
   },
   "/admin/inventory": {
     title: "Склад",
@@ -276,13 +276,13 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     keywords: ["сайт", "страницы", "витрина"],
   },
   "/admin/site/constructor": {
-    title: "Редактор витрины",
-    subtitle: "Правки текущего сайта ПилоРус",
-    searchHint: "Редактор готового сайта и превью",
-    keywords: ["редактор", "конструктор", "готовый сайт", "зейдр", "zeder", "pilorus", "превью"],
-    placeholder: "Страница, блок, готовый сайт, домен или визуальная правка...",
-    nextStep: "Открыть текущий сайт и внести правку без запуска нового проекта",
-    quickHrefs: ["/admin/site/constructor", "/admin/site", "/admin/appearance", "/admin/business/settings", "/admin/products"],
+    title: "Служебный конструктор",
+    subtitle: "Скрытый запас для будущих копий сайтов",
+    searchHint: "Служебный конструктор и превью",
+    keywords: ["служебный", "конструктор", "копия сайта", "zeder", "pilorus", "превью"],
+    placeholder: "Служебный сайт, копия, домен или визуальная правка...",
+    nextStep: "Использовать только для будущих копий, не для текущего запуска ПилоРус",
+    quickHrefs: ["/admin/site", "/admin/appearance", "/admin/business/settings", "/admin/products"],
   },
   "/admin/site/benchmarks": {
     title: "Сайты и проекты",
@@ -291,7 +291,7 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     keywords: ["сайты", "проекты", "запуск", "tenant", "домен", "клиент", "стройматериалы"],
     placeholder: "Сайт, проект, домен, клиент, ниша или запуск...",
     nextStep: "Выбрать сайт и работать с его данными без путаницы",
-    quickHrefs: ["/admin/site/benchmarks", "/admin/site/releases", "/zaidr", "/admin/site/constructor", "/admin/crm", "/admin/products"],
+    quickHrefs: ["/admin/site/benchmarks", "/admin/site/releases", "/zaidr", "/admin/crm", "/admin/products"],
   },
   "/admin/site/releases": {
     title: "Ядро и релизы",
@@ -300,7 +300,7 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     keywords: ["релиз", "ядро", "deploy", "деплой", "сервер", "заидр", "зейдр", "domain.ru", "версия", "smoke", "проверки"],
     placeholder: "Версия ядра, сайт, домен, сервер, проверка или следующий запуск...",
     nextStep: "Проверить, куда раскатывается ядро ARAY и что требует подтверждения",
-    quickHrefs: ["/admin/site/releases", "/admin/site/benchmarks", "/admin/site/constructor", "/admin/aray/orders", "/admin/health"],
+    quickHrefs: ["/admin/site/releases", "/admin/site/benchmarks", "/admin/aray/orders", "/admin/health"],
   },
   "/admin/appearance": {
     title: "Оформление",
@@ -416,7 +416,7 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     nextStep: "Ввести домен клиента или открыть заявку и собрать первый черновик",
     quickTitle: "Запуск сайта",
     quickSubtitle: "Скан, заявка и превью",
-    quickHrefs: ["/admin/aray/orders", "/admin/aray/briefs", "/admin/aray/builder", "/admin/site/constructor", "/admin/site"],
+    quickHrefs: ["/admin/aray/orders", "/admin/aray/briefs", "/admin/aray/builder", "/admin/site"],
   },
   "/admin/aray/briefs": {
     title: "Бриф и материалы",
@@ -426,7 +426,7 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     keywords: ["бриф", "материалы", "товары", "услуги", "фото", "доступы", "цель", "клиент"],
     placeholder: "Клиент, цель, товары, услуги, фото, доступы или вопрос...",
     nextStep: "Проверить, хватает ли материалов для сборки сайта",
-    quickHrefs: ["/admin/aray/orders", "/admin/aray/builder", "/admin/site/constructor"],
+    quickHrefs: ["/admin/aray/orders", "/admin/aray/builder"],
   },
   "/admin/aray/builder": {
     title: "Собрать сайт",
@@ -436,7 +436,7 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
     keywords: ["собрать сайт", "блоки", "конструктор", "черновик", "превью", "лендинг", "магазин"],
     placeholder: "Блок, ниша, пример, черновик сайта или действие...",
     nextStep: "Выбрать блоки и открыть черновик в конструкторе",
-    quickHrefs: ["/admin/aray/orders", "/admin/site/constructor", "/admin/site/benchmarks", "/admin/site"],
+    quickHrefs: ["/admin/aray/orders", "/admin/site/benchmarks", "/admin/site"],
   },
   "/admin/aray/modules": {
     title: "Модули ARAY",
@@ -523,13 +523,13 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
 };
 
 const GROUP_QUICK_HREFS: Record<string, string[]> = {
-  main: ["/admin", "/admin/products", "/admin/suppliers", "/admin/orders", "/admin/promotion"],
+  main: ["/admin", "/admin/products", "/admin/orders", "/admin/promotion", "/admin/site"],
   sales: ["/admin/orders", "/admin/orders/new", "/admin/crm", "/admin/clients", "/admin/delivery", "/admin/tasks"],
-  products: ["/admin/products", "/admin/suppliers", "/admin/products/new", "/admin/products/audit", "/admin/inventory", "/admin/import"],
+  products: ["/admin/products", "/admin/products/new", "/admin/products/audit", "/admin/inventory", "/admin/import"],
   marketing: ["/admin/promotion", "/admin/stories", "/admin/reviews", "/admin/promotions", "/admin/posts", "/admin/services", "/admin/analytics"],
   finance: ["/admin/finance", "/admin/orders", "/admin/analytics"],
   arayCms: ["/admin/aray/orders", "/admin/aray/briefs", "/admin/aray/builder", "/admin/site/benchmarks", "/admin/site/releases", "/admin/aray", "/admin/aray/modules"],
-  settings: ["/admin/site", "/admin/site/constructor", "/admin/appearance", "/admin/director", "/admin/business/settings", "/admin/staff", "/admin/settings", "/admin/health"],
+  settings: ["/admin/site", "/admin/appearance", "/admin/director", "/admin/business/settings", "/admin/staff", "/admin/settings", "/admin/health"],
   help: ["/admin/help", "/admin/terminals/training"],
   personal: ["/cabinet", "/cabinet/orders", "/cabinet/profile", "/catalog"],
 };
@@ -545,7 +545,7 @@ const MOBILE_DOCK_LABELS: Record<string, string> = {
   "/admin/messenger": "Чаты",
   "/admin/crm": "CRM",
   "/admin/products": "Товары",
-  "/admin/suppliers": "Продавцы",
+  "/admin/suppliers": "Поставщики",
   "/admin/products/new": "Новый",
   "/admin/aray": "ARAY",
   "/admin/aray/orders": "Запуск",
@@ -558,7 +558,7 @@ const MOBILE_DOCK_LABELS: Record<string, string> = {
   "/admin/analytics": "Отчеты",
   "/admin/finance": "Деньги",
   "/admin/business/settings": "Бизнес",
-  "/admin/site/constructor": "Редактор",
+  "/admin/site/constructor": "Служебно",
   "/admin/site/benchmarks": "Сайты",
   "/admin/site/releases": "Релиз",
   "/admin/settings": "Система",
@@ -858,7 +858,7 @@ export function getAdminNavigationSearchContext({
   const hints = Array.from(new Set([
     ...(routeMeta?.keywords || []),
     ...(activeItem ? [getAdminNavItemLabel(activeItem, t), getAdminGroupLabel(activeItem.group, t)] : []),
-    ...(role === "USER" ? ["мои заказы", "каталог", "профиль"] : ["арай", "терминал", "заказ", "каталог"]),
+    ...(role === "USER" ? ["мои заказы", "каталог", "профиль"] : ["товары", "заказ", "каталог", "реклама"]),
   ])).filter(Boolean).slice(0, 5);
 
   return {

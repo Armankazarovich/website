@@ -116,6 +116,8 @@ export async function POST(req: Request) {
     const company = clean(body.company, 160);
     const phone = clean(body.phone, 80);
     const message = clean(body.message, 1200);
+    const sourceTitle = clean(body.sourceTitle, 160);
+    const leadComment = [sourceTitle || null, message || null].filter(Boolean).join("\n\n");
 
     if (name.length < 2 || phone.replace(/\D/g, "").length < 10) {
       return NextResponse.json({ error: "Имя и телефон обязательны" }, { status: 400 });
@@ -123,7 +125,7 @@ export async function POST(req: Request) {
 
     await prisma.$transaction([
       prisma.partnershipLead.create({
-        data: { tenantId, name, company: company || null, phone, message: message || null },
+        data: { tenantId, name, company: company || null, phone, message: leadComment || null },
       }),
       prisma.lead.create({
         data: {
@@ -133,7 +135,7 @@ export async function POST(req: Request) {
           phone,
           source: "PARTNER",
           stage: "NEW",
-          comment: message || null,
+          comment: leadComment || null,
           tags: ARAY_PARTNER_LEAD_TAGS,
           activities: {
             create: {
@@ -146,8 +148,8 @@ export async function POST(req: Request) {
     ]);
 
     // Уведомления — не блокируем ответ
-    sendPartnershipTelegram({ name, company, phone, message }).catch(console.error);
-    sendPartnershipEmail({ name, company, phone, message }).catch(console.error);
+    sendPartnershipTelegram({ name, company, phone, message: leadComment || message }).catch(console.error);
+    sendPartnershipEmail({ name, company, phone, message: leadComment || message }).catch(console.error);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

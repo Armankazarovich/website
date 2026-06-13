@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Calculator, Handshake, PackageCheck, PhoneCall, Tag, Truck } from "lucide-react";
-import { PartnershipPromoCard } from "@/components/store/partnership-promo-card";
 import { PromoCards } from "@/components/store/promo-cards";
 import { BackButton } from "@/components/ui/back-button";
 import { prisma } from "@/lib/prisma";
@@ -84,7 +83,6 @@ export default async function PromotionsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3">
-        <PartnershipPromoCard />
         <PromoCards promotions={promoCards} phoneLink={phoneLink} />
 
         {promotions.length === 0 && (

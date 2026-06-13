@@ -16,7 +16,6 @@ import {
   Search,
   ChevronDown,
   ArrowRight,
-  Handshake,
   Calculator,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -26,7 +25,6 @@ import { useSearchDrawer } from "@/store/search-drawer";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { PartnershipModal } from "@/components/store/partnership-modal";
 import { WishlistCount } from "@/components/store/wishlist-count";
 import { CompareCount } from "@/components/store/compare-count";
 import { PhoneLinks, type PhoneItem } from "@/components/shared/phone-links";
@@ -60,7 +58,6 @@ interface HeaderProps {
 }
 
 const infoLinks = [
-  { label: "Биржа", href: "/marketplace" },
   { label: "Доставка и оплата", href: "/delivery" },
   { label: "Акции и скидки", href: "/promotions" },
   { label: "О производстве", href: "/about" },
@@ -160,7 +157,6 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [catalogOpen, setCatalogOpen] = useState(false);
-  const [partnershipOpen, setPartnershipOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileCatalogOpen, setMobileCatalogOpen] = useState(false);
   // selectedType/selectedSize removed — mega menu is now pure navigation
@@ -525,15 +521,6 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                 )} />
               </Link>
             ))}
-
-            {/* Partnership button */}
-            <button
-              onClick={() => setPartnershipOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-primary hover:bg-primary/10"
-            >
-              <Handshake className="w-3.5 h-3.5" />
-              Сотрудничество
-            </button>
           </nav>
 
           {/* Tablet nav (md only — between logo and actions) */}
@@ -548,17 +535,6 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
               )}
             >
               Каталог
-            </Link>
-            <Link
-              href="/marketplace"
-              className={cn(
-                "px-3 py-2 rounded-xl text-sm font-medium transition-colors",
-                pathname === "/marketplace"
-                  ? "text-primary bg-primary/10"
-                  : "text-foreground/75 hover:text-foreground hover:bg-accent"
-              )}
-            >
-              Биржа
             </Link>
             <Link
               href="/delivery"
@@ -760,15 +736,6 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
               <User className="w-4 h-4" />
             </button>
 
-            {/* Partnership — md only */}
-            <button
-              onClick={() => setPartnershipOpen(true)}
-              className="hidden xl:flex 2xl:hidden min-h-11 items-center gap-1.5 text-xs font-medium text-brand-orange border border-brand-orange/30 bg-brand-orange/8 hover:bg-brand-orange/15 transition-all px-3 py-2 rounded-xl ml-0.5"
-            >
-              <Handshake className="w-3.5 h-3.5" />
-              Партнёрство
-            </button>
-
             {/* Hamburger (mobile only) — animates to X */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -799,9 +766,6 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
       </header>
 
       {/* Search Modal */}
-
-      {/* Partnership Modal */}
-      <PartnershipModal open={partnershipOpen} onClose={() => setPartnershipOpen(false)} />
 
       {/* ══════════════════════════════════════════════════
           GLASSMORPHISM MOBILE MENU
@@ -945,9 +909,6 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
 
                   {/* Остальные ссылки */}
                   {[
-                    { label: "Биржа продавцов", href: "/marketplace", icon: (
-                      <Handshake className="h-4 w-4" />
-                    )},
                     { label: "Доставка и оплата", href: "/delivery", icon: (
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 4h13v13H1V4z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M14 9h4.5L22 13v4h-8V9z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><circle cx="5" cy="19" r="2" stroke="currentColor" strokeWidth="1.6"/><circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6"/></svg>
                     )},
@@ -986,16 +947,6 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                     </Link>
                   ))}
 
-                  {/* Сотрудничество */}
-                  <button
-                    onClick={() => { setMobileMenuOpen(false); setPartnershipOpen(true); }}
-                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-brand-orange hover:bg-brand-orange/10 transition-colors mt-1"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-brand-orange/15 text-brand-orange flex items-center justify-center shrink-0">
-                      <Handshake className="w-4 h-4" />
-                    </div>
-                    Сотрудничество
-                  </button>
                 </div>
               </div>
 

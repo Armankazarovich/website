@@ -4,6 +4,14 @@
 Проект: ARAY Production / PiloRus
 Рабочая папка: `D:\проект\pilorus\website`
 
+## PiloRus client launch mode
+
+Status from 2026-06-13: single client site first. PiloRus is being delivered as one clean client website for selling timber products, orders, calls, SEO, Direct, PWA and catalog work.
+
+The marketplace hidden rule is active for the public PiloRus launch. `/marketplace`, `/vendors` and `/vendors/[slug]` redirect to `/catalog` and stay `noindex`. Supplier/vendor data, scan preview, feed preview and offer models remain as a hidden reserve for a later separate marketplace project, not as a visible PiloRus feature.
+
+SEO/search launch rule from 2026-06-13: the public PiloRus site must behave as one finished client website. Search returns only sellable catalog products and understands common timber dimension queries such as `50x150` and `брус 150х150`. `robots.txt` is served from one source, blocks hidden marketplace/vendor paths, and the sitemap must stay clean from those future-reserve URLs.
+
 ## Главный курс
 
 PiloRus - эталонная платформа маркетплейса/биржи для пиломатериалов.

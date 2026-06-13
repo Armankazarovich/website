@@ -11,7 +11,6 @@ import { formatPrice } from "@/lib/utils";
 import { ProductCard } from "@/components/store/product-card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, CheckCircle, Phone, Star, MapPin, Search, ClipboardList, CreditCard, Truck, Users, Factory, FileText } from "lucide-react";
-import { PartnershipPromoCard } from "@/components/store/partnership-promo-card";
 import { PromoCards } from "@/components/store/promo-cards";
 import { CategoryCard } from "@/components/store/category-card";
 import { HomeReviewPopup } from "@/components/store/home-review-popup";
@@ -545,7 +544,6 @@ export default async function HomePage() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Partnership card — always shown */}
-            <PartnershipPromoCard />
 
             <PromoCards promotions={promotions.map((p) => ({
               id: p.id,

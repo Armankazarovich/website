@@ -219,7 +219,7 @@ check(
 const pwaContext = read("lib/pwa-install-context.ts");
 check(
   "PWA icon cache version is bumped",
-  /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-pilorus-clean-mark-20260611"/.test(pwaContext),
+  /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-pilorus-header-logo-20260613"/.test(pwaContext),
   "Mobile PWA should request the fresh icon version after logo changes.",
 );
 
@@ -242,7 +242,7 @@ check(
     allExist(["app/admin/suppliers/page.tsx", "app/api/admin/suppliers/route.ts", "app/api/admin/supplier-offers/route.ts"]) &&
     read("components/admin/admin-navigation-registry.ts").includes("/admin/suppliers") &&
     Boolean(packageJson.scripts?.["multivendor:check"]),
-  "PiloRus marketplace launch needs suppliers, variant offers, admin routes and a guard before seller onboarding.",
+  "Supplier foundation stays as a hidden reserve after the client-site pivot; PiloRus launch must not depend on seller onboarding.",
 );
 
 const cartFly = read("lib/cart-fly.ts");

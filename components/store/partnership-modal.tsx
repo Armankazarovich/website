@@ -4,12 +4,13 @@ import { useState } from "react";
 import {
   CheckCircle,
   Loader2,
-  Handshake,
-  Building2,
-  HardHat,
-  TreePine,
-  ShoppingBag,
-  Wrench,
+  Code2,
+  ExternalLink,
+  Globe2,
+  Megaphone,
+  Palette,
+  Rocket,
+  SearchCheck,
 } from "lucide-react";
 import { PHONE_DISPLAY } from "@/lib/phone-constants";
 import { Button } from "@/components/ui/button";
@@ -17,21 +18,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SidePanel } from "./side-panel";
 
-const PARTNER_TYPES = [
-  { icon: HardHat, label: "Строители", desc: "Подрядчики, бригады, застройщики" },
-  { icon: TreePine, label: "Банщики и Сауны", desc: "Строительство бань, саун, беседок" },
-  { icon: ShoppingBag, label: "Магазины", desc: "Стройматериалы, хозтовары" },
-  { icon: Building2, label: "ЖКХ и УК", desc: "Управляющие компании, ТСЖ" },
-  { icon: Wrench, label: "Производство", desc: "Мебельные цеха, столярни" },
+const SERVICE_AREAS = [
+  { icon: Globe2, label: "Сайт под ключ", desc: "Главная, каталог, страницы и заявки" },
+  { icon: Palette, label: "Дизайн", desc: "Чистая витрина под бренд и нишу" },
+  { icon: SearchCheck, label: "SEO", desc: "Структура страниц для поиска" },
+  { icon: Megaphone, label: "Реклама", desc: "Подготовка к Яндекс Директ" },
+  { icon: Rocket, label: "Запуск", desc: "PWA, фавиконы, формы и аналитика" },
 ];
 
 const BENEFITS = [
-  "Оптовые цены — скидка от 5% до 20%",
-  "Персональный менеджер 24/7",
-  "Отсрочка платежа до 30 дней",
-  "Приоритетная отгрузка без очереди",
-  "Полный пакет документов с НДС",
-  "Бесплатный замер и консультация",
+  "Сайт выглядит как готовый бизнес, без технических лишних слов",
+  "Каталог, заявки, звонки, SEO и аналитика собираются в одну систему",
+  "PWA, фавиконы и иконки приводятся к одному чистому бренду",
+  "Можно начать с текущего сайта и постепенно усилить рекламу",
+  "Заявка сразу попадает менеджеру, чтобы не терять клиента",
 ];
 
 interface Props {
@@ -76,7 +76,11 @@ export function PartnershipModal({ open, onClose }: Props) {
       const res = await fetch("/api/partnership", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          sourceTitle: "Разработка сайта — Юва студия",
+          leadType: "website-development",
+        }),
       });
       if (!res.ok) throw new Error("Ошибка отправки");
       setSuccess(true);
@@ -91,9 +95,9 @@ export function PartnershipModal({ open, onClose }: Props) {
     <SidePanel
       open={open}
       onClose={handleClose}
-      title="Станьте партнёром"
-      subtitle="Оптовые условия для бизнеса"
-      icon={<Handshake className="w-4 h-4" strokeWidth={2} />}
+      title="Разработка сайта — Юва студия"
+      subtitle="Yuva-studia.ru · сайты, каталоги и заявки для бизнеса"
+      icon={<Code2 className="w-4 h-4" strokeWidth={2} />}
       iconTone="bg-brand-orange/15 text-brand-orange"
     >
       {success ? (
@@ -104,7 +108,7 @@ export function PartnershipModal({ open, onClose }: Props) {
           </div>
           <h3 className="font-display font-bold text-2xl mb-3">Заявка отправлена!</h3>
           <p className="text-muted-foreground mb-6 leading-relaxed">
-            Наш менеджер свяжется с вами в течение часа для обсуждения условий сотрудничества
+            Менеджер Юва студии свяжется с вами, уточнит задачу и подскажет следующий шаг.
           </p>
           <Button onClick={handleClose} className="px-8">
             Закрыть
@@ -112,13 +116,13 @@ export function PartnershipModal({ open, onClose }: Props) {
         </div>
       ) : (
         <div className="px-5 py-5 space-y-6">
-          {/* For whom */}
+          {/* Services */}
           <div>
             <h3 className="font-display font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
-              Для кого подходит
+              Что можно заказать
             </h3>
             <div className="grid grid-cols-2 gap-2.5">
-              {PARTNER_TYPES.map(({ icon: Icon, label, desc }) => (
+              {SERVICE_AREAS.map(({ icon: Icon, label, desc }) => (
                 <div
                   key={label}
                   className="flex flex-col gap-1.5 p-3 rounded-xl bg-muted/50 border border-border"
@@ -134,7 +138,7 @@ export function PartnershipModal({ open, onClose }: Props) {
           {/* Benefits */}
           <div>
             <h3 className="font-display font-semibold text-sm mb-3 text-muted-foreground uppercase tracking-wider">
-              Ваши преимущества
+              Что входит в запуск
             </h3>
             <div className="space-y-2">
               {BENEFITS.map((b) => (
@@ -147,6 +151,15 @@ export function PartnershipModal({ open, onClose }: Props) {
                 </div>
               ))}
             </div>
+            <a
+              href="https://yuva-studia.ru"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
+            >
+              Yuva-studia.ru
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
           </div>
 
           {/* Form */}
@@ -169,11 +182,11 @@ export function PartnershipModal({ open, onClose }: Props) {
             </div>
             <div>
               <Label htmlFor="p-company" className="mb-1.5 block">
-                Компания / ИП
+                Компания или ниша
               </Label>
               <Input
                 id="p-company"
-                placeholder='ООО "Стройка" / ИП Иванов'
+                placeholder="Например: пиломатериалы, услуги, спортпит"
                 value={form.company}
                 onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
                 autoComplete="organization"
@@ -199,7 +212,7 @@ export function PartnershipModal({ open, onClose }: Props) {
               </Label>
               <textarea
                 id="p-message"
-                placeholder="Расскажите о вашем бизнесе, примерных объёмах закупки..."
+                placeholder="Коротко расскажите, какой сайт нужен: каталог, услуги, интернет-магазин, реклама..."
                 rows={3}
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base sm:text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                 value={form.message}

@@ -15,7 +15,7 @@ export const ADMIN_NAV_GROUP_ORDER = [
 export const ADMIN_NAV_GROUP_DESCRIPTIONS: Record<string, string> = {
   main: "рабочий стол, сводка дня, риски и быстрые действия",
   sales: "заказы, терминал, клиенты, доставка, CRM и задачи",
-  products: "биржа, каталог, продавцы, цены, склад, медиа и импорт",
+  products: "каталог, товары, цены, склад, медиа и импорт",
   marketing: "Direct, SEO, акции, сторис, отзывы, контент и аналитика",
   finance: "деньги, расходы, платежи и финансовая картина",
   arayCms: "служебные инструменты ARAY для будущих копий и запусков",
@@ -37,7 +37,6 @@ const ADMIN_NAV_SECTIONS: Record<string, Array<{ label: string; hrefs: string[] 
   products: [
     { label: "Карточки и цены", hrefs: ["/admin/products", "/admin/products/new", "/admin/products/audit"] },
     { label: "Структура каталога", hrefs: ["/admin/categories", "/admin/product-types", "/catalog"] },
-    { label: "Продавцы и предложения", hrefs: ["/admin/suppliers"] },
     { label: "Склад / остатки", hrefs: ["/admin/inventory"] },
     { label: "Медиа и защита", hrefs: ["/admin/media", "/admin/watermark"] },
     { label: "Импорт", hrefs: ["/admin/import"] },
@@ -58,7 +57,7 @@ const ADMIN_NAV_SECTIONS: Record<string, Array<{ label: string; hrefs: string[] 
     { label: "Служебное CMS", hrefs: ["/admin/aray", "/admin/aray/partners", "/admin/aray/requisites", "/admin/aray/brand-kit", "/admin/aray/arc"] },
   ],
   settings: [
-    { label: "Витрина ПилоРус", hrefs: ["/admin/site", "/admin/site/constructor", "/admin/appearance"] },
+    { label: "Витрина ПилоРус", hrefs: ["/admin/site", "/admin/appearance"] },
     { label: "Группы и бизнес", hrefs: ["/admin/director", "/admin/business/settings", "/admin/staff"] },
     { label: "Рабочие места", hrefs: ["/admin/terminals"] },
     { label: "Система", hrefs: ["/admin/settings", "/admin/health"] },
