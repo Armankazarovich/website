@@ -1,5 +1,5 @@
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+import { recordNotificationCenterEvent } from "@/lib/notification-center";
+import { resolveTelegramCredentials } from "@/lib/telegram-config";
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   NEW: "Новый",
@@ -27,6 +27,119 @@ export const STATUS_EMOJI: Record<string, string> = {
 
 // Финальные статусы — сообщение в Telegram удаляется автоматически
 export const FINAL_STATUSES = ["CANCELLED", "DELIVERED", "COMPLETED"];
+
+type TelegramApiResult = {
+  ok: boolean;
+  messageId: string | null;
+  error: string | null;
+  raw?: unknown;
+};
+
+type TelegramOrderEventInput = {
+  id: string;
+  tenantId?: string | null;
+  orderNumber: number;
+  guestName?: string | null;
+  guestPhone?: string | null;
+  guestEmail?: string | null;
+  totalAmount: number;
+  sourceUserId?: string | null;
+  notificationSource?: string | null;
+};
+
+function getTelegramApiError(data: any, fallback: string) {
+  if (data && typeof data.description === "string" && data.description.trim()) {
+    return data.description.trim();
+  }
+  if (data && typeof data.error === "string" && data.error.trim()) {
+    return data.error.trim();
+  }
+  return fallback;
+}
+
+async function sendTelegramApi(
+  token: string,
+  method: string,
+  payload: Record<string, unknown>,
+): Promise<TelegramApiResult> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    const data = await res.json().catch(() => null);
+    const ok = Boolean(res.ok && data?.ok);
+    return {
+      ok,
+      messageId: ok && data?.result?.message_id ? String(data.result.message_id) : null,
+      error: ok ? null : getTelegramApiError(data, `Telegram API вернул ${res.status}`),
+      raw: data,
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      messageId: null,
+      error: error instanceof Error && error.name === "AbortError"
+        ? "Telegram API не ответил за 8 секунд"
+        : error instanceof Error
+          ? error.message
+          : "Telegram API недоступен",
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function recordTelegramOrderEvent(
+  order: TelegramOrderEventInput,
+  result: {
+    status: "SENT" | "FAILED";
+    error?: string | null;
+    messageId?: string | null;
+    source?: string | null;
+    fallbackUsed?: boolean;
+  },
+) {
+  try {
+    await recordNotificationCenterEvent({
+      tenantId: order.tenantId || "pilorus",
+      channel: "TELEGRAM",
+      status: result.status,
+      source: "ORDER",
+      sourceUserId: order.sourceUserId || null,
+      title: `Telegram: новый заказ #${order.orderNumber}`,
+      body:
+        result.status === "SENT"
+          ? `Уведомление о новом заказе #${order.orderNumber} отправлено в Telegram.`
+          : `Telegram не отправил уведомление о заказе #${order.orderNumber}.`,
+      recipientRole: "STAFF",
+      sentCount: result.status === "SENT" ? 1 : 0,
+      failedCount: result.status === "FAILED" ? 1 : 0,
+      error: result.error || null,
+      sentAt: result.status === "SENT" ? new Date() : null,
+      entityType: "ORDER",
+      entityId: order.id,
+      entityLabel: `Order #${order.orderNumber}`,
+      entityHref: `/admin/orders/${order.id}`,
+      metadata: {
+        eventKey: "order.created.telegram",
+        orderNumber: order.orderNumber,
+        customer: order.guestName || order.guestPhone || order.guestEmail || null,
+        totalAmount: order.totalAmount,
+        source: order.notificationSource || "order-created",
+        configSource: result.source || null,
+        telegramMessageId: result.messageId || null,
+        fallbackUsed: Boolean(result.fallbackUsed),
+      },
+    });
+  } catch (error) {
+    console.error("Telegram notification audit error:", error);
+  }
+}
 
 export const STATUS_FLOW = [
   "NEW", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_DELIVERY", "READY_PICKUP", "DELIVERED",
@@ -124,6 +237,7 @@ export function buildOrderText(
 
 export async function sendTelegramOrderNotification(order: {
   id: string;
+  tenantId?: string | null;
   orderNumber: number;
   guestName?: string | null;
   guestPhone?: string | null;
@@ -133,6 +247,8 @@ export async function sendTelegramOrderNotification(order: {
   comment?: string | null;
   totalAmount: number;
   deliveryCost?: number;
+  sourceUserId?: string | null;
+  notificationSource?: string | null;
   items: Array<{
     productName: string;
     variantSize: string;
@@ -141,38 +257,72 @@ export async function sendTelegramOrderNotification(order: {
     price: number;
   }>;
 }): Promise<string | null> {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return null;
+  const credentials = await resolveTelegramCredentials({ tenantId: order.tenantId });
+  if (!credentials.ok || !credentials.chatId) {
+    const error = credentials.ok ? "Telegram не настроен: telegram_chat_id" : credentials.error;
+    await recordTelegramOrderEvent(order, {
+      status: "FAILED",
+      error,
+      source: credentials.source,
+    });
+    return null;
+  }
 
   const text = buildOrderText(order, "NEW");
   const reply_markup = buildOrderKeyboard(order.id, "NEW");
 
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text,
-        parse_mode: "Markdown",
-        reply_markup,
-      }),
+  const markdownResult = await sendTelegramApi(credentials.token, "sendMessage", {
+    chat_id: credentials.chatId,
+    text,
+    parse_mode: "Markdown",
+    reply_markup,
+  });
+
+  if (markdownResult.ok) {
+    await recordTelegramOrderEvent(order, {
+      status: "SENT",
+      messageId: markdownResult.messageId,
+      source: credentials.source,
     });
-    const data = await res.json();
-    return data.ok ? String(data.result.message_id) : null;
-  } catch {
-    return null;
+    return markdownResult.messageId;
   }
+
+  const plainResult = await sendTelegramApi(credentials.token, "sendMessage", {
+    chat_id: credentials.chatId,
+    text,
+    reply_markup,
+  });
+
+  if (plainResult.ok) {
+    await recordTelegramOrderEvent(order, {
+      status: "SENT",
+      messageId: plainResult.messageId,
+      source: credentials.source,
+      fallbackUsed: true,
+    });
+    return plainResult.messageId;
+  }
+
+  await recordTelegramOrderEvent(order, {
+    status: "FAILED",
+    error: plainResult.error || markdownResult.error || "Telegram не принял сообщение",
+    source: credentials.source,
+    fallbackUsed: true,
+  });
+
+  return null;
 }
 
 // Удалить сообщение из Telegram группы (вызывается при финальных статусах)
 export async function deleteTelegramMessage(messageId: string): Promise<void> {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+  const credentials = await resolveTelegramCredentials();
+  if (!credentials.ok || !credentials.chatId) return;
   try {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`, {
+    await fetch(`https://api.telegram.org/bot${credentials.token}/deleteMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
+        chat_id: credentials.chatId,
         message_id: Number(messageId),
       }),
     });
@@ -242,13 +392,15 @@ export function buildStaffKeyboard(userId: string) {
 
 export async function sendTelegramStatusUpdate(order: {
   id: string;
+  tenantId?: string | null;
   orderNumber: number;
   guestName?: string | null;
   status: string;
   totalAmount: number;
   telegramMessageId?: string | null; // если есть — редактируем, иначе новое сообщение
 }) {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+  const credentials = await resolveTelegramCredentials({ tenantId: order.tenantId });
+  if (!credentials.ok || !credentials.chatId) return;
 
   const emoji = STATUS_EMOJI[order.status] || "🔄";
   const label = ORDER_STATUS_LABELS[order.status] || order.status;
@@ -268,11 +420,11 @@ export async function sendTelegramStatusUpdate(order: {
       `✏️ _Изменено в ${timeStr}_`,
     ].join("\n");
 
-    const editRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+    const editRes = await fetch(`https://api.telegram.org/bot${credentials.token}/editMessageText`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
+        chat_id: credentials.chatId,
         message_id: Number(order.telegramMessageId),
         text: editText,
         parse_mode: "Markdown",
@@ -296,11 +448,11 @@ export async function sendTelegramStatusUpdate(order: {
     `🕐 _${timeStr}_`,
   ].join("\n");
 
-  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+  await fetch(`https://api.telegram.org/bot${credentials.token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
+      chat_id: credentials.chatId,
       text,
       parse_mode: "Markdown",
       reply_markup,
@@ -310,12 +462,14 @@ export async function sendTelegramStatusUpdate(order: {
 
 export async function sendTelegramOrderEdited(order: {
   id: string;
+  tenantId?: string | null;
   orderNumber: number;
   guestName?: string | null;
   totalAmount: number;
   deliveryCost?: number;
 }) {
-  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) return;
+  const credentials = await resolveTelegramCredentials({ tenantId: order.tenantId });
+  if (!credentials.ok || !credentials.chatId) return;
   const deliveryLine = order.deliveryCost && order.deliveryCost > 0
     ? `\nДоставка: ${order.deliveryCost.toLocaleString("ru-RU")} ₽`
     : "";
@@ -333,11 +487,11 @@ export async function sendTelegramOrderEdited(order: {
     ]],
   };
 
-  await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+  await fetch(`https://api.telegram.org/bot${credentials.token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
+      chat_id: credentials.chatId,
       text,
       parse_mode: "Markdown",
       reply_markup,
@@ -360,8 +514,9 @@ export async function handleTelegramCallback(callbackQuery: any) {
   if (!orderId || !newStatus) return null;
 
   // Answer callback query to remove loading state
-  if (TELEGRAM_BOT_TOKEN) {
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+  const credentials = await resolveTelegramCredentials({ requireChatId: false });
+  if (credentials.ok) {
+    await fetch(`https://api.telegram.org/bot${credentials.token}/answerCallbackQuery`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ callback_query_id: callbackQuery.id }),

@@ -289,6 +289,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   if (status && ORDER_STATUS_NOTIFICATION_LABELS[status]) {
     sendTelegramStatusUpdate({
       id: order.id,
+      tenantId,
       orderNumber: order.orderNumber,
       guestName: order.guestName,
       status,
@@ -334,6 +335,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
     sendTelegramOrderEdited({
       id: order.id,
+      tenantId,
       orderNumber: order.orderNumber,
       guestName: order.guestName,
       totalAmount: Number(order.totalAmount),

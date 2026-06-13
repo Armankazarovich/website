@@ -6,6 +6,7 @@ import os from "os";
 import nodemailer from "nodemailer";
 import { getSiteSetting } from "@/lib/tenant-settings";
 import { getCurrentTenantId } from "@/lib/tenant-context";
+import { resolveTelegramCredentials, maskTelegramChatId } from "@/lib/telegram-config";
 
 async function checkAdmin() {
   const session = await auth();
@@ -361,22 +362,21 @@ export async function GET() {
 
   // 11. Telegram bot
   try {
-    const tgToken = process.env.TELEGRAM_BOT_TOKEN;
-    const tgChat = process.env.TELEGRAM_CHAT_ID;
-    if (!tgToken || !tgChat) {
+    const telegramCredentials = await resolveTelegramCredentials({ tenantId });
+    if (!telegramCredentials.ok || !telegramCredentials.chatId) {
       checks.push({
         id: "telegram",
         name: "Telegram-бот",
         category: "notifications",
         status: "warn",
         message: "Бот не настроен — уведомления в Telegram не работают",
-        fix: "Уведомления → настройте TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID в .env",
+        fix: "Уведомления → укажите токен бота и chat_id в настройках Telegram",
         detail:
           "Telegram-бот отправляет уведомления о новых заказах и позволяет менять статусы",
       });
     } else {
       const botRes = await fetch(
-        `https://api.telegram.org/bot${tgToken}/getMe`,
+        `https://api.telegram.org/bot${telegramCredentials.token}/getMe`,
         {
           signal: AbortSignal.timeout(5000),
         },
@@ -393,10 +393,10 @@ export async function GET() {
           ? `Бот @${botRes.result?.username} активен`
           : "Не удалось подключиться к боту",
         fix: !ok
-          ? "Проверьте правильность TELEGRAM_BOT_TOKEN — создайте нового бота у @BotFather"
+          ? "Проверьте правильность токена — создайте нового бота у @BotFather"
           : undefined,
         detail: ok
-          ? `Бот: @${botRes.result?.username} · Chat ID: ${tgChat}`
+          ? `Бот: @${botRes.result?.username} · Chat ID: ${maskTelegramChatId(telegramCredentials.chatId)}`
           : "Бот может быть заблокирован или токен неверный",
       });
     }

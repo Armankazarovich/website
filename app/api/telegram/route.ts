@@ -5,8 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { handleTelegramCallback, buildOrderText, buildOrderKeyboard, buildHelpMessages, ORDER_STATUS_LABELS, FINAL_STATUSES } from "@/lib/telegram";
 import { resolveOrderStatusCustomerEmail, sendTrackedOrderStatusEmail } from "@/lib/order-status-notifications";
 import { sendPushToUser } from "@/lib/push";
-
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+import { resolveTelegramCredentials } from "@/lib/telegram-config";
 
 const statusLabels: Record<string, string> = {
   CONFIRMED: "Ваш заказ подтверждён",
@@ -33,6 +32,8 @@ const statusDescriptions: Record<string, string> = {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    const telegramCredentials = await resolveTelegramCredentials({ requireChatId: false });
+    const telegramBotToken = telegramCredentials.ok ? telegramCredentials.token : null;
 
     // Handle /start and /help commands
     if (body.message?.text) {
@@ -40,8 +41,8 @@ export async function POST(req: NextRequest) {
 
       if (msgText === "/start" || msgText.startsWith("/start@")) {
         const chatId = body.message.chat.id;
-        if (TELEGRAM_BOT_TOKEN) {
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        if (telegramBotToken) {
+          await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -64,7 +65,8 @@ export async function POST(req: NextRequest) {
         const chatId = body.message.chat.id;
         const messages = buildHelpMessages();
         for (const helpMsg of messages) {
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          if (!telegramBotToken) break;
+          await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -84,20 +86,20 @@ export async function POST(req: NextRequest) {
       // Handle help button
       if (data === "help") {
         const chatId = body.callback_query.message?.chat.id;
-        if (chatId && TELEGRAM_BOT_TOKEN) {
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+        if (chatId && telegramBotToken) {
+          await fetch(`https://api.telegram.org/bot${telegramBotToken}/answerCallbackQuery`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ callback_query_id: body.callback_query.id }),
           });
 
           const [msg1, msg2] = buildHelpMessages();
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ chat_id: chatId, text: msg1, parse_mode: "Markdown" }),
           });
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -122,7 +124,7 @@ export async function POST(req: NextRequest) {
         const userId = parts[1];
         const action = parts[2];
 
-        if (userId && action && TELEGRAM_BOT_TOKEN) {
+        if (userId && action && telegramBotToken) {
           const newStatus = action === "approve" ? "ACTIVE" : "SUSPENDED";
 
           await prisma.user.update({
@@ -131,7 +133,7 @@ export async function POST(req: NextRequest) {
           });
 
           // Answer callback with alert
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/answerCallbackQuery`, {
+          await fetch(`https://api.telegram.org/bot${telegramBotToken}/answerCallbackQuery`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -152,7 +154,7 @@ export async function POST(req: NextRequest) {
               ? `\n\n✅ *Одобрен* — ${changerName}`
               : `\n\n❌ *Отклонён* — ${changerName}`;
 
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+            await fetch(`https://api.telegram.org/bot${telegramBotToken}/editMessageText`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -221,13 +223,13 @@ export async function POST(req: NextRequest) {
           ? `@${changer.username}`
           : [changer?.first_name, changer?.last_name].filter(Boolean).join(" ") || "Менеджер";
 
-        if (body.callback_query.message && TELEGRAM_BOT_TOKEN) {
+        if (body.callback_query.message && telegramBotToken) {
           const msgChatId = body.callback_query.message.chat.id;
           const msgId = body.callback_query.message.message_id;
 
           if (isFinal) {
             // Финальный статус — удаляем сообщение из группы
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`, {
+            await fetch(`https://api.telegram.org/bot${telegramBotToken}/deleteMessage`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ chat_id: msgChatId, message_id: msgId }),
@@ -235,7 +237,7 @@ export async function POST(req: NextRequest) {
 
             // Также удаляем сохранённое сообщение (если отличается от текущего)
             if (telegramMsgId && String(telegramMsgId) !== String(msgId)) {
-              await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage`, {
+              await fetch(`https://api.telegram.org/bot${telegramBotToken}/deleteMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ chat_id: msgChatId, message_id: Number(telegramMsgId) }),
@@ -264,7 +266,7 @@ export async function POST(req: NextRequest) {
             const text = buildOrderText(orderForText, result.newStatus, changerName);
             const reply_markup = buildOrderKeyboard(order.id, result.newStatus);
 
-            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/editMessageText`, {
+            await fetch(`https://api.telegram.org/bot${telegramBotToken}/editMessageText`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({

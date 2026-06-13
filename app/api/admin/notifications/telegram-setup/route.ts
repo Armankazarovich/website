@@ -3,8 +3,8 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { requireArayModuleAccess } from "@/lib/aray-module-auth";
+import { resolveTelegramCredentials, maskTelegramChatId } from "@/lib/telegram-config";
 
-const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const SITE_URL = process.env.NEXTAUTH_URL || "https://pilo-rus.ru";
 
 async function checkAdmin() {
@@ -23,15 +23,18 @@ export async function GET() {
   const access = await checkAdmin();
   if (!access.authorized) return access.response;
 
-  if (!TOKEN) {
+  const credentials = await resolveTelegramCredentials({ requireChatId: false });
+  if (!credentials.ok) {
     return NextResponse.json({
       configured: false,
-      error: "TELEGRAM_BOT_TOKEN не установлен в переменных окружения",
+      error: credentials.error,
+      source: credentials.source,
+      missing: credentials.missing,
     });
   }
 
   try {
-    const res = await fetch(`https://api.telegram.org/bot${TOKEN}/getWebhookInfo`);
+    const res = await fetch(`https://api.telegram.org/bot${credentials.token}/getWebhookInfo`);
     const data = await res.json();
 
     if (!data.ok) {
@@ -65,45 +68,61 @@ export async function POST(req: NextRequest) {
   const access = await checkAdmin();
   if (!access.authorized) return access.response;
 
-  if (!TOKEN) {
-    return NextResponse.json({ ok: false, error: "TELEGRAM_BOT_TOKEN не установлен" }, { status: 400 });
-  }
-
   const body = await req.json().catch(() => ({}));
   const action = body.action || "setup";
 
   if (action === "test") {
     // Send a test message to the chat
-    const chatId = process.env.TELEGRAM_CHAT_ID;
-    if (!chatId) {
-      return NextResponse.json({ ok: false, error: "TELEGRAM_CHAT_ID не установлен" }, { status: 400 });
+    const credentials = await resolveTelegramCredentials();
+    if (!credentials.ok || !credentials.chatId) {
+      const error = credentials.ok ? "Telegram не настроен: telegram_chat_id" : credentials.error;
+      const missing = credentials.ok ? ["telegram_chat_id"] : credentials.missing;
+      return NextResponse.json({
+        ok: false,
+        error,
+        source: credentials.source,
+        missing,
+      }, { status: 400 });
     }
-    const res = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    const res = await fetch(`https://api.telegram.org/bot${credentials.token}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: chatId,
-        text: `✅ *Тест соединения ПилоРус*\n\nBот подключён и работает корректно\\!\nВремя: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`,
-        parse_mode: "MarkdownV2",
+        chat_id: credentials.chatId,
+        text: `Тест соединения ПилоРус\n\nБот подключён и работает корректно.\nВремя: ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })}`,
       }),
     });
     const data = await res.json();
-    return NextResponse.json({ ok: data.ok, error: data.description });
+    return NextResponse.json({
+      ok: data.ok,
+      error: data.description,
+      source: credentials.source,
+      chatId: maskTelegramChatId(credentials.chatId),
+    });
   }
 
   // Setup webhook
   const webhookUrl = `${SITE_URL}/api/telegram`;
+  const credentials = await resolveTelegramCredentials({ requireChatId: false });
+  if (!credentials.ok) {
+    return NextResponse.json({
+      ok: false,
+      error: credentials.error,
+      source: credentials.source,
+      missing: credentials.missing,
+    }, { status: 400 });
+  }
 
   try {
     // Delete old webhook first
-    await fetch(`https://api.telegram.org/bot${TOKEN}/deleteWebhook`, {
+    await fetch(`https://api.telegram.org/bot${credentials.token}/deleteWebhook`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ drop_pending_updates: false }),
     });
 
     // Set new webhook
-    const res = await fetch(`https://api.telegram.org/bot${TOKEN}/setWebhook`, {
+    const res = await fetch(`https://api.telegram.org/bot${credentials.token}/setWebhook`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

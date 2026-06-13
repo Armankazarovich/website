@@ -387,8 +387,9 @@ export async function POST(req: NextRequest) {
     }).catch(console.error);
 
     // Telegram notification — сохраняем message_id для авто-удаления при финальных статусах
-    sendTelegramOrderNotification({
+    const telegramMessageId = await sendTelegramOrderNotification({
       id: order.id,
+      tenantId,
       orderNumber: order.orderNumber,
       guestName: order.guestName,
       guestPhone: order.guestPhone,
@@ -397,12 +398,12 @@ export async function POST(req: NextRequest) {
       paymentMethod: order.paymentMethod,
       comment: order.comment,
       totalAmount: Number(order.totalAmount),
+      notificationSource: "public-checkout",
       items: orderItems,
-    }).then((msgId) => {
-      if (msgId) {
-        prisma.order.update({ where: { id: order.id }, data: { telegramMessageId: msgId } }).catch(console.error);
-      }
-    }).catch(console.error);
+    });
+    if (telegramMessageId) {
+      await prisma.order.update({ where: { id: order.id }, data: { telegramMessageId } });
+    }
 
     // 📜 Activity log — PLACE_ORDER (для раздела «История» в кабинете клиента)
     if (userId) {

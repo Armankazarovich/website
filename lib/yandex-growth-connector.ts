@@ -13,7 +13,12 @@ import {
   getYandexMetrikaStatus,
   type ArayMetrikaGoals,
 } from "@/lib/yandex-metrika";
-import { getYandexUnifiedOAuthApp } from "@/lib/yandex-oauth-app";
+import {
+  YANDEX_GROWTH_OAUTH_SCOPES,
+  getYandexUnifiedOAuthApp,
+  yandexUnifiedOAuthRedirectUri,
+} from "@/lib/yandex-oauth-app";
+import { yandexOAuthCallbackUri } from "@/lib/yandex-oauth-redirect";
 
 type SettingsMap = Record<string, string>;
 
@@ -66,6 +71,33 @@ function connectorSiteName(settings: SettingsMap) {
 
 function hasUnifiedYandexOAuthApp() {
   return Boolean(getYandexUnifiedOAuthApp());
+}
+
+function buildYandexOAuthSetup(req: Request) {
+  const redirectUris = Array.from(
+    new Set([
+      yandexUnifiedOAuthRedirectUri(req),
+      yandexOAuthCallbackUri(
+        req,
+        "YANDEX_DIRECT_REDIRECT_URI",
+        "/api/admin/direct/oauth/callback",
+      ),
+      yandexOAuthCallbackUri(
+        req,
+        "YANDEX_METRIKA_REDIRECT_URI",
+        "/api/admin/metrika/oauth/callback",
+      ),
+    ]),
+  );
+
+  return {
+    appReady: hasUnifiedYandexOAuthApp(),
+    scopes: [...YANDEX_GROWTH_OAUTH_SCOPES],
+    redirectUris,
+    hostnameHint: "Поле Suggest Hostname в Яндексе можно оставить пустым.",
+    primaryButton: "Подключить Яндекс",
+    fallback: "Отдельные входы Direct и Метрики нужны только если единый вход не выдал все права.",
+  };
 }
 
 function metrikaGoalsReady(goals: ArayMetrikaGoals) {
@@ -257,6 +289,7 @@ export async function buildYandexGrowthConnectorOverview(req: Request) {
       yandexBusinessUrl: "https://business.yandex.ru/",
       promotionUrl: "/admin/promotion",
     },
+    oauthSetup: buildYandexOAuthSetup(req),
     direct,
     metrika: {
       ...metrika,

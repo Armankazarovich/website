@@ -5,10 +5,12 @@ import { useEffect, useMemo, useState } from "react";
 import {
   CheckCircle2,
   CircleDashed,
+  Clipboard,
   ExternalLink,
   KeyRound,
   Loader2,
   RefreshCw,
+  ShieldCheck,
   Wand2,
 } from "lucide-react";
 
@@ -35,6 +37,14 @@ type YandexGrowthOverview = {
     googleConnectUrl: string;
     yandexBusinessUrl: string;
     promotionUrl: string;
+  };
+  oauthSetup: {
+    appReady: boolean;
+    scopes: string[];
+    redirectUris: string[];
+    hostnameHint: string;
+    primaryButton: string;
+    fallback: string;
   };
   direct: {
     configured: boolean;
@@ -80,6 +90,7 @@ export function YandexGrowthConnectorPanel() {
     message: "",
     error: "",
   });
+  const [copiedSetup, setCopiedSetup] = useState(false);
 
   const detectedCounterId = useMemo(() => {
     return overview?.metrika.storedCounterId || overview?.metrika.selectedCounterId || overview?.metrika.counters[0]?.id || null;
@@ -138,6 +149,28 @@ export function YandexGrowthConnectorPanel() {
     void runAction({ ...payload, confirm: true });
   }
 
+  async function copyOAuthSetup() {
+    if (!overview?.oauthSetup) return;
+    const text = [
+      "Yandex OAuth для pilo-rus.ru",
+      "",
+      "Платформа: Веб-сервисы",
+      "Redirect URI:",
+      ...overview.oauthSetup.redirectUris.map((uri) => `- ${uri}`),
+      "",
+      `Scopes: ${overview.oauthSetup.scopes.join(" ")}`,
+      overview.oauthSetup.hostnameHint,
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedSetup(true);
+      window.setTimeout(() => setCopiedSetup(false), 2200);
+    } catch {
+      setCopiedSetup(false);
+    }
+  }
+
   useEffect(() => {
     void loadOverview();
   }, []);
@@ -182,20 +215,31 @@ export function YandexGrowthConnectorPanel() {
           {action.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
           {autoPrepareLabel}
         </button>
-        <a
-          href={overview?.actions.directOauthUrl || "/api/admin/direct/oauth/start"}
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-        >
-          Direct отдельно
-          <ExternalLink className="h-4 w-4" />
-        </a>
-        <a
-          href={overview?.actions.metrikaOauthUrl || "/api/admin/metrika/oauth/start"}
-          className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
-        >
-          Метрика отдельно
-          <ExternalLink className="h-4 w-4" />
-        </a>
+        <details className="group">
+          <summary className="inline-flex min-h-10 cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary">
+            Запасные входы
+            <ExternalLink className="h-4 w-4" />
+          </summary>
+          <div className="mt-2 flex flex-wrap gap-2 rounded-xl border border-border bg-card p-2">
+            <a
+              href={overview?.actions.directOauthUrl || "/api/admin/direct/oauth/start"}
+              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-semibold hover:border-primary/40 hover:text-primary"
+            >
+              Direct отдельно
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            <a
+              href={overview?.actions.metrikaOauthUrl || "/api/admin/metrika/oauth/start"}
+              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-semibold hover:border-primary/40 hover:text-primary"
+            >
+              Метрика отдельно
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+            <p className="basis-full px-1 text-xs leading-relaxed text-muted-foreground">
+              {overview?.oauthSetup.fallback || "Используйте только если единый вход Яндекса не выдал все права."}
+            </p>
+          </div>
+        </details>
         <a
           href={overview?.actions.googleConnectUrl || "/admin/aray/connectors?provider=google"}
           className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
@@ -245,6 +289,59 @@ export function YandexGrowthConnectorPanel() {
           {action.error || action.message}
         </div>
       )}
+
+      {overview?.oauthSetup ? (
+        <div className="mt-4 rounded-xl border border-border bg-card p-3 md:p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-sm font-semibold">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                Что должно быть в OAuth-приложении Яндекса
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                Один раз создаём веб-приложение Яндекса с правами Direct и Метрики. После этого кнопка
+                «Подключить Яндекс» отдаёт доступы в админку без передачи пароля.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={copyOAuthSetup}
+              className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-xl border border-border bg-background px-3 text-xs font-semibold hover:border-primary/40 hover:text-primary"
+            >
+              <Clipboard className="h-3.5 w-3.5" />
+              {copiedSetup ? "Скопировано" : "Скопировать"}
+            </button>
+          </div>
+          <div className="mt-3 grid gap-3 lg:grid-cols-[1.4fr_0.8fr]">
+            <div className="space-y-2">
+              {overview.oauthSetup.redirectUris.map((uri) => (
+                <div
+                  key={uri}
+                  className="break-all rounded-xl border border-border bg-background px-3 py-2 font-mono text-xs text-muted-foreground"
+                >
+                  {uri}
+                </div>
+              ))}
+            </div>
+            <div className="rounded-xl border border-border bg-background px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+              <div className="font-semibold text-foreground">
+                {overview.oauthSetup.appReady ? "OAuth ID и секрет найдены" : "Нужно добавить OAuth ID и секрет на сервер"}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {overview.oauthSetup.scopes.map((scope) => (
+                  <span
+                    key={scope}
+                    className="rounded-full border border-primary/25 bg-primary/10 px-2 py-1 font-mono text-[11px] text-primary"
+                  >
+                    {scope}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2">{overview.oauthSetup.hostnameHint}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {(overview?.readiness.checklist || []).map((item) => (

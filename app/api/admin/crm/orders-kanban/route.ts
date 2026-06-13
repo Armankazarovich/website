@@ -206,6 +206,7 @@ export async function PATCH(req: NextRequest) {
   // 1. Telegram администраторам (редактируем существующее сообщение / создаём новое)
   sendTelegramStatusUpdate({
     id: order.id,
+    tenantId,
     orderNumber: order.orderNumber,
     guestName: order.guestName,
     status,

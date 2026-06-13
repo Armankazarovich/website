@@ -297,6 +297,14 @@ function assertArayConnectorsAreOperationalFirst() {
       yandexActionErrorIndex > yandexOverviewRefreshIndex,
     "Yandex connector actions must refresh real status even when an action stops on a missing prerequisite",
   );
+  assert(
+    yandexPanelSource.includes("Что должно быть в OAuth-приложении Яндекса") &&
+      yandexPanelSource.includes("overview.oauthSetup.redirectUris") &&
+      yandexPanelSource.includes("overview.oauthSetup.scopes") &&
+      yandexPanelSource.includes("Запасные входы") &&
+      yandexPanelSource.indexOf("Запасные входы") < yandexPanelSource.indexOf("Direct отдельно"),
+    "Yandex connector panel must lead with one unified OAuth path and keep separate Direct/Metrika buttons as fallback only",
+  );
 }
 
 function assertArayWorkspaceResponsiveStandard() {
