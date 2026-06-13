@@ -6,9 +6,7 @@ const sharp = require("sharp");
 const root = path.resolve(__dirname, "..");
 const publicDir = path.join(root, "public");
 const iconsDir = path.join(publicDir, "icons");
-const sourceLogo = fs.existsSync(path.join(publicDir, "logo-icon.png"))
-  ? path.join(publicDir, "logo-icon.png")
-  : path.join(publicDir, "logo.png");
+const sourceLogo = path.join(publicDir, "logo.png");
 const iconSizes = [32, 72, 96, 128, 144, 152, 192, 384, 512];
 const faviconSizes = [16, 32, 48];
 

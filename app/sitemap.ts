@@ -4,22 +4,23 @@ import { getPublicProductsFilter } from "@/lib/product-seo";
 import { getManagedProductTypes, getProductTypeSettings } from "@/lib/product-type-settings";
 
 const BASE = "https://pilo-rus.ru";
+const LAUNCH_LAST_MODIFIED = new Date("2026-06-13T00:00:00.000Z");
 
 // Keep sitemap fresh when managers publish products without forcing a deploy.
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
-    { url: BASE,                    priority: 1.0, changeFrequency: "weekly"  },
-    { url: `${BASE}/catalog`,       priority: 0.9, changeFrequency: "daily"   },
-    { url: `${BASE}/calculator`,    priority: 0.8, changeFrequency: "monthly" },
-    { url: `${BASE}/news`,          priority: 0.8, changeFrequency: "weekly"  },
-    { url: `${BASE}/services`,      priority: 0.8, changeFrequency: "monthly" },
-    { url: `${BASE}/about`,         priority: 0.6, changeFrequency: "monthly" },
-    { url: `${BASE}/delivery`,      priority: 0.7, changeFrequency: "monthly" },
-    { url: `${BASE}/contacts`,      priority: 0.7, changeFrequency: "monthly" },
-    { url: `${BASE}/promotions`,    priority: 0.6, changeFrequency: "weekly"  },
-    { url: `${BASE}/terms`,         priority: 0.3, changeFrequency: "yearly"  },
+    { url: BASE,                    lastModified: LAUNCH_LAST_MODIFIED, priority: 1.0, changeFrequency: "weekly"  },
+    { url: `${BASE}/catalog`,       lastModified: LAUNCH_LAST_MODIFIED, priority: 0.9, changeFrequency: "daily"   },
+    { url: `${BASE}/calculator`,    lastModified: LAUNCH_LAST_MODIFIED, priority: 0.8, changeFrequency: "monthly" },
+    { url: `${BASE}/news`,          lastModified: LAUNCH_LAST_MODIFIED, priority: 0.8, changeFrequency: "weekly"  },
+    { url: `${BASE}/services`,      lastModified: LAUNCH_LAST_MODIFIED, priority: 0.8, changeFrequency: "monthly" },
+    { url: `${BASE}/about`,         lastModified: LAUNCH_LAST_MODIFIED, priority: 0.6, changeFrequency: "monthly" },
+    { url: `${BASE}/delivery`,      lastModified: LAUNCH_LAST_MODIFIED, priority: 0.7, changeFrequency: "monthly" },
+    { url: `${BASE}/contacts`,      lastModified: LAUNCH_LAST_MODIFIED, priority: 0.7, changeFrequency: "monthly" },
+    { url: `${BASE}/promotions`,    lastModified: LAUNCH_LAST_MODIFIED, priority: 0.6, changeFrequency: "weekly"  },
+    { url: `${BASE}/terms`,         lastModified: LAUNCH_LAST_MODIFIED, priority: 0.3, changeFrequency: "yearly"  },
   ];
 
   const [categories, products, posts, services, productTypeSettings] = await Promise.all([

@@ -70,10 +70,11 @@ const checks = [
   },
   {
     file: "prisma/data-migrate.ts",
-    label: "production data migration preserves Direct public URL and region",
+    label: "production data migration forces Direct public URL and region",
     patterns: [
-      "upsertPublicUrlIfBlankOrLocal(\"yandex_direct_public_url\", \"https://pilo-rus.ru\")",
-      "upsertSettingIfBlank(\"yandex_direct_region_ids\", \"1\")",
+      "upsertSetting(\"yandex_direct_public_url\", \"https://pilo-rus.ru\")",
+      "upsertSetting(\"yandex_direct_region_ids\", \"1\")",
+      "upsertTenantLaunchSettings",
     ],
   },
 ];

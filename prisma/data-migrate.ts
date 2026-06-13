@@ -4,7 +4,7 @@
  * Все операции проверяют текущее состояние перед изменением — безопасно запускать многократно.
  */
 
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { existsSync } from "fs";
 import { join } from "path";
 const prisma = new PrismaClient();
@@ -18,22 +18,25 @@ async function upsertSetting(key: string, value: string) {
   });
 }
 
-async function upsertSettingIfBlank(key: string, value: string) {
-  const existing = await prisma.siteSettings.findUnique({
-    where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key } },
-  });
-  if (!existing || !existing.value.trim()) {
-    await upsertSetting(key, value);
-  }
-}
+async function upsertTenantLaunchSettings(patch: Record<string, string>) {
+  const tenant = await prisma.tenant.findUnique({ where: { slug: DEFAULT_TENANT_ID } });
+  if (!tenant) return;
+  const currentSettings =
+    tenant.settings && typeof tenant.settings === "object" && !Array.isArray(tenant.settings)
+      ? (tenant.settings as Record<string, unknown>)
+      : {};
 
-async function upsertPublicUrlIfBlankOrLocal(key: string, value: string) {
-  const existing = await prisma.siteSettings.findUnique({
-    where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key } },
+  await prisma.tenant.update({
+    where: { slug: DEFAULT_TENANT_ID },
+    data: {
+      domain: "pilo-rus.ru",
+      logoUrl: "/logo.png",
+      settings: {
+        ...currentSettings,
+        ...patch,
+      } as Prisma.InputJsonObject,
+    },
   });
-  if (!existing || !existing.value.trim() || /localhost|127\.0\.0\.1/i.test(existing.value)) {
-    await upsertSetting(key, value);
-  }
 }
 
 async function ensureLaunchPromotion({
@@ -250,13 +253,28 @@ async function main() {
 
   // 2026-06-13: PiloRus launch analytics and Direct base settings.
   await upsertSetting("yandex_metrika_id", "109821205");
-  await upsertPublicUrlIfBlankOrLocal("site_url", "https://pilo-rus.ru");
-  await upsertPublicUrlIfBlankOrLocal("public_site_url", "https://pilo-rus.ru");
-  await upsertPublicUrlIfBlankOrLocal("direct_public_url", "https://pilo-rus.ru");
-  await upsertPublicUrlIfBlankOrLocal("yandex_direct_public_url", "https://pilo-rus.ru");
-  await upsertSettingIfBlank("direct_region_ids", "1");
-  await upsertSettingIfBlank("yandex_direct_region_ids", "1");
+  await upsertSetting("site_url", "https://pilo-rus.ru");
+  await upsertSetting("public_site_url", "https://pilo-rus.ru");
+  await upsertSetting("direct_public_url", "https://pilo-rus.ru");
+  await upsertSetting("yandex_direct_public_url", "https://pilo-rus.ru");
+  await upsertSetting("direct_region_ids", "1");
+  await upsertSetting("yandex_direct_region_ids", "1");
+  await upsertSetting("logo_url", "/logo.png");
+  await upsertSetting("site_logo_url", "/logo.png");
+  await upsertSetting("pwa_logo_url", "/logo.png");
   await upsertSetting("yandex_verification", "f585429020ab990b");
+  await upsertTenantLaunchSettings({
+    site_url: "https://pilo-rus.ru",
+    public_site_url: "https://pilo-rus.ru",
+    direct_public_url: "https://pilo-rus.ru",
+    yandex_direct_public_url: "https://pilo-rus.ru",
+    direct_region_ids: "1",
+    yandex_direct_region_ids: "1",
+    yandex_metrika_id: "109821205",
+    logo_url: "/logo.png",
+    site_logo_url: "/logo.png",
+    pwa_logo_url: "/logo.png",
+  });
 
   await ensureLaunchPromotion({
     title: "Скидки при большом объеме",
@@ -277,6 +295,11 @@ async function main() {
     title: "Условия для повторных заказов",
     description:
       "Для клиентов, которые возвращаются за материалами, сохраняем историю заявок и быстрее готовим расчет. По повторным закупкам можно обсудить индивидуальные условия.",
+  });
+  await ensureLaunchPromotion({
+    title: "Расчет спецификации под объект",
+    description:
+      "Пришлите список материалов, чертеж или размеры объекта — менеджер поможет собрать спецификацию, проверить объем и подготовить понятное предложение по пиломатериалам и доставке.",
   });
 
   // ── 2026-03-29: Изменения по запросу клиента ─────────────────────────────

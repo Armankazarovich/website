@@ -6,7 +6,7 @@ import { clampArayPwaIconSize } from "@/lib/aray-pwa-icon";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
 
-const DEFAULT_SITE_LOGO = "/icons/icon-512x512.png";
+const DEFAULT_SITE_LOGO = "/logo.png";
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 const PILORUS_PWA_APPS = new Set(["", "pilorus-site", "pilorus-catalog"]);
 const PILORUS_HOST_PARTS = ["pilo-rus", "pilorus"];
@@ -71,7 +71,6 @@ async function resolveSiteLogoUrl(req: NextRequest) {
 function normalizePwaLogoUrl(value: unknown) {
   const logoUrl = cleanLogoUrl(value);
   if (!logoUrl) return "";
-  if (logoUrl === "/logo.png") return DEFAULT_SITE_LOGO;
   return logoUrl;
 }
 

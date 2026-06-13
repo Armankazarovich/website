@@ -166,14 +166,13 @@ const levels = [
     name: "L3 Mobile and PWA",
     goal: "Installed app identity, mobile header, and launch behavior stay simple and stable.",
     checks: [
-      {
-        name: "PWA icon uses clean PNG",
-        ok: includesAll("lib/site-pwa-icon.ts", [
-          'DEFAULT_SITE_LOGO = "/icons/icon-512x512.png"',
-          'if (logoUrl === "/logo.png") return DEFAULT_SITE_LOGO',
-        ]),
-        detail: "PiloRus app icon must not become a generated colored tile.",
-      },
+        {
+          name: "PWA icon uses public header logo",
+          ok:
+            includesAll("lib/site-pwa-icon.ts", ['DEFAULT_SITE_LOGO = "/logo.png"']) &&
+            !read("lib/site-pwa-icon.ts").includes('if (logoUrl === "/logo.png") return DEFAULT_SITE_LOGO'),
+          detail: "PiloRus app icon must stay aligned with the same logo used in the public header.",
+        },
       {
         name: "PWA install launcher remains simple",
         ok: includesAll("components/store/pwa-install.tsx", [

@@ -187,11 +187,11 @@ check(
 const sitePwaIcon = read("lib/site-pwa-icon.ts");
 check(
   "PWA site icon uses clean PNG source",
-  sitePwaIcon.includes('const DEFAULT_SITE_LOGO = "/icons/icon-512x512.png"') &&
-    sitePwaIcon.includes('if (logoUrl === "/logo.png") return DEFAULT_SITE_LOGO') &&
+    sitePwaIcon.includes('const DEFAULT_SITE_LOGO = "/logo.png"') &&
+      !sitePwaIcon.includes('if (logoUrl === "/logo.png") return DEFAULT_SITE_LOGO') &&
     sitePwaIcon.includes("PILORUS_PWA_APPS") &&
     !sitePwaIcon.includes("background: { r: 82"),
-  "PiloRus PWA icon should be the prepared PNG, not a generated colored tile.",
+  "PiloRus PWA icon should use the same logo source as the public header.",
 );
 check(
   "PWA icon guard is wired",
@@ -219,7 +219,7 @@ check(
 const pwaContext = read("lib/pwa-install-context.ts");
 check(
   "PWA icon cache version is bumped",
-  /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-pilorus-compact-logo-20260613"/.test(pwaContext),
+  /PWA_SITE_ICON_VERSION\s*=\s*"site-brand-pilorus-header-logo-20260613"/.test(pwaContext),
   "Mobile PWA should request the fresh icon version after logo changes.",
 );
 

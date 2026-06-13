@@ -134,7 +134,7 @@ async function getData() {
         OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
       },
       orderBy: { createdAt: "asc" },
-      take: 2,
+      take: 3,
     }),
     prisma.review.findMany({
       where: { approved: true },
