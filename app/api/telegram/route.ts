@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { handleTelegramCallback, buildOrderText, buildOrderKeyboard, buildHelpMessages, ORDER_STATUS_LABELS, FINAL_STATUSES } from "@/lib/telegram";
-import { sendOrderStatusEmail } from "@/lib/email";
+import { resolveOrderStatusCustomerEmail, sendTrackedOrderStatusEmail } from "@/lib/order-status-notifications";
 import { sendPushToUser } from "@/lib/push";
 
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -193,15 +193,15 @@ export async function POST(req: NextRequest) {
           include: { items: true },
         });
 
-        // Email клиенту о смене статуса
-        if (order.guestEmail && statusLabels[result.newStatus]) {
-          sendOrderStatusEmail(order.guestEmail, {
-            orderNumber: order.orderNumber,
+        if (statusLabels[result.newStatus]) {
+          const email = await resolveOrderStatusCustomerEmail(order);
+          sendTrackedOrderStatusEmail({
+            tenantId: order.tenantId || "pilorus",
+            actorId: null,
+            order,
             status: result.newStatus,
-            statusLabel: statusLabels[result.newStatus],
-            statusDescription: statusDescriptions[result.newStatus] || "",
-            trackUrl: `https://pilo-rus.ru/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
-            customerName: order.guestName || "Клиент",
+            email,
+            baseUrl: "https://pilo-rus.ru",
           }).catch(console.error);
         }
 

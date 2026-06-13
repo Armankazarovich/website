@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser, sendPushToStaff } from "@/lib/push";
-import { sendOrderStatusEmail } from "@/lib/email";
 import { sendTelegramStatusUpdate, deleteTelegramMessage, FINAL_STATUSES } from "@/lib/telegram";
 import { enqueueTerminalOrderLifecycle, indexTerminalOrder } from "@/lib/terminal-sync";
 import { getCurrentTenantId } from "@/lib/tenant-context";
@@ -14,6 +13,8 @@ import {
   ORDER_STATUS_NOTIFICATION_LABELS,
   buildOrderStatusNotificationSummary,
   recordStaffOrderStatusNotification,
+  resolveOrderStatusCustomerEmail,
+  sendTrackedOrderStatusEmail,
 } from "@/lib/order-status-notifications";
 
 const STAFF_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "COURIER", "ACCOUNTANT", "WAREHOUSE", "SELLER"];
@@ -265,27 +266,17 @@ export async function PATCH(req: NextRequest) {
     }).catch(console.error);
   }
 
-  // 4. Email клиенту
+  let statusCustomerEmail: string | null = null;
   if (ORDER_STATUS_NOTIFICATION_LABELS[status]) {
-    let email = order.guestEmail;
-    if (!email && order.userId) {
-      const user = await prisma.user.findUnique({
-        where: { id: order.userId },
-        select: { email: true },
-      });
-      email = user?.email ?? null;
-    }
-    if (email) {
-      const baseUrl = process.env.NEXTAUTH_URL || "https://pilo-rus.ru";
-      sendOrderStatusEmail(email, {
-        orderNumber: order.orderNumber,
-        status,
-        statusLabel: ORDER_STATUS_NOTIFICATION_LABELS[status],
-        statusDescription: ORDER_STATUS_NOTIFICATION_DESCRIPTIONS[status] || "",
-        trackUrl: `${baseUrl}/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
-        customerName: order.guestName || "Клиент",
-      }).catch(console.error);
-    }
+    statusCustomerEmail = await resolveOrderStatusCustomerEmail(order);
+    await sendTrackedOrderStatusEmail({
+      tenantId,
+      actorId,
+      order,
+      status,
+      email: statusCustomerEmail,
+      baseUrl: process.env.NEXTAUTH_URL || "https://pilo-rus.ru",
+    });
   }
 
   return NextResponse.json({
@@ -299,6 +290,6 @@ export async function PATCH(req: NextRequest) {
       guestPhone: order.guestPhone,
       guestEmail: order.guestEmail,
       userId: order.userId,
-    }),
+    }, statusCustomerEmail || order.guestEmail),
   });
 }
