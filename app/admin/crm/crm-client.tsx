@@ -1522,11 +1522,12 @@ export function CrmClient() {
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const selectedLeadId = searchParams.get("leadId") || "";
-  const [tab, setTab] = useState<"orders" | "leads">(selectedLeadId ? "leads" : "orders");
+  const initialSearch = searchParams.get("search") || "";
+  const [tab, setTab] = useState<"orders" | "leads">(selectedLeadId || initialSearch ? "leads" : "orders");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialSearch);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [addFormStage, setAddFormStage] = useState("NEW");

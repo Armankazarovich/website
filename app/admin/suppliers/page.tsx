@@ -8,6 +8,7 @@ import {
   Clock3,
   ExternalLink,
   Handshake,
+  MessageSquareText,
   Package,
   Plus,
   ScanSearch,
@@ -243,7 +244,7 @@ export default async function AdminSuppliersPage({
   const tenantId = getCurrentTenantId();
   const message = messageFor(searchParams);
 
-  const [suppliers, offers, products] = await Promise.all([
+  const [suppliers, offers, products, sellerLeads] = await Promise.all([
     prisma.supplier.findMany({
       where: { tenantId },
       include: { _count: { select: { offers: true } } },
@@ -263,6 +264,21 @@ export default async function AdminSuppliersPage({
       include: { variants: { orderBy: { sortOrder: "asc" } }, category: true },
       orderBy: { name: "asc" },
       take: 120,
+    }),
+    prisma.lead.findMany({
+      where: {
+        tenantId,
+        deletedAt: null,
+        tags: { has: "Витрина продавца" },
+      },
+      select: {
+        id: true,
+        stage: true,
+        tags: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 500,
     }),
   ]);
 
@@ -286,6 +302,17 @@ export default async function AdminSuppliersPage({
     sourceUrl: supplier.sourceUrl,
     website: supplier.website,
   }));
+  const sellerLeadStats = new Map<string, { total: number; active: number; fresh: number; latest: Date | null }>();
+  for (const lead of sellerLeads) {
+    const supplierId = lead.tags.find((tag) => tag.startsWith("supplier-id:"))?.replace("supplier-id:", "");
+    if (!supplierId) continue;
+    const current = sellerLeadStats.get(supplierId) || { total: 0, active: 0, fresh: 0, latest: null };
+    current.total += 1;
+    if (!["WON", "LOST"].includes(lead.stage)) current.active += 1;
+    if (lead.stage === "NEW") current.fresh += 1;
+    if (!current.latest || lead.createdAt > current.latest) current.latest = lead.createdAt;
+    sellerLeadStats.set(supplierId, current);
+  }
 
   return (
     <div className="admin-page-frame admin-page-frame-fluid pb-16">
@@ -467,6 +494,8 @@ export default async function AdminSuppliersPage({
             ) : suppliers.map((supplier) => {
               const storefrontHref = supplierStorefrontHref(supplier.slug);
               const publicStorefront = isPublicSupplierStorefront(supplier);
+              const leadStats = sellerLeadStats.get(supplier.id) || { total: 0, active: 0, fresh: 0, latest: null };
+              const sellerLeadHref = `/admin/crm?search=${encodeURIComponent(`seller:${supplier.slug}`)}`;
               return (
                 <article key={supplier.id} className="rounded-xl border border-border bg-background p-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -498,8 +527,9 @@ export default async function AdminSuppliersPage({
                       <Badge>{trustLabels[supplier.trustLevel] || supplier.trustLevel}</Badge>
                     </div>
                   </div>
-                  <div className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-3">
+                  <div className="mt-3 grid gap-2 text-sm text-muted-foreground sm:grid-cols-4">
                     <span>{supplier._count.offers} предложений</span>
+                    <span>{leadStats.active} заявок в работе / {leadStats.total} всего</span>
                     <span>Порядок: {supplier.marketplaceRank}</span>
                     <span>{supplier.sourceUrl ? "Сайт для скана есть" : "Сайт для скана не указан"}</span>
                   </div>
@@ -510,6 +540,10 @@ export default async function AdminSuppliersPage({
                         Открыть витрину
                       </Link>
                     ) : null}
+                    <Link href={sellerLeadHref} className="inline-flex min-h-[34px] items-center gap-2 rounded-xl border border-border px-3 text-xs font-semibold text-foreground">
+                      <MessageSquareText className="h-3.5 w-3.5" />
+                      Заявки{leadStats.fresh > 0 ? ` · ${leadStats.fresh} нов.` : ""}
+                    </Link>
                     {supplier.website ? (
                       <a href={supplier.website} target="_blank" rel="noreferrer" className="inline-flex min-h-[34px] items-center gap-2 rounded-xl border border-border px-3 text-xs font-semibold text-foreground">
                         <ExternalLink className="h-3.5 w-3.5" />

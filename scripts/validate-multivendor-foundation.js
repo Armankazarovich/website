@@ -68,6 +68,14 @@ check(
 );
 
 check(
+  "Supplier admin page links seller leads",
+  includesAll(suppliersPage, ["sellerLeadStats", "seller:${supplier.slug}", "/admin/crm?search=", "Заявки"]) &&
+    includesAll(read("app/api/admin/crm/leads/route.ts"), ["tags: { has: search }"]) &&
+    includesAll(read("app/admin/crm/crm-client.tsx"), ["initialSearch", "searchParams.get(\"search\")"]),
+  "/admin/suppliers must show seller lead counters and open CRM filtered by the seller tag.",
+);
+
+check(
   "Public vendor storefront routes exist",
     exists("app/(store)/vendors/page.tsx") &&
     exists("app/(store)/vendors/[slug]/page.tsx") &&

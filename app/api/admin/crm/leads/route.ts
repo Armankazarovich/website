@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
             { phone: { contains: search, mode: "insensitive" } },
             { email: { contains: search, mode: "insensitive" } },
             { company: { contains: search, mode: "insensitive" } },
+            { tags: { has: search } },
           ],
         }
       : {}),
