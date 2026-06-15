@@ -45,7 +45,7 @@ export default function ZaidrPage() {
       <main>
         <section className="relative overflow-hidden bg-slate-950 text-foreground">
           <Image
-            src="/images/production/sklad-3.jpg"
+            src="/images/production/sklad-3.webp"
             alt="Склад стройматериалов"
             fill
             priority

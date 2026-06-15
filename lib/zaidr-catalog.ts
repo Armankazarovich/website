@@ -61,7 +61,7 @@ export const ZAIDR_CATEGORY_IMAGES = [
   "/images/production/prod-12.jpg",
   "/images/production/prod-14.jpg",
   "/images/production/prod-16.jpg",
-  "/images/production/sklad-4.jpg",
+  "/images/production/sklad-4.webp",
 ] as const;
 
 export const ZAIDR_IMAGE_STATUS_LABELS: Record<ZaidrImageStatus, string> = {

@@ -12,9 +12,9 @@
   "prefer_related_applications": false,
   "screenshots": [
     {
-      "src": "/images/production/sklad-3.jpg",
+      "src": "/images/production/pwa-screenshot.webp",
       "sizes": "1280x720",
-      "type": "image/jpeg",
+      "type": "image/webp",
       "form_factor": "wide",
       "label": "ПилоРус — главная страница"
     }

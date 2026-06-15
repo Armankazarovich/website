@@ -9,7 +9,7 @@ import {
   ArrowRight, Package, ChevronDown, Layers,
   CheckSquare, Square, Tag, TrendingUp, TrendingDown, Check,
   ImageOff, Stamp, AlertTriangle, Sparkles, Loader2,
-  Search,
+  Search, ExternalLink,
 } from "lucide-react";
 import { checkProductReadiness, readinessIssueLabel, type ProductReadinessIssue } from "@/lib/product-readiness";
 
@@ -495,7 +495,8 @@ export function ProductsClient({
   /* ── Readiness индикатор публикации ── */
   const ReadinessBadge = ({ p, compact = false }: { p: Product; compact?: boolean }) => {
     const r = checkProductReadiness(p);
-    if (r.ready && r.warnings.length === 0) {
+    const publicReady = p.active && r.ready;
+    if (publicReady && r.warnings.length === 0) {
       // Всё ок
       if (compact) {
         return (
@@ -518,7 +519,9 @@ export function ProductsClient({
     }
 
     const allIssues: ProductReadinessIssue[] = [...r.blockers, ...r.warnings];
-    const titleText = r.ready
+    const titleText = !p.active
+      ? `СКРЫТО от клиентов.\nПричина:\n• Товар выключен в админке${r.blockers.length ? "\nТакже:\n• " + r.blockers.map(readinessIssueLabel).join("\n• ") : ""}${r.warnings.length ? "\nЗамечания:\n• " + r.warnings.map(readinessIssueLabel).join("\n• ") : ""}`
+      : r.ready
       ? `Показывается, но есть замечания:\n• ${r.warnings.map(readinessIssueLabel).join("\n• ")}`
       : `СКРЫТО от клиентов.\nПричины:\n• ${r.blockers.map(readinessIssueLabel).join("\n• ")}${r.warnings.length ? "\nТакже:\n• " + r.warnings.map(readinessIssueLabel).join("\n• ") : ""}`;
 
@@ -527,11 +530,11 @@ export function ProductsClient({
         <span
           title={titleText}
           className={`inline-flex items-center justify-center w-2 h-2 rounded-full ${
-            r.ready
+            p.active && r.ready
               ? "bg-amber-500 "
               : "bg-rose-500 "
           }`}
-          aria-label={r.ready ? "Публикация: есть замечания" : "Публикация: скрыто от клиентов"}
+          aria-label={p.active && r.ready ? "Публикация: есть замечания" : "Публикация: скрыто от клиентов"}
         />
       );
     }
@@ -540,17 +543,43 @@ export function ProductsClient({
       <span
         title={titleText}
         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border ${
-          r.ready
+          p.active && r.ready
             ? "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30"
             : "bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/30"
         }`}
       >
         <AlertTriangle className="w-3 h-3 shrink-0" />
-        {r.ready ? "Замечания" : "Скрыто"}
+        {!p.active ? "Скрыт от клиентов" : r.ready ? "Замечания" : "Скрыто"}
         {allIssues.length > 1 && (
           <span className="ml-0.5 text-[10px] opacity-70">({allIssues.length})</span>
         )}
       </span>
+    );
+  };
+
+  const ProductPublicLink = ({ p }: { p: Product }) => {
+    const canOpen = p.active && checkProductReadiness(p).ready;
+    if (!canOpen) {
+      return (
+        <span
+          title="Товар скрыт от клиентов. Включите товар и проверьте фото, цену и наличие."
+          className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground/40"
+          aria-label="Товар скрыт от клиентов"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+        </span>
+      );
+    }
+    return (
+      <Link
+        href={`/product/${p.slug}`}
+        target="_blank"
+        rel="noreferrer"
+        title="Открыть товар на сайте"
+        className="inline-flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      >
+        <ExternalLink className="w-3.5 h-3.5" />
+      </Link>
     );
   };
 
@@ -799,6 +828,7 @@ export function ProductsClient({
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {p.featured && <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />}
+                    <ProductPublicLink p={p} />
                     <button onClick={(e) => openDrawer(p, e)} className="p-1.5 rounded-xl hover:bg-accent transition-colors">
                       <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
                     </button>
@@ -885,13 +915,16 @@ export function ProductsClient({
                   <td className="px-4 py-3 text-center"><StatusBadge p={p} /></td>
                   <td className="px-4 py-3 text-center"><ReadinessBadge p={p} /></td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={(e) => openDrawer(p, e)}
-                      className="p-1.5 rounded-xl hover:bg-accent transition-colors"
-                      title="Редактировать товар"
-                    >
-                      <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <ProductPublicLink p={p} />
+                      <button
+                        onClick={(e) => openDrawer(p, e)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-xl transition-colors hover:bg-accent"
+                        title="Редактировать товар"
+                      >
+                        <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

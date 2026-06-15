@@ -553,9 +553,10 @@ async function main() {
   const dspCat = await prisma.category.findFirst({
     where: { tenantId: DEFAULT_TENANT_ID, slug: { in: ["dsp-mdf-osb", "dsp-mdf-osb-csp", "dsp"] } }
   });
+  const hasPilmosCatalogSnapshot = !!readPilmosCatalogSnapshot();
 
   // 4. Деактивировать товары Кедр + скрыть категорию
-  if (kedrCat) {
+  if (!hasPilmosCatalogSnapshot && kedrCat) {
     const activeKedr = await prisma.product.count({ where: { categoryId: kedrCat.id, active: true } });
     if (activeKedr > 0) {
       await prisma.product.updateMany({ where: { categoryId: kedrCat.id }, data: { active: false } });
@@ -568,7 +569,7 @@ async function main() {
   }
 
   // 5. Переместить ДСП товары в Фанеру + скрыть ДСП категорию
-  if (dspCat && faneraCat && dspCat.id !== faneraCat.id) {
+  if (!hasPilmosCatalogSnapshot && dspCat && faneraCat && dspCat.id !== faneraCat.id) {
     const dspProducts = await prisma.product.count({ where: { categoryId: dspCat.id } });
     if (dspProducts > 0) {
       await prisma.product.updateMany({ where: { categoryId: dspCat.id }, data: { categoryId: faneraCat.id } });
@@ -581,7 +582,7 @@ async function main() {
   }
 
   // 6. Переименовать Фанеру
-  if (faneraCat && faneraCat.name === "Фанера") {
+  if (!hasPilmosCatalogSnapshot && faneraCat && faneraCat.name === "Фанера") {
     await prisma.category.update({
       where: { id: faneraCat.id },
       data: { name: "Фанера, ДСП, МДФ, ОСБ" }
@@ -628,8 +629,8 @@ async function main() {
   const allCats = await prisma.category.findMany({ select: { id: true, slug: true, sortOrder: true } });
   for (const cat of allCats) {
     const isHiddenByOrder = cat.sortOrder >= 999;
-    // Принудительно скрываем kedr и dsp из навигации
-    const forceHide = ["kedr", "dsp-mdf-osb", "dsp-mdf-osb-csp"].includes(cat.slug);
+    // Старый объединенный slug оставляем как технический редирект, новые категории идут из Pilmos snapshot.
+    const forceHide = ["dsp-mdf-osb-csp"].includes(cat.slug);
     if (isHiddenByOrder || forceHide) {
       await prisma.category.update({
         where: { id: cat.id },
@@ -660,16 +661,17 @@ async function main() {
   }
 
   // 9. Редиректы категорий (для middleware — 301 перенаправления старых ссылок)
+  await prisma.categoryRedirect.deleteMany({
+    where: { fromSlug: { in: ["kedr", "dsp-mdf-osb"] } },
+  });
   const knownRedirects = [
-    { fromSlug: "kedr",        toSlug: null,     permanent: true },  // /catalog?category=kedr → /catalog
-    { fromSlug: "dsp-mdf-osb", toSlug: "fanera", permanent: true },  // → /catalog?category=fanera
-    { fromSlug: "dsp-mdf-osb-csp", toSlug: "fanera", permanent: true },
+    { fromSlug: "dsp-mdf-osb-csp", toSlug: "dsp-mdf-osb", permanent: true },
   ];
   for (const r of knownRedirects) {
     await prisma.categoryRedirect.upsert({
       where:  { fromSlug: r.fromSlug },
       create: { fromSlug: r.fromSlug, toSlug: r.toSlug, permanent: r.permanent },
-      update: {},
+      update: { toSlug: r.toSlug, permanent: r.permanent },
     });
   }
   console.log("[data-migrate] ✓ Редиректы категорий установлены (шаг 9)");
@@ -1007,6 +1009,7 @@ async function main() {
       phone3_link: "",
       social_whatsapp: "+74951352026",
       whatsapp_number: "+74951352026",
+      aray_enabled: "false",
       address: "Химки, ул. Заводская 2А, стр.28",
       company_name: "ООО «ДЕРЕВОЛИДЕР»",
       legal_full_name: "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ «ДЕРЕВОЛИДЕР»",

@@ -8,8 +8,8 @@ import Image from "next/image";
 const PHOTOS = [
   { src: "/images/production/sklad-1.jpg",  alt: "Склад пиломатериалов ПилоРус" },
   { src: "/images/production/sklad-2.jpg",  alt: "Хранение пиломатериалов" },
-  { src: "/images/production/sklad-3.jpg",  alt: "Производственный склад" },
-  { src: "/images/production/sklad-4.jpg",  alt: "Брус на складе" },
+  { src: "/images/production/sklad-3.webp",  alt: "Производственный склад" },
+  { src: "/images/production/sklad-4.webp",  alt: "Брус на складе" },
   { src: "/images/production/prod-7.jpg",   alt: "Производство" },
   { src: "/images/production/prod-8.jpg",   alt: "Обработка древесины" },
   { src: "/images/production/prod-9.jpg",   alt: "Пиломатериалы" },

@@ -105,7 +105,7 @@ export const metadata: Metadata = {
     siteName: "ПилоРус",
     locale: "ru_RU",
     type: "website",
-    images: [{ url: "https://pilo-rus.ru/images/production/sklad-3.jpg", width: 1200, height: 630, alt: "ПилоРус — производство пиломатериалов" }],
+    images: [{ url: "https://pilo-rus.ru/images/production/sklad-3.webp", width: 1200, height: 630, alt: "ПилоРус — производство пиломатериалов" }],
   },
   alternates: { canonical: "https://pilo-rus.ru" },
 };

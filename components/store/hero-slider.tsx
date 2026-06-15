@@ -7,8 +7,8 @@ import { motion, useScroll, useTransform } from "framer-motion";
 const SLIDES = [
   { src: "/images/production/sklad-1.jpg", alt: "Склад пиломатериалов ПилоРус" },
   { src: "/images/production/sklad-2.jpg", alt: "Доска обрезная на складе" },
-  { src: "/images/production/sklad-3.jpg", alt: "Производство ПилоРус" },
-  { src: "/images/production/sklad-4.jpg", alt: "Брус строительный" },
+  { src: "/images/production/sklad-3.webp", alt: "Производство ПилоРус" },
+  { src: "/images/production/sklad-4.webp", alt: "Брус строительный" },
   { src: "/images/production/sklad-5.jpg", alt: "Погрузка пиломатериалов" },
 ];
 
