@@ -91,6 +91,7 @@ function decimalOrNull(value?: number | null) {
 async function applyPilmosCatalogSnapshot() {
   const snapshot = readPilmosCatalogSnapshot();
   if (!snapshot) return;
+  const snapshotSlugs = new Set(snapshot.products.map((product) => product.slug));
 
   const categoryBySlug = new Map<string, { id: string; slug: string }>();
   let categoriesSynced = 0;
@@ -197,6 +198,24 @@ async function applyPilmosCatalogSnapshot() {
     }
   }
 
+  const legacyStorefrontProducts = await prisma.product.findMany({
+    where: {
+      tenantId: DEFAULT_TENANT_ID,
+      slug: { notIn: Array.from(snapshotSlugs) },
+      category: {
+        tenantId: DEFAULT_TENANT_ID,
+        slug: { in: snapshot.categories.map((category) => category.slug) },
+      },
+    },
+    select: { id: true, slug: true },
+  });
+  const retiredLegacyProducts = legacyStorefrontProducts.length
+    ? await prisma.product.updateMany({
+        where: { id: { in: legacyStorefrontProducts.map((product) => product.id) } },
+        data: { active: false, featured: false },
+      })
+    : { count: 0 };
+
   await upsertSetting(
     "catalog_pilmos_snapshot_20260614",
     JSON.stringify({
@@ -207,10 +226,11 @@ async function applyPilmosCatalogSnapshot() {
       categories: categoriesSynced,
       products: productsSynced,
       variants: variantsSynced,
+      retiredLegacyProducts: retiredLegacyProducts.count,
     }),
   );
   console.log(
-    `[data-migrate] Pilmos catalog snapshot applied: ${productsSynced} products, ${variantsSynced} variants, ${categoriesSynced} categories`,
+    `[data-migrate] Pilmos catalog snapshot applied: ${productsSynced} products, ${variantsSynced} variants, ${categoriesSynced} categories, ${retiredLegacyProducts.count} legacy storefront products retired`,
   );
 }
 

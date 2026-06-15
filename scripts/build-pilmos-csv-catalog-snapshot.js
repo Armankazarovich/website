@@ -286,6 +286,328 @@ function extractSize(text) {
   return "";
 }
 
+function normalizeKeyText(value) {
+  return normalizeSize(value)
+    .toLowerCase()
+    .replace(/[х×]/g, "x")
+    .replace(/[()]/g, " ")
+    .replace(/ё/g, "е")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function compactProductText(value) {
+  return clean(value)
+    .replace(/(\d)\s*[xх×*]\s*(\d)/gi, "$1×$2")
+    .replace(/\s*×\s*/g, "×")
+    .replace(/(\d)\s*мм\b/gi, "$1 мм")
+    .replace(/(\d)\s*м\b/gi, "$1 м")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isExcludedImportProduct(product) {
+  const text = normalizeKeyText(`${product.name} ${product.sourceCategoryText}`);
+  return /опилк|щепа|дрова|топлив|мешк/.test(text);
+}
+
+function extractSheetSize(text) {
+  const value = normalizeSize(text);
+  const match = value.match(/(\d{3,4})\s*×\s*(\d{3,4})(?:\s*мм)?/);
+  return match ? `${match[1]}×${match[2]} мм` : "";
+}
+
+function extractThickness(text) {
+  const value = normalizeSize(text);
+  const triple = value.match(/(\d{1,3}(?:[,.]\d+)?)\s*×\s*(\d{3,4})\s*×\s*(\d{3,4})/);
+  if (triple) return `${triple[1].replace(",", ".")} мм`;
+  const leading = value.match(/(?:^|\s)(\d{1,2}(?:[,.]\d+)?)\s*мм\s+\d{3,4}\s*×\s*\d{3,4}/i);
+  if (leading) return `${leading[1].replace(",", ".")} мм`;
+  const afterSheet = value.match(/\d{3,4}\s*×\s*\d{3,4}\s*мм\s*(?:сорт\s*)?[^,\s/]*\s*(\d{1,2}(?:[,.]\d+)?)\s*мм/i);
+  if (afterSheet) return `${afterSheet[1].replace(",", ".")} мм`;
+  const simple = value.match(/(?:^|\s)(\d{1,2}(?:[,.]\d+)?)\s*мм(?:\s|$)/i);
+  if (!simple) return "";
+  const thickness = Number(simple[1].replace(",", "."));
+  return thickness > 0 && thickness < 80 ? `${simple[1].replace(",", ".")} мм` : "";
+}
+
+function extractGrade(text) {
+  const value = clean(text).replace(/\\/g, "");
+  const normalized = value.replace(/\s+/g, " ");
+  const direct = normalized.match(/(?:сорт|класс)\s*(Экстра|Прима|AB|АВ|BC|ВС|A|А|B|В|C|С|\d(?:\s*[-/]\s*\d)?|2\s*-\s*3)/i);
+  if (direct) return `сорт ${direct[1].replace(/\s+/g, "").replace("АВ", "AB").replace("ВС", "BC")}`;
+  const fraction = normalized.match(/\b([1-4]\s*\/\s*[1-4])\b/);
+  if (fraction) return `сорт ${fraction[1].replace(/\s+/g, "")}`;
+  const shortGrade = normalized.match(/\b(AB|BC|A|B|C|АВ|ВС|А|В|С)\b/i);
+  if (shortGrade) return `сорт ${shortGrade[1].replace("АВ", "AB").replace("ВС", "BC")}`;
+  return "";
+}
+
+function extractForest(text) {
+  const value = clean(text);
+  const match = value.match(/(Архангельский|Вологодский|Кировский)\s+лес/i);
+  return match ? `${match[1]} лес` : "";
+}
+
+function titleCaseFirst(value) {
+  const text = clean(value);
+  if (!text) return text;
+  return `${text.charAt(0).toLocaleUpperCase("ru-RU")}${text.slice(1)}`;
+}
+
+function stripVariantNoise(value) {
+  return clean(value)
+    .replace(/Акции на пиломатериалы[^/|,]*/gi, "")
+    .replace(/Цена за\s*(?:м3|м³|шт\.?|штуку)/gi, "")
+    .replace(/\b(?:м3|м³|шт\.?|штука|за штуку)\b/gi, "")
+    .replace(/\\,/g, ",")
+    .replace(/\s*\/\s*/g, " / ")
+    .replace(/\s+/g, " ")
+    .replace(/(?:^|\/)\s*$/g, "")
+    .trim();
+}
+
+function cleanVariantLabel(parts) {
+  const seen = new Set();
+  const cleanParts = [];
+  for (const part of parts.map(stripVariantNoise).filter(Boolean)) {
+    const key = normalizeKeyText(part).replace(/[.,]/g, "");
+    if (!key || seen.has(key)) continue;
+    const hasCoveredSize = [...seen].some((item) => item.includes(key) || key.includes(item));
+    if (hasCoveredSize && /\d/.test(key)) continue;
+    seen.add(key);
+    cleanParts.push(compactProductText(part));
+  }
+  return cleanParts.join(", ") || "Стандарт";
+}
+
+function prettifyVariantLabel(value) {
+  return clean(value)
+    .replace(/\b(\d{1,4})[\u00d7x](\d{1,4})[\u00d7x](\d{3,5})(?!\s*(?:\u043c\u043c|mm))\b/gi, "$1\u00d7$2\u00d7$3 \u043c\u043c")
+    .replace(/\b(\d{1,4})[\u00d7x](\d{1,4})(?!\s*(?:[\u00d7x]|\u043c\u043c|mm|\u043c\b))\b/gi, "$1\u00d7$2 \u043c\u043c")
+    .replace(/\s*\/\s*\u0410\u043a\u0446\u0438\u0438?\s+\u043d\u0430\s+\u043f\u0438\u043b\u043e\u043c\u0430\u0442\u0435\u0440\u0438\u0430\u043b\u044b[^,]*/gi, "")
+    .replace(/(\u0441\u043e\u0440\u0442\s+)[\u0441c](?=\b|,|$)/gi, "$1C")
+    .replace(/(\d)\s*\/\s*(\d)/g, "$1/$2")
+    .replace(/Ар×ангельский/gi, "Архангельский")
+    .replace(/\bсорт\s+([abcавс])\b/gi, (_m, grade) => `сорт ${String(grade).toUpperCase().replace("А", "A").replace("В", "B").replace("С", "C")}`)
+    .replace(/\bсорт\s+c\b/gi, "сорт C")
+    .replace(/\b0\s*мм,\s*/gi, "")
+    .replace(/\b0\s*мм\b/gi, "")
+    .replace(/^\s*,\s*/g, "")
+    .replace(/\s*,\s*,/g, ",")
+    .replace(/\s+/g, " ")
+    .trim() || "Стандарт";
+}
+
+function sheetFamilyName(productName, categoryText) {
+  const text = `${productName} ${categoryText}`;
+  const normalized = normalizeKeyText(text);
+  const sheetSize = extractSheetSize(text);
+  if (/\bosb\b|осб/.test(normalized)) {
+    const type = /osb-?3|осб-?3/.test(normalized) ? "Плита OSB-3" : "Плита OSB";
+    const used = /б\/у|бу/.test(normalized) ? " Б/У" : "";
+    return `${type}${used}${sheetSize ? ` ${sheetSize}` : ""}`.trim();
+  }
+  if (/мдф/.test(normalized)) return `МДФ${sheetSize ? ` ${sheetSize}` : ""}`.trim();
+  if (/дсп/.test(normalized)) return `ДСП${sheetSize ? ` ${sheetSize}` : ""}`.trim();
+  if (/двп|оргалит/.test(normalized)) return `ДВП (оргалит)${sheetSize ? ` ${sheetSize}` : ""}`.trim();
+  if (/цсп/.test(normalized)) return `Плита ЦСП${sheetSize ? ` ${sheetSize}` : ""}`.trim();
+  if (/ламинир/.test(normalized)) return `Фанера ламинированная${sheetSize ? ` ${sheetSize}` : ""}`.trim();
+  if (/фк/.test(normalized)) return `Фанера ФК${sheetSize ? ` ${sheetSize}` : ""}`.trim();
+  if (/фсф/.test(normalized)) {
+    const wood = /берез/.test(normalized) ? " березовая" : /хво/.test(normalized) ? " хвойная" : "";
+    return `Фанера ФСФ${wood}${sheetSize ? ` ${sheetSize}` : ""}`.trim();
+  }
+  return `Фанера${sheetSize ? ` ${sheetSize}` : ""}`.trim();
+}
+
+function woodSpecies(productName, categorySlug, categoryText) {
+  const text = normalizeKeyText(`${productName} ${categoryText}`);
+  if (/листвен/.test(text)) return "из лиственницы";
+  if (/кедр/.test(text)) return "из кедра";
+  if (/осин/.test(text)) return "из осины";
+  if (/лип/.test(text)) return "из липы";
+  if (/сосн|ел|ель/.test(text) || categorySlug === "sosna-el") return "из сосны и ели";
+  return "";
+}
+
+function woodFamily(productName, categoryText) {
+  const text = normalizeKeyText(`${productName} ${categoryText}`);
+  if (/блок[\s-]?хаус/.test(text)) return "Блок-хаус";
+  if (/имитац/.test(text)) return "Имитация бруса";
+  if (/евровагонк/.test(text)) return "Евровагонка";
+  if (/вагонк/.test(text)) return "Вагонка";
+  if (/планкен/.test(text)) return "Планкен";
+  if (/террас/.test(text)) return "Террасная доска";
+  if (/доска пола|полов/.test(text)) return "Доска пола";
+  if (/брусок/.test(text)) return /строган/.test(text) ? "Брусок строганный" : "Брусок";
+  if (/брус/.test(text)) {
+    if (/клеен/.test(text)) return "Брус клееный";
+    if (/строган/.test(text)) return "Брус строганный";
+    return "Брус обрезной";
+  }
+  if (/доск/.test(text)) {
+    if (/строган/.test(text)) return "Доска строганная";
+    return "Доска обрезная";
+  }
+  return productKind(productName, categoryText);
+}
+
+function woodStandard(productName, categoryText) {
+  const text = normalizeKeyText(`${productName} ${categoryText}`);
+  if (/гост/.test(text)) return "(ГОСТ)";
+  if (/\bту\b/.test(text)) return "(ТУ)";
+  if (/сух/.test(text)) return "сухая";
+  if (/антисепт/.test(text)) return "антисептированная";
+  return "";
+}
+
+function buildStorefrontGroup(product) {
+  if (isExcludedImportProduct(product)) return null;
+
+  if (product.categorySlug === "fanera") {
+    const name = sheetFamilyName(product.name, product.sourceCategoryText);
+    return {
+      key: `${product.categorySlug}|${normalizeKeyText(name)}`,
+      name,
+      slugBase: slugify(name),
+    };
+  }
+
+  const family = woodFamily(product.name, product.sourceCategoryText);
+  const species = woodSpecies(product.name, product.categorySlug, product.sourceCategoryText);
+  const standard = woodStandard(product.name, product.sourceCategoryText);
+  const name = titleCaseFirst([family, species, standard].filter(Boolean).join(" "));
+  return {
+    key: `${product.categorySlug}|${normalizeKeyText(name)}`,
+    name,
+    slugBase: slugify(name),
+  };
+}
+
+function buildDisplayVariant(product, variant) {
+  const text = `${product.name} ${variant.size}`;
+  const sourcePrice = variant.sourcePrice;
+  const price = variant.price;
+  const unit = variant.unit;
+
+  if (product.categorySlug === "fanera") {
+    const thickness = extractThickness(text);
+    const grade = extractGrade(text);
+    const size = prettifyVariantLabel(cleanVariantLabel([thickness, grade]));
+    return {
+      ...variant,
+      size,
+      sourcePrice,
+      price,
+      unit,
+      pricePerCube: unit === "CUBE" ? price : null,
+      pricePerPiece: unit === "PIECE" ? price : null,
+      piecesPerCube: null,
+    };
+  }
+
+  const size = extractSize(text);
+  const grade = extractGrade(text);
+  const forest = extractForest(text);
+  return {
+    ...variant,
+    size: prettifyVariantLabel(cleanVariantLabel([size, grade, forest])),
+    sourcePrice,
+    price,
+    unit,
+    pricePerCube: unit === "CUBE" ? price : null,
+    pricePerPiece: unit === "PIECE" ? price : null,
+    piecesPerCube: unit === "CUBE" ? piecesPerCube(size) : null,
+  };
+}
+
+function mergeVariantPrices(variants) {
+  const byKey = new Map();
+  for (const variant of variants) {
+    const key = normalizeKeyText(variant.size);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, { ...variant });
+      continue;
+    }
+
+    const next = { ...existing };
+    if (variant.pricePerCube && (!next.pricePerCube || variant.pricePerCube < next.pricePerCube)) {
+      next.pricePerCube = variant.pricePerCube;
+      next.piecesPerCube = variant.piecesPerCube ?? next.piecesPerCube;
+    }
+    if (variant.pricePerPiece && (!next.pricePerPiece || variant.pricePerPiece < next.pricePerPiece)) {
+      next.pricePerPiece = variant.pricePerPiece;
+    }
+    next.price = Math.min(
+      ...[next.pricePerCube, next.pricePerPiece, variant.pricePerCube, variant.pricePerPiece]
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value) && value > 0),
+    );
+    next.sourcePrice = Math.min(Number(next.sourcePrice || next.price), Number(variant.sourcePrice || variant.price));
+    next.unit = next.pricePerCube && next.pricePerPiece ? "BOTH" : next.pricePerCube ? "CUBE" : "PIECE";
+    next.inStock = next.inStock || variant.inStock;
+    next.stockQty = next.stockQty ?? variant.stockQty ?? null;
+    byKey.set(key, next);
+  }
+
+  return [...byKey.values()]
+    .sort((a, b) => normalizeKeyText(a.size).localeCompare(normalizeKeyText(b.size), "ru", { numeric: true }))
+    .map((variant, index) => ({ ...variant, sortOrder: index }));
+}
+
+function groupProductsForStorefront(rawProducts) {
+  const groups = new Map();
+  for (const product of rawProducts) {
+    const group = buildStorefrontGroup(product);
+    if (!group) continue;
+
+    const current = groups.get(group.key) || {
+      ...group,
+      categorySlug: product.categorySlug,
+      images: [],
+      products: [],
+      variants: [],
+    };
+    current.products.push(product);
+    for (const image of product.images) {
+      if (image && !current.images.includes(image)) current.images.push(image);
+    }
+    for (const variant of product.variants) {
+      current.variants.push(buildDisplayVariant(product, variant));
+    }
+    groups.set(group.key, current);
+  }
+
+  const seenSlugs = new Map();
+  return [...groups.values()].map((group) => {
+    const category = CATEGORY_DEFS[group.categorySlug];
+    const variants = mergeVariantPrices(group.variants).filter(
+      (variant) => variant.pricePerCube || variant.pricePerPiece,
+    );
+    const baseSlug = group.slugBase;
+    const seen = seenSlugs.get(baseSlug) || 0;
+    seenSlugs.set(baseSlug, seen + 1);
+    const slug = seen ? `${baseSlug}-${seen + 1}` : baseSlug;
+
+    return {
+      externalId: group.products.map((product) => product.externalId || product.id).filter(Boolean).join(","),
+      sourceSku: group.products.map((product) => product.sourceSku || product.sku).filter(Boolean).slice(0, 8).join(","),
+      slug,
+      name: group.name,
+      categorySlug: group.categorySlug,
+      images: group.images.slice(0, 1),
+      shortDescription: makeShortDescription(group.name, category.name),
+      description: makeDescription(group.name, category.name, variants),
+      saleUnit: saleUnitFromVariants(variants),
+      active: variants.length > 0,
+      featured: false,
+      variants,
+    };
+  }).filter((product) => product.active && product.images.length);
+}
+
 function productKind(name, categoryText) {
   const text = `${name} ${categoryText}`.toLowerCase();
   if (/фанер/.test(text)) return "фанера";
@@ -522,7 +844,7 @@ function main() {
     else stats.skippedWithoutPrice += 1;
   }
 
-  const products = [];
+  const rawProducts = [];
   const seenSlugs = new Map();
 
   for (const product of parentProducts) {
@@ -540,7 +862,7 @@ function main() {
     const slug = `${baseSlug}${suffix}`.slice(0, 100).replace(/-+$/g, "");
     const category = CATEGORY_DEFS[product.categorySlug];
 
-    products.push({
+    rawProducts.push({
       externalId: product.id,
       sourceSku: product.sku,
       slug,
@@ -555,6 +877,8 @@ function main() {
       variants,
     });
   }
+
+  const products = groupProductsForStorefront(rawProducts);
 
   products.sort((a, b) => {
     const sortA = CATEGORY_DEFS[a.categorySlug]?.sortOrder ?? 999;
