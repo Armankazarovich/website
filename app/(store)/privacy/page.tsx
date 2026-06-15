@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 
 export default async function PrivacyPage() {
   const settings = await getSiteSettings();
-  const phoneLink = getSetting(settings, "phone_link") || "+74993720441";
-  const phoneDisplay = getSetting(settings, "phone") || "+7 (499) 372-04-41";
+  const phoneLink = getSetting(settings, "phone_link") || "+74951352026";
+  const phoneDisplay = getSetting(settings, "phone") || "+7 (495) 135-20-26";
   const email = getSetting(settings, "email") || "info@pilo-rus.ru";
   const address = getSetting(settings, "address") || "Химки, ул. Заводская 2А, стр.28";
   const companyName = getSetting(settings, "company_name") || "ООО «ДЕРЕВОЛИДЕР»";

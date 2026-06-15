@@ -119,8 +119,8 @@ function ChannelBubble({
 
 // ─── Main widget ──────────────────────────────────────────────────────────────
 export function ContactWidget({
-  phone = "+7 (499) 372-04-41",
-  phoneLink = "+74993720441",
+  phone = "+7 (495) 135-20-26",
+  phoneLink = "+74951352026",
   email,
   whatsapp,
   telegram,

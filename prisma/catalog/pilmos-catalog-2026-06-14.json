@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-15T09:05:56.256Z",
+  "generatedAt": "2026-06-15T10:13:05.722Z",
   "source": "Pilmos WooCommerce CSV",
   "sourceCsv": "C:\\Users\\StormPC\\Downloads\\wc-product-export-11-6-2026-1781182114661.csv",
   "sourcePricePolicy": "PiloRus price = Pilmos CSV price * 0.99, rounded",
@@ -455,25 +455,11 @@
         "https://pilmos.ru/wp-content/uploads/2023/05/5g48diikyo1hnyai56pt9m0mmnmokwlf-jpg-e1694872702848.webp"
       ],
       "shortDescription": "Брус обрезной из сосны и ели — брус для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Брус обрезной из сосны и ели — брус из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 100×100 мм, сорт 1, 100×100×6000 мм, 100×100×6000 мм, Архангельский лес, 100×150 мм, сорт 1, 100×150×6000 мм, 100×150×6000 мм, Архангельский лес, 100×200 мм, 100×200×6000 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Брус обрезной из сосны и ели — брус из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 100×100×6000 мм, 100×100×6000 мм, Архангельский лес, 100×100×6000 мм, сорт 1, 100×150×6000 мм, 100×150×6000 мм, Архангельский лес, 100×150×6000 мм, сорт 1, 100×200×6000 мм, 100×200×6000 мм, Архангельский лес. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "BOTH",
       "active": true,
       "featured": false,
       "variants": [
-        {
-          "externalId": "2771",
-          "sourceSku": "bos3s1010600sm",
-          "size": "100×100 мм, сорт 1",
-          "unit": "CUBE",
-          "sourcePrice": 9000,
-          "price": 8910,
-          "pricePerCube": 8910,
-          "pricePerPiece": null,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 0
-        },
         {
           "externalId": "7040",
           "sourceSku": "",
@@ -486,7 +472,7 @@
           "piecesPerCube": 16,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 1
+          "sortOrder": 0
         },
         {
           "externalId": "5526",
@@ -500,12 +486,12 @@
           "piecesPerCube": 16,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 2
+          "sortOrder": 1
         },
         {
-          "externalId": "5529",
-          "sourceSku": "bos3s105600sm",
-          "size": "100×150 мм, сорт 1",
+          "externalId": "2771",
+          "sourceSku": "bos3s1010600sm",
+          "size": "100×100×6000 мм, сорт 1",
           "unit": "CUBE",
           "sourcePrice": 9000,
           "price": 8910,
@@ -514,7 +500,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 3
+          "sortOrder": 2
         },
         {
           "externalId": "7042",
@@ -528,7 +514,7 @@
           "piecesPerCube": 11,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 4
+          "sortOrder": 3
         },
         {
           "externalId": "5521",
@@ -542,12 +528,12 @@
           "piecesPerCube": 11,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 5
+          "sortOrder": 4
         },
         {
-          "externalId": "5530",
-          "sourceSku": "bos3s1020600sm",
-          "size": "100×200 мм",
+          "externalId": "5529",
+          "sourceSku": "bos3s105600sm",
+          "size": "100×150×6000 мм, сорт 1",
           "unit": "CUBE",
           "sourcePrice": 9000,
           "price": 8910,
@@ -556,7 +542,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 6
+          "sortOrder": 5
         },
         {
           "externalId": "7044",
@@ -565,12 +551,12 @@
           "unit": "BOTH",
           "sourcePrice": 2000,
           "price": 1980,
-          "pricePerCube": 15840,
+          "pricePerCube": 8910,
           "pricePerPiece": 1980,
           "piecesPerCube": 8,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 7
+          "sortOrder": 6
         },
         {
           "externalId": "5516",
@@ -584,21 +570,7 @@
           "piecesPerCube": 8,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 8
-        },
-        {
-          "externalId": "5531",
-          "sourceSku": "bos3s1515600sm",
-          "size": "150×150 мм",
-          "unit": "CUBE",
-          "sourcePrice": 9000,
-          "price": 8910,
-          "pricePerCube": 8910,
-          "pricePerPiece": null,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 9
+          "sortOrder": 7
         },
         {
           "externalId": "7046",
@@ -607,12 +579,12 @@
           "unit": "BOTH",
           "sourcePrice": 2357,
           "price": 2330,
-          "pricePerCube": 15840,
+          "pricePerCube": 8910,
           "pricePerPiece": 2330,
           "piecesPerCube": 7,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 10
+          "sortOrder": 8
         },
         {
           "externalId": "5511",
@@ -626,21 +598,7 @@
           "piecesPerCube": 7,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 11
-        },
-        {
-          "externalId": "5532",
-          "sourceSku": "bos3s1520600sm",
-          "size": "150×200 мм",
-          "unit": "CUBE",
-          "sourcePrice": 9000,
-          "price": 8910,
-          "pricePerCube": 8910,
-          "pricePerPiece": null,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 12
+          "sortOrder": 9
         },
         {
           "externalId": "7048",
@@ -649,12 +607,12 @@
           "unit": "BOTH",
           "sourcePrice": 3200,
           "price": 3170,
-          "pricePerCube": 15840,
+          "pricePerCube": 8910,
           "pricePerPiece": 3170,
           "piecesPerCube": 5,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 13
+          "sortOrder": 10
         },
         {
           "externalId": "5495",
@@ -668,21 +626,7 @@
           "piecesPerCube": 5,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 14
-        },
-        {
-          "externalId": "5533",
-          "sourceSku": "bos3s2020600sm",
-          "size": "200×200 мм",
-          "unit": "CUBE",
-          "sourcePrice": 9000,
-          "price": 8910,
-          "pricePerCube": 8910,
-          "pricePerPiece": null,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 15
+          "sortOrder": 11
         },
         {
           "externalId": "5484",
@@ -691,12 +635,12 @@
           "unit": "BOTH",
           "sourcePrice": 4000,
           "price": 3960,
-          "pricePerCube": 15840,
+          "pricePerCube": 8910,
           "pricePerPiece": 3960,
           "piecesPerCube": 4,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 16
+          "sortOrder": 12
         },
         {
           "externalId": "5486",
@@ -710,7 +654,7 @@
           "piecesPerCube": 4,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 17
+          "sortOrder": 13
         }
       ]
     },
@@ -1128,7 +1072,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/05/img_217563_1-jpg-e1694874098625.webp"
       ],
       "shortDescription": "Брусок из сосны и ели — брусок для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Брусок из сосны и ели — брусок из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 25×50 мм, 27×27 мм, 40×40 мм, 40×50 мм, 45×45 мм, 45×50 мм, 50×50 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Брусок из сосны и ели — брусок из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 25×50×6000 мм, 27×27×6000 мм, 40×40×6000 мм, 40×50×6000 мм, 45×45×6000 мм, 45×50×6000 мм, 50×50×6000 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -1136,7 +1080,7 @@
         {
           "externalId": "570",
           "sourceSku": "obs254sm",
-          "size": "25×50 мм",
+          "size": "25×50×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 70,
           "price": 69,
@@ -1150,7 +1094,7 @@
         {
           "externalId": "13033",
           "sourceSku": "",
-          "size": "27×27 мм",
+          "size": "27×27×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 80,
           "price": 79,
@@ -1164,7 +1108,7 @@
         {
           "externalId": "5703",
           "sourceSku": "obs44sm",
-          "size": "40×40 мм",
+          "size": "40×40×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 100,
           "price": 99,
@@ -1178,7 +1122,7 @@
         {
           "externalId": "5704",
           "sourceSku": "obs45sm",
-          "size": "40×50 мм",
+          "size": "40×50×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 130,
           "price": 129,
@@ -1192,7 +1136,7 @@
         {
           "externalId": "10325",
           "sourceSku": "obs254sm-1",
-          "size": "45×45 мм",
+          "size": "45×45×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 70,
           "price": 69,
@@ -1206,7 +1150,7 @@
         {
           "externalId": "11160",
           "sourceSku": "",
-          "size": "45×50 мм",
+          "size": "45×50×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 120,
           "price": 119,
@@ -1220,7 +1164,7 @@
         {
           "externalId": "5705",
           "sourceSku": "obs55sm",
-          "size": "50×50 мм",
+          "size": "50×50×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 170,
           "price": 168,
@@ -1243,7 +1187,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/05/721_original-e1694874498258.webp"
       ],
       "shortDescription": "Брусок строганный из сосны и ели — брусок для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Брусок строганный из сосны и ели — брусок из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 25×50 мм, 40×40 мм, 40×50 мм, 40×60 мм, 50×50 мм, 50×70 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Брусок строганный из сосны и ели — брусок из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 25×50×6000 мм, 40×40×6000 мм, 40×50×6000 мм, 40×60×6000 мм, 50×50×6000 мм, 50×70×6000 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -1251,7 +1195,7 @@
         {
           "externalId": "579",
           "sourceSku": "bss255sm",
-          "size": "25×50 мм",
+          "size": "25×50×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 110,
           "price": 109,
@@ -1265,7 +1209,7 @@
         {
           "externalId": "5707",
           "sourceSku": "bss44sm",
-          "size": "40×40 мм",
+          "size": "40×40×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 150,
           "price": 149,
@@ -1279,7 +1223,7 @@
         {
           "externalId": "5708",
           "sourceSku": "bss45sm",
-          "size": "40×50 мм",
+          "size": "40×50×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 180,
           "price": 178,
@@ -1293,7 +1237,7 @@
         {
           "externalId": "13021",
           "sourceSku": "bss45sm-1",
-          "size": "40×60 мм",
+          "size": "40×60×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 100,
           "price": 99,
@@ -1307,7 +1251,7 @@
         {
           "externalId": "5709",
           "sourceSku": "bss55sm",
-          "size": "50×50 мм",
+          "size": "50×50×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 230,
           "price": 228,
@@ -1321,7 +1265,7 @@
         {
           "externalId": "5710",
           "sourceSku": "bss57sm",
-          "size": "50×70 мм",
+          "size": "50×70×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 325,
           "price": 322,
@@ -1344,7 +1288,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/05/vagonka-shtil-iz-listvenniczy-klass-ekstra-14x145x2000-mm-1400x1240w-jpg-e1694869052359.webp"
       ],
       "shortDescription": "Вагонка из сосны и ели — вагонка для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Вагонка из сосны и ели — вагонка из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 5×140 мм, сорт AB, Архангельский лес, 5×140 мм, сорт AB, Вологодский лес, 12×140 мм 3 м, сорт C, 13×120 мм, сорт AB, Архангельский лес, 13×120 мм, сорт AB, Вологодский лес, 13×140 мм, сорт AB, Архангельский лес, 13×140 мм, сорт AB, Вологодский лес, 13×140 мм, сорт BC. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Вагонка из сосны и ели — вагонка из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 5×140×6000 мм, сорт AB, Архангельский лес, 5×140×6000 мм, сорт AB, Вологодский лес, 12×140 мм 3 м, сорт C, 13×120×6000 мм, сорт AB, Архангельский лес, 13×120×6000 мм, сорт AB, Вологодский лес, 13×140×6000 мм, сорт AB, Архангельский лес, 13×140×6000 мм, сорт AB, Вологодский лес, 13×140×6000 мм, сорт BC. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -1352,7 +1296,7 @@
         {
           "externalId": "5811",
           "sourceSku": "",
-          "size": "5×140 мм, сорт AB, Архангельский лес",
+          "size": "5×140×6000 мм, сорт AB, Архангельский лес",
           "unit": "PIECE",
           "sourcePrice": 550,
           "price": 545,
@@ -1366,7 +1310,7 @@
         {
           "externalId": "5810",
           "sourceSku": "",
-          "size": "5×140 мм, сорт AB, Вологодский лес",
+          "size": "5×140×6000 мм, сорт AB, Вологодский лес",
           "unit": "PIECE",
           "sourcePrice": 600,
           "price": 594,
@@ -1394,7 +1338,7 @@
         {
           "externalId": "5137",
           "sourceSku": "",
-          "size": "13×120 мм, сорт AB, Архангельский лес",
+          "size": "13×120×6000 мм, сорт AB, Архангельский лес",
           "unit": "PIECE",
           "sourcePrice": 570,
           "price": 564,
@@ -1408,7 +1352,7 @@
         {
           "externalId": "5136",
           "sourceSku": "",
-          "size": "13×120 мм, сорт AB, Вологодский лес",
+          "size": "13×120×6000 мм, сорт AB, Вологодский лес",
           "unit": "PIECE",
           "sourcePrice": 600,
           "price": 594,
@@ -1422,7 +1366,7 @@
         {
           "externalId": "5805",
           "sourceSku": "",
-          "size": "13×140 мм, сорт AB, Архангельский лес",
+          "size": "13×140×6000 мм, сорт AB, Архангельский лес",
           "unit": "PIECE",
           "sourcePrice": 570,
           "price": 564,
@@ -1436,7 +1380,7 @@
         {
           "externalId": "5804",
           "sourceSku": "",
-          "size": "13×140 мм, сорт AB, Вологодский лес",
+          "size": "13×140×6000 мм, сорт AB, Вологодский лес",
           "unit": "PIECE",
           "sourcePrice": 600,
           "price": 594,
@@ -1450,7 +1394,7 @@
         {
           "externalId": "3980",
           "sourceSku": "365489",
-          "size": "13×140 мм, сорт BC",
+          "size": "13×140×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 150,
           "price": 149,
@@ -1464,7 +1408,7 @@
         {
           "externalId": "6869",
           "sourceSku": "",
-          "size": "14×96 мм",
+          "size": "14×96×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 600,
           "price": 594,
@@ -1478,7 +1422,7 @@
         {
           "externalId": "6876",
           "sourceSku": "",
-          "size": "14×115 мм",
+          "size": "14×115×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 600,
           "price": 594,
@@ -1492,7 +1436,7 @@
         {
           "externalId": "6882",
           "sourceSku": "",
-          "size": "14×144 мм",
+          "size": "14×144×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 600,
           "price": 594,
@@ -1515,7 +1459,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/06/14914034242660-1-jpg.webp"
       ],
       "shortDescription": "Доска обрезная из сосны и ели — доска для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Доска обрезная из сосны и ели — доска из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 16×90×6000 мм, 16×110×6000 мм, 16×140×6000 мм, 20×90×6000 мм, 20×120×6000 мм, 20×140×6000 мм, 25×100 мм, сорт C, 25×100×6000 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Доска обрезная из сосны и ели — доска из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 16×90×6000 мм, 16×110×6000 мм, 16×140×6000 мм, 20×90×6000 мм, 20×120×6000 мм, 20×140×6000 мм, 25×100×6000 мм, 25×100×6000 мм, Архангельский лес. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "BOTH",
       "active": true,
       "featured": false,
@@ -1605,20 +1549,6 @@
           "sortOrder": 5
         },
         {
-          "externalId": "9555",
-          "sourceSku": "dos2510gost01",
-          "size": "25×100 мм, сорт C",
-          "unit": "CUBE",
-          "sourcePrice": 8500,
-          "price": 8420,
-          "pricePerCube": 8420,
-          "pricePerPiece": null,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 6
-        },
-        {
           "externalId": "5791",
           "sourceSku": "",
           "size": "25×100×6000 мм",
@@ -1630,7 +1560,7 @@
           "piecesPerCube": 66,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 7
+          "sortOrder": 6
         },
         {
           "externalId": "5793",
@@ -1644,7 +1574,7 @@
           "piecesPerCube": 66,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 8
+          "sortOrder": 7
         },
         {
           "externalId": "4133",
@@ -1658,12 +1588,12 @@
           "piecesPerCube": 66,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 9
+          "sortOrder": 8
         },
         {
-          "externalId": "14757",
-          "sourceSku": "dos2510gost01-1",
-          "size": "25×130 мм, сорт C",
+          "externalId": "9555",
+          "sourceSku": "dos2510gost01",
+          "size": "25×100×6000 мм, сорт C",
           "unit": "CUBE",
           "sourcePrice": 8500,
           "price": 8420,
@@ -1672,7 +1602,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 10
+          "sortOrder": 9
         },
         {
           "externalId": "5930",
@@ -1686,7 +1616,7 @@
           "piecesPerCube": 51,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 11
+          "sortOrder": 10
         },
         {
           "externalId": "5932",
@@ -1700,7 +1630,7 @@
           "piecesPerCube": 51,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 12
+          "sortOrder": 11
         },
         {
           "externalId": "2543",
@@ -1714,21 +1644,21 @@
           "piecesPerCube": 51,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 13
+          "sortOrder": 12
         },
         {
-          "externalId": "12208",
-          "sourceSku": "",
-          "size": "25×150 мм, сорт Экстра",
+          "externalId": "14757",
+          "sourceSku": "dos2510gost01-1",
+          "size": "25×130×6000 мм, сорт C",
           "unit": "CUBE",
-          "sourcePrice": 50400,
-          "price": 49900,
-          "pricePerCube": 49900,
+          "sourcePrice": 8500,
+          "price": 8420,
+          "pricePerCube": 8420,
           "pricePerPiece": null,
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 14
+          "sortOrder": 13
         },
         {
           "externalId": "5942",
@@ -1742,7 +1672,7 @@
           "piecesPerCube": 44,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 15
+          "sortOrder": 14
         },
         {
           "externalId": "5944",
@@ -1756,7 +1686,7 @@
           "piecesPerCube": 44,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 16
+          "sortOrder": 15
         },
         {
           "externalId": "5974",
@@ -1770,7 +1700,7 @@
           "piecesPerCube": 44,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 17
+          "sortOrder": 16
         },
         {
           "externalId": "12200",
@@ -1782,6 +1712,20 @@
           "pricePerCube": 40000,
           "pricePerPiece": null,
           "piecesPerCube": 44,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 17
+        },
+        {
+          "externalId": "12208",
+          "sourceSku": "",
+          "size": "25×150×6000 мм, сорт Экстра",
+          "unit": "CUBE",
+          "sourcePrice": 50400,
+          "price": 49900,
+          "pricePerCube": 49900,
+          "pricePerPiece": null,
+          "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
           "sortOrder": 18
@@ -1801,20 +1745,6 @@
           "sortOrder": 19
         },
         {
-          "externalId": "12209",
-          "sourceSku": "",
-          "size": "25×200 мм, сорт Экстра",
-          "unit": "CUBE",
-          "sourcePrice": 50400,
-          "price": 49900,
-          "pricePerCube": 49900,
-          "pricePerPiece": null,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 20
-        },
-        {
           "externalId": "5947",
           "sourceSku": "",
           "size": "25×200×6000 мм",
@@ -1826,7 +1756,7 @@
           "piecesPerCube": 33,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 21
+          "sortOrder": 20
         },
         {
           "externalId": "5949",
@@ -1840,7 +1770,7 @@
           "piecesPerCube": 33,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 22
+          "sortOrder": 21
         },
         {
           "externalId": "5977",
@@ -1852,6 +1782,20 @@
           "pricePerCube": 8910,
           "pricePerPiece": null,
           "piecesPerCube": 33,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 22
+        },
+        {
+          "externalId": "12209",
+          "sourceSku": "",
+          "size": "25×200×6000 мм, сорт Экстра",
+          "unit": "CUBE",
+          "sourcePrice": 50400,
+          "price": 49900,
+          "pricePerCube": 49900,
+          "pricePerPiece": null,
+          "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
           "sortOrder": 23
@@ -2263,20 +2207,6 @@
           "sortOrder": 52
         },
         {
-          "externalId": "12210",
-          "sourceSku": "",
-          "size": "50×150 мм, сорт Экстра",
-          "unit": "CUBE",
-          "sourcePrice": 50400,
-          "price": 49900,
-          "pricePerCube": 49900,
-          "pricePerPiece": null,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 53
-        },
-        {
           "externalId": "5962",
           "sourceSku": "",
           "size": "50×150×6000 мм",
@@ -2288,7 +2218,7 @@
           "piecesPerCube": 22,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 54
+          "sortOrder": 53
         },
         {
           "externalId": "5964",
@@ -2302,7 +2232,7 @@
           "piecesPerCube": 22,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 55
+          "sortOrder": 54
         },
         {
           "externalId": "5987",
@@ -2316,7 +2246,7 @@
           "piecesPerCube": 22,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 56
+          "sortOrder": 55
         },
         {
           "externalId": "12202",
@@ -2330,12 +2260,12 @@
           "piecesPerCube": 22,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 57
+          "sortOrder": 56
         },
         {
-          "externalId": "12211",
+          "externalId": "12210",
           "sourceSku": "",
-          "size": "50×200 мм, сорт Экстра",
+          "size": "50×150×6000 мм, сорт Экстра",
           "unit": "CUBE",
           "sourcePrice": 50400,
           "price": 49900,
@@ -2344,7 +2274,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 58
+          "sortOrder": 57
         },
         {
           "externalId": "5966",
@@ -2358,7 +2288,7 @@
           "piecesPerCube": 16,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 59
+          "sortOrder": 58
         },
         {
           "externalId": "5968",
@@ -2372,7 +2302,7 @@
           "piecesPerCube": 16,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 60
+          "sortOrder": 59
         },
         {
           "externalId": "5991",
@@ -2384,6 +2314,20 @@
           "pricePerCube": 14850,
           "pricePerPiece": null,
           "piecesPerCube": 16,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 60
+        },
+        {
+          "externalId": "12211",
+          "sourceSku": "",
+          "size": "50×200×6000 мм, сорт Экстра",
+          "unit": "CUBE",
+          "sourcePrice": 50400,
+          "price": 49900,
+          "pricePerCube": 49900,
+          "pricePerPiece": null,
+          "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
           "sortOrder": 61
@@ -2428,7 +2372,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/06/14914034242660-1-jpg.webp"
       ],
       "shortDescription": "Доска обрезная из сосны и ели (ГОСТ) — доска для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Доска обрезная из сосны и ели (ГОСТ) — доска из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 25×100 мм, 25×100×6000 мм, 25×130 мм, 25×150 мм, 25×200 мм, 40×100 мм, 40×150 мм, 40×200 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Доска обрезная из сосны и ели (ГОСТ) — доска из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 25×100×6000 мм, 25×130×6000 мм, 25×150×6000 мм, 25×200×6000 мм, 40×100×6000 мм, 40×150×6000 мм, 40×200×6000 мм, 50×100×6000 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "CUBE",
       "active": true,
       "featured": false,
@@ -2436,20 +2380,6 @@
         {
           "externalId": "897",
           "sourceSku": "dos2510gost",
-          "size": "25×100 мм",
-          "unit": "CUBE",
-          "sourcePrice": 16350,
-          "price": 16190,
-          "pricePerCube": 16190,
-          "pricePerPiece": null,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 0
-        },
-        {
-          "externalId": "9556",
-          "sourceSku": "dos2510gost00",
           "size": "25×100×6000 мм",
           "unit": "CUBE",
           "sourcePrice": 13500,
@@ -2459,12 +2389,26 @@
           "piecesPerCube": 66,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 1
+          "sortOrder": 0
         },
         {
           "externalId": "5982",
           "sourceSku": "dos2513gost",
-          "size": "25×130 мм",
+          "size": "25×130×6000 мм",
+          "unit": "CUBE",
+          "sourcePrice": 16350,
+          "price": 16190,
+          "pricePerCube": 16190,
+          "pricePerPiece": null,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 1
+        },
+        {
+          "externalId": "5986",
+          "sourceSku": "dos2515gost",
+          "size": "25×150×6000 мм",
           "unit": "CUBE",
           "sourcePrice": 16350,
           "price": 16190,
@@ -2476,9 +2420,9 @@
           "sortOrder": 2
         },
         {
-          "externalId": "5986",
-          "sourceSku": "dos2515gost",
-          "size": "25×150 мм",
+          "externalId": "5993",
+          "sourceSku": "dos252gost",
+          "size": "25×200×6000 мм",
           "unit": "CUBE",
           "sourcePrice": 16350,
           "price": 16190,
@@ -2490,9 +2434,9 @@
           "sortOrder": 3
         },
         {
-          "externalId": "5993",
-          "sourceSku": "dos252gost",
-          "size": "25×200 мм",
+          "externalId": "5994",
+          "sourceSku": "dos410gost",
+          "size": "40×100×6000 мм",
           "unit": "CUBE",
           "sourcePrice": 16350,
           "price": 16190,
@@ -2504,23 +2448,9 @@
           "sortOrder": 4
         },
         {
-          "externalId": "5994",
-          "sourceSku": "dos410gost",
-          "size": "40×100 мм",
-          "unit": "CUBE",
-          "sourcePrice": 16350,
-          "price": 16190,
-          "pricePerCube": 16190,
-          "pricePerPiece": null,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 5
-        },
-        {
           "externalId": "5996",
           "sourceSku": "dos415gost",
-          "size": "40×150 мм",
+          "size": "40×150×6000 мм",
           "unit": "CUBE",
           "sourcePrice": 13000,
           "price": 12870,
@@ -2529,12 +2459,26 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 6
+          "sortOrder": 5
         },
         {
           "externalId": "5999",
           "sourceSku": "dos420gost",
-          "size": "40×200 мм",
+          "size": "40×200×6000 мм",
+          "unit": "CUBE",
+          "sourcePrice": 16350,
+          "price": 16190,
+          "pricePerCube": 16190,
+          "pricePerPiece": null,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 6
+        },
+        {
+          "externalId": "6001",
+          "sourceSku": "dos510gost",
+          "size": "50×100×6000 мм",
           "unit": "CUBE",
           "sourcePrice": 16350,
           "price": 16190,
@@ -2546,9 +2490,9 @@
           "sortOrder": 7
         },
         {
-          "externalId": "6001",
-          "sourceSku": "dos510gost",
-          "size": "50×100 мм",
+          "externalId": "6003",
+          "sourceSku": "dos515gost",
+          "size": "50×150×6000 мм",
           "unit": "CUBE",
           "sourcePrice": 16350,
           "price": 16190,
@@ -2560,9 +2504,9 @@
           "sortOrder": 8
         },
         {
-          "externalId": "6003",
-          "sourceSku": "dos515gost",
-          "size": "50×150 мм",
+          "externalId": "6005",
+          "sourceSku": "dos520gost",
+          "size": "50×200×6000 мм",
           "unit": "CUBE",
           "sourcePrice": 16350,
           "price": 16190,
@@ -2574,13 +2518,13 @@
           "sortOrder": 9
         },
         {
-          "externalId": "6005",
-          "sourceSku": "dos520gost",
-          "size": "50×200 мм",
+          "externalId": "11446",
+          "sourceSku": "dos520gost-1",
+          "size": "50×250×6000 мм",
           "unit": "CUBE",
-          "sourcePrice": 16350,
-          "price": 16190,
-          "pricePerCube": 16190,
+          "sourcePrice": 18500,
+          "price": 18320,
+          "pricePerCube": 18320,
           "pricePerPiece": null,
           "piecesPerCube": null,
           "inStock": true,
@@ -2588,9 +2532,9 @@
           "sortOrder": 10
         },
         {
-          "externalId": "11446",
-          "sourceSku": "dos520gost-1",
-          "size": "50×250 мм",
+          "externalId": "11447",
+          "sourceSku": "dos520gost-1-1",
+          "size": "50×300×6000 мм",
           "unit": "CUBE",
           "sourcePrice": 18500,
           "price": 18320,
@@ -2600,20 +2544,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 11
-        },
-        {
-          "externalId": "11447",
-          "sourceSku": "dos520gost-1-1",
-          "size": "50×300 мм",
-          "unit": "CUBE",
-          "sourcePrice": 18500,
-          "price": 18320,
-          "pricePerCube": 18320,
-          "pricePerPiece": null,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 12
         }
       ]
     },
@@ -3415,20 +3345,6 @@
           "sortOrder": 15
         },
         {
-          "externalId": "7289",
-          "sourceSku": "",
-          "size": "20×140 мм",
-          "unit": "PIECE",
-          "sourcePrice": 1600,
-          "price": 1580,
-          "pricePerCube": null,
-          "pricePerPiece": 1580,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 16
-        },
-        {
           "externalId": "5742",
           "sourceSku": "",
           "size": "20×140 мм 2-6 м, сорт AB, Архангельский лес",
@@ -3440,7 +3356,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 17
+          "sortOrder": 16
         },
         {
           "externalId": "5741",
@@ -3454,7 +3370,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 18
+          "sortOrder": 17
         },
         {
           "externalId": "5740",
@@ -3468,12 +3384,26 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
+          "sortOrder": 18
+        },
+        {
+          "externalId": "7289",
+          "sourceSku": "",
+          "size": "20×140×6000 мм",
+          "unit": "PIECE",
+          "sourcePrice": 1600,
+          "price": 1580,
+          "pricePerCube": null,
+          "pricePerPiece": 1580,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
           "sortOrder": 19
         },
         {
           "externalId": "9552",
           "sourceSku": "",
-          "size": "20×140 мм, сорт а",
+          "size": "20×140×6000 мм, сорт а",
           "unit": "PIECE",
           "sourcePrice": 680,
           "price": 673,
@@ -3483,20 +3413,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 20
-        },
-        {
-          "externalId": "7294",
-          "sourceSku": "",
-          "size": "20×190 мм",
-          "unit": "PIECE",
-          "sourcePrice": 1600,
-          "price": 1580,
-          "pricePerCube": null,
-          "pricePerPiece": 1580,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 21
         },
         {
           "externalId": "10324",
@@ -3510,7 +3426,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 22
+          "sortOrder": 21
         },
         {
           "externalId": "10321",
@@ -3524,7 +3440,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 23
+          "sortOrder": 22
         },
         {
           "externalId": "10319",
@@ -3538,7 +3454,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 24
+          "sortOrder": 23
         },
         {
           "externalId": "5749",
@@ -3552,7 +3468,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 25
+          "sortOrder": 24
         },
         {
           "externalId": "5748",
@@ -3566,7 +3482,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 26
+          "sortOrder": 25
         },
         {
           "externalId": "5747",
@@ -3580,12 +3496,26 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
+          "sortOrder": 26
+        },
+        {
+          "externalId": "7294",
+          "sourceSku": "",
+          "size": "20×190×6000 мм",
+          "unit": "PIECE",
+          "sourcePrice": 1600,
+          "price": 1580,
+          "pricePerCube": null,
+          "pricePerPiece": 1580,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
           "sortOrder": 27
         },
         {
           "externalId": "10317",
           "sourceSku": "ib219sm-1",
-          "size": "20×190 мм, сорт BC",
+          "size": "20×190×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 500,
           "price": 495,
@@ -3823,7 +3753,7 @@
         {
           "externalId": "3825",
           "sourceSku": "301806",
-          "size": "30×180 мм, сорт AB",
+          "size": "30×180×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 850,
           "price": 842,
@@ -4014,7 +3944,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/06/evrpolsos1-e1694870343977.png"
       ],
       "shortDescription": "Пиломатериал из сосны и ели — пиломатериал для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Пиломатериал из сосны и ели — пиломатериал из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×85 мм, сорт BC, 20×90 мм 2-6 м, сорт AB, 20×90 мм, сорт AB, 21×95 мм 2-6 м, сорт AB, 28×140 мм 2-6 м, сорт AB, 35×120 мм 2-6 м, сорт AB, 35×135 мм 2-6 м, сорт AB, 35×140 мм 2-6 м, сорт AB. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Пиломатериал из сосны и ели — пиломатериал из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×85×6000 мм, сорт BC, 20×90 мм 2-6 м, сорт AB, 20×90×6000 мм, сорт AB, 21×95 мм 2-6 м, сорт AB, 28×140 мм 2-6 м, сорт AB, 35×120 мм 2-6 м, сорт AB, 35×135 мм 2-6 м, сорт AB, 35×140 мм 2-6 м, сорт AB. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -4022,7 +3952,7 @@
         {
           "externalId": "10327",
           "sourceSku": "",
-          "size": "20×85 мм, сорт BC",
+          "size": "20×85×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 500,
           "price": 495,
@@ -4050,7 +3980,7 @@
         {
           "externalId": "775",
           "sourceSku": "",
-          "size": "20×90 мм, сорт AB",
+          "size": "20×90×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 600,
           "price": 594,
@@ -4134,7 +4064,7 @@
         {
           "externalId": "13016",
           "sourceSku": "",
-          "size": "35×140 мм, сорт BC",
+          "size": "35×140×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 400,
           "price": 396,
@@ -4185,7 +4115,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/06/20x90-extra-1400x1400-1-jpg.webp"
       ],
       "shortDescription": "Планкен из сосны и ели — планкен для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Планкен из сосны и ели — планкен из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×90×6000 мм, сорт C, 20×120×6000 мм, сорт C, 20×140 мм, сорт C, 20×140×6000 мм, сорт C, 20×190×6000 мм, сорт C. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Планкен из сосны и ели — планкен из раздела «Сосна и Ель». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×90×6000 мм, сорт C, 20×120×6000 мм, сорт C, 20×140×6000 мм, сорт C, 20×190×6000 мм, сорт C. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -4219,9 +4149,9 @@
           "sortOrder": 1
         },
         {
-          "externalId": "13010",
+          "externalId": "6402",
           "sourceSku": "",
-          "size": "20×140 мм, сорт C",
+          "size": "20×140×6000 мм, сорт C",
           "unit": "PIECE",
           "sourcePrice": 200,
           "price": 198,
@@ -4231,20 +4161,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 2
-        },
-        {
-          "externalId": "6402",
-          "sourceSku": "",
-          "size": "20×140×6000 мм, сорт C",
-          "unit": "PIECE",
-          "sourcePrice": 590,
-          "price": 584,
-          "pricePerCube": null,
-          "pricePerPiece": 584,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 3
         },
         {
           "externalId": "6406",
@@ -4258,7 +4174,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 4
+          "sortOrder": 3
         }
       ]
     },
@@ -4387,7 +4303,7 @@
         "https://pilmos.ru/wp-content/uploads/2021/09/blok-hauss-listvennicza-jpg-e1694876354643.webp"
       ],
       "shortDescription": "Блок-хаус из лиственницы — блок-хаус для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Блок-хаус из лиственницы — блок-хаус из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×90 мм / 120 мм 2-4 м, 20×90 мм / 120 мм 2-4 м, сорт A, 20×90 мм / 120 мм 2-4 м, сорт AB, 20×90 мм / 120 мм 2-4 м, сорт BC, 28×140 мм 2-4 м, 28×140 мм 2-4 м, сорт AB, 28×140 мм 2-4 м, сорт BC, 35×140 мм 2-4 м. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Блок-хаус из лиственницы — блок-хаус из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×90 мм/120 мм 2-4 м, 20×90 мм/120 мм 2-4 м, сорт A, 20×90 мм/120 мм 2-4 м, сорт AB, 20×90 мм/120 мм 2-4 м, сорт BC, 28×140 мм 2-4 м, 28×140 мм 2-4 м, сорт AB, 28×140 мм 2-4 м, сорт BC, 35×140 мм 2-4 м. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -4395,7 +4311,7 @@
         {
           "externalId": "397",
           "sourceSku": "",
-          "size": "20×90 мм / 120 мм 2-4 м",
+          "size": "20×90 мм/120 мм 2-4 м",
           "unit": "PIECE",
           "sourcePrice": 2100,
           "price": 2080,
@@ -4409,7 +4325,7 @@
         {
           "externalId": "7238",
           "sourceSku": "",
-          "size": "20×90 мм / 120 мм 2-4 м, сорт A",
+          "size": "20×90 мм/120 мм 2-4 м, сорт A",
           "unit": "PIECE",
           "sourcePrice": 1850,
           "price": 1830,
@@ -4423,7 +4339,7 @@
         {
           "externalId": "396",
           "sourceSku": "",
-          "size": "20×90 мм / 120 мм 2-4 м, сорт AB",
+          "size": "20×90 мм/120 мм 2-4 м, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 1600,
           "price": 1580,
@@ -4437,7 +4353,7 @@
         {
           "externalId": "395",
           "sourceSku": "",
-          "size": "20×90 мм / 120 мм 2-4 м, сорт BC",
+          "size": "20×90 мм/120 мм 2-4 м, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 1200,
           "price": 1190,
@@ -5587,7 +5503,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/05/p4jm3hidwcd1p24fxddk6xp3e8jfx96m-e1694877839976.png"
       ],
       "shortDescription": "Вагонка из лиственницы — вагонка для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Вагонка из лиственницы — вагонка из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 5×96 мм, 5×96 мм, сорт A, 5×96 мм, сорт AB, 5×96 мм, сорт BC, 14×90 мм 2-6 м, 14×90 мм 2-6 м, сорт A, 14×90 мм 2-6 м, сорт AB, 14×90 мм 2-6 м, сорт BC. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Вагонка из лиственницы — вагонка из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 5×96×6000 мм, 5×96×6000 мм, сорт A, 5×96×6000 мм, сорт AB, 5×96×6000 мм, сорт BC, 14×90 мм 2-6 м, 14×90 мм 2-6 м, сорт A, 14×90 мм 2-6 м, сорт AB, 14×90 мм 2-6 м, сорт BC. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -5595,7 +5511,7 @@
         {
           "externalId": "7005",
           "sourceSku": "",
-          "size": "5×96 мм",
+          "size": "5×96×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1600,
           "price": 1580,
@@ -5609,7 +5525,7 @@
         {
           "externalId": "7245",
           "sourceSku": "",
-          "size": "5×96 мм, сорт A",
+          "size": "5×96×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 1450,
           "price": 1440,
@@ -5623,7 +5539,7 @@
         {
           "externalId": "7007",
           "sourceSku": "",
-          "size": "5×96 мм, сорт AB",
+          "size": "5×96×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 1150,
           "price": 1140,
@@ -5637,7 +5553,7 @@
         {
           "externalId": "7008",
           "sourceSku": "",
-          "size": "5×96 мм, сорт BC",
+          "size": "5×96×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 850,
           "price": 842,
@@ -5707,7 +5623,7 @@
         {
           "externalId": "5139",
           "sourceSku": "",
-          "size": "14×90 мм, сорт а",
+          "size": "14×90×6000 мм, сорт а",
           "unit": "PIECE",
           "sourcePrice": 144,
           "price": 143,
@@ -5721,7 +5637,7 @@
         {
           "externalId": "6987",
           "sourceSku": "",
-          "size": "14×96 мм",
+          "size": "14×96×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 630,
           "price": 624,
@@ -5735,7 +5651,7 @@
         {
           "externalId": "7247",
           "sourceSku": "",
-          "size": "14×96 мм, сорт A",
+          "size": "14×96×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 1450,
           "price": 1440,
@@ -5749,7 +5665,7 @@
         {
           "externalId": "6989",
           "sourceSku": "",
-          "size": "14×96 мм, сорт AB",
+          "size": "14×96×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 1250,
           "price": 1240,
@@ -5763,7 +5679,7 @@
         {
           "externalId": "6988",
           "sourceSku": "",
-          "size": "14×96 мм, сорт BC",
+          "size": "14×96×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 850,
           "price": 842,
@@ -5777,7 +5693,7 @@
         {
           "externalId": "5867",
           "sourceSku": "",
-          "size": "14×110 мм",
+          "size": "14×110×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 600,
           "price": 594,
@@ -5791,7 +5707,7 @@
         {
           "externalId": "7249",
           "sourceSku": "",
-          "size": "14×110 мм, сорт A",
+          "size": "14×110×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 1550,
           "price": 1530,
@@ -5805,7 +5721,7 @@
         {
           "externalId": "5869",
           "sourceSku": "",
-          "size": "14×110 мм, сорт AB",
+          "size": "14×110×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 1150,
           "price": 1140,
@@ -5819,7 +5735,7 @@
         {
           "externalId": "5868",
           "sourceSku": "",
-          "size": "14×110 мм, сорт BC",
+          "size": "14×110×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 900,
           "price": 891,
@@ -5833,7 +5749,7 @@
         {
           "externalId": "6993",
           "sourceSku": "",
-          "size": "14×120 мм",
+          "size": "14×120×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1780,
           "price": 1760,
@@ -5847,7 +5763,7 @@
         {
           "externalId": "7246",
           "sourceSku": "",
-          "size": "14×120 мм, сорт A",
+          "size": "14×120×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 1550,
           "price": 1530,
@@ -5861,7 +5777,7 @@
         {
           "externalId": "6995",
           "sourceSku": "",
-          "size": "14×120 мм, сорт AB",
+          "size": "14×120×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 1450,
           "price": 1440,
@@ -5875,7 +5791,7 @@
         {
           "externalId": "6996",
           "sourceSku": "",
-          "size": "14×120 мм, сорт BC",
+          "size": "14×120×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 900,
           "price": 891,
@@ -5889,7 +5805,7 @@
         {
           "externalId": "5148",
           "sourceSku": "",
-          "size": "14×135 мм",
+          "size": "14×135×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 630,
           "price": 624,
@@ -5903,7 +5819,7 @@
         {
           "externalId": "7250",
           "sourceSku": "",
-          "size": "14×135 мм, сорт A",
+          "size": "14×135×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 1350,
           "price": 1340,
@@ -5917,7 +5833,7 @@
         {
           "externalId": "5150",
           "sourceSku": "",
-          "size": "14×135 мм, сорт AB",
+          "size": "14×135×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 1100,
           "price": 1090,
@@ -5931,7 +5847,7 @@
         {
           "externalId": "5149",
           "sourceSku": "",
-          "size": "14×135 мм, сорт BC",
+          "size": "14×135×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 850,
           "price": 842,
@@ -5945,7 +5861,7 @@
         {
           "externalId": "6999",
           "sourceSku": "",
-          "size": "18×140 мм",
+          "size": "18×140×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 2200,
           "price": 2180,
@@ -5959,7 +5875,7 @@
         {
           "externalId": "7001",
           "sourceSku": "",
-          "size": "18×140 мм, сорт AB",
+          "size": "18×140×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 950,
           "price": 941,
@@ -5973,7 +5889,7 @@
         {
           "externalId": "7002",
           "sourceSku": "",
-          "size": "18×140 мм, сорт BC",
+          "size": "18×140×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 850,
           "price": 842,
@@ -5996,7 +5912,7 @@
         "https://pilmos.ru/wp-content/uploads/2021/09/781_original-e1685614661119.webp"
       ],
       "shortDescription": "Доска обрезная из лиственницы — доска для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Доска обрезная из лиственницы — доска из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 16×90×6000 мм, 16×110×6000 мм, 16×140×6000 мм, 20×90×6000 мм, 20×120×6000 мм, 20×140×6000 мм, 25×100 мм, сорт 2, 25×100×6000 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Доска обрезная из лиственницы — доска из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 16×90×6000 мм, 16×110×6000 мм, 16×140×6000 мм, 20×90×6000 мм, 20×120×6000 мм, 20×140×6000 мм, 25×100×6000 мм, 25×100×6000 мм, сорт 2. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -6086,20 +6002,6 @@
           "sortOrder": 5
         },
         {
-          "externalId": "4081",
-          "sourceSku": "",
-          "size": "25×100 мм, сорт 2",
-          "unit": "PIECE",
-          "sourcePrice": 32000,
-          "price": 31680,
-          "pricePerCube": null,
-          "pricePerPiece": 31680,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 6
-        },
-        {
           "externalId": "6035",
           "sourceSku": "",
           "size": "25×100×6000 мм",
@@ -6108,6 +6010,20 @@
           "price": 386,
           "pricePerCube": null,
           "pricePerPiece": 386,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 6
+        },
+        {
+          "externalId": "4081",
+          "sourceSku": "",
+          "size": "25×100×6000 мм, сорт 2",
+          "unit": "PIECE",
+          "sourcePrice": 32000,
+          "price": 31680,
+          "pricePerCube": null,
+          "pricePerPiece": 31680,
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
@@ -6144,7 +6060,7 @@
         {
           "externalId": "13014",
           "sourceSku": "",
-          "size": "26×140 мм",
+          "size": "26×140×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 320,
           "price": 317,
@@ -6154,20 +6070,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 10
-        },
-        {
-          "externalId": "7092",
-          "sourceSku": "",
-          "size": "28×90 мм",
-          "unit": "PIECE",
-          "sourcePrice": 1100,
-          "price": 1090,
-          "pricePerCube": null,
-          "pricePerPiece": 1090,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 11
         },
         {
           "externalId": "6760",
@@ -6181,7 +6083,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 12
+          "sortOrder": 11
         },
         {
           "externalId": "6762",
@@ -6195,7 +6097,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 13
+          "sortOrder": 12
         },
         {
           "externalId": "6763",
@@ -6209,21 +6111,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 14
-        },
-        {
-          "externalId": "11379",
-          "sourceSku": "",
-          "size": "28×90 мм, сорт AB",
-          "unit": "PIECE",
-          "sourcePrice": 1900,
-          "price": 1880,
-          "pricePerCube": null,
-          "pricePerPiece": 1880,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 15
+          "sortOrder": 13
         },
         {
           "externalId": "5899",
@@ -6237,12 +6125,26 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 16
+          "sortOrder": 14
+        },
+        {
+          "externalId": "11379",
+          "sourceSku": "",
+          "size": "28×90×6000 мм, сорт AB",
+          "unit": "PIECE",
+          "sourcePrice": 1900,
+          "price": 1880,
+          "pricePerCube": null,
+          "pricePerPiece": 1880,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 15
         },
         {
           "externalId": "7095",
           "sourceSku": "",
-          "size": "28×115 мм",
+          "size": "28×115×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1100,
           "price": 1090,
@@ -6251,21 +6153,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 17
-        },
-        {
-          "externalId": "7101",
-          "sourceSku": "",
-          "size": "28×120 мм",
-          "unit": "PIECE",
-          "sourcePrice": 1100,
-          "price": 1090,
-          "pricePerCube": null,
-          "pricePerPiece": 1090,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 18
+          "sortOrder": 16
         },
         {
           "externalId": "1261",
@@ -6279,7 +6167,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 19
+          "sortOrder": 17
         },
         {
           "externalId": "1262",
@@ -6293,7 +6181,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 20
+          "sortOrder": 18
         },
         {
           "externalId": "1263",
@@ -6307,12 +6195,26 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 21
+          "sortOrder": 19
+        },
+        {
+          "externalId": "7101",
+          "sourceSku": "",
+          "size": "28×120×6000 мм",
+          "unit": "PIECE",
+          "sourcePrice": 1100,
+          "price": 1090,
+          "pricePerCube": null,
+          "pricePerPiece": 1090,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 20
         },
         {
           "externalId": "11149",
           "sourceSku": "",
-          "size": "28×120 мм, сорт AB",
+          "size": "28×120×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 1900,
           "price": 1880,
@@ -6321,12 +6223,12 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 22
+          "sortOrder": 21
         },
         {
           "externalId": "11147",
           "sourceSku": "",
-          "size": "28×120 мм, сорт C",
+          "size": "28×120×6000 мм, сорт C",
           "unit": "PIECE",
           "sourcePrice": 1200,
           "price": 1190,
@@ -6335,21 +6237,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 23
-        },
-        {
-          "externalId": "11145",
-          "sourceSku": "",
-          "size": "28×140 мм",
-          "unit": "PIECE",
-          "sourcePrice": 1000,
-          "price": 990,
-          "pricePerCube": null,
-          "pricePerPiece": 990,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 24
+          "sortOrder": 22
         },
         {
           "externalId": "7060",
@@ -6363,7 +6251,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 25
+          "sortOrder": 23
         },
         {
           "externalId": "6753",
@@ -6377,7 +6265,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 26
+          "sortOrder": 24
         },
         {
           "externalId": "6238",
@@ -6391,7 +6279,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 27
+          "sortOrder": 25
         },
         {
           "externalId": "7183",
@@ -6405,7 +6293,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 28
+          "sortOrder": 26
         },
         {
           "externalId": "6240",
@@ -6419,7 +6307,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 29
+          "sortOrder": 27
         },
         {
           "externalId": "6241",
@@ -6433,26 +6321,26 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 30
+          "sortOrder": 28
         },
         {
           "externalId": "5901",
           "sourceSku": "dchl2814sm",
           "size": "28×140×6000 мм",
           "unit": "PIECE",
-          "sourcePrice": 1260,
-          "price": 1250,
+          "sourcePrice": 1000,
+          "price": 990,
           "pricePerCube": null,
-          "pricePerPiece": 1250,
+          "pricePerPiece": 990,
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 31
+          "sortOrder": 29
         },
         {
           "externalId": "5185",
           "sourceSku": "",
-          "size": "28×142 мм",
+          "size": "28×142×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 2200,
           "price": 2180,
@@ -6461,12 +6349,12 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 32
+          "sortOrder": 30
         },
         {
           "externalId": "5186",
           "sourceSku": "",
-          "size": "28×142 мм, сорт B",
+          "size": "28×142×6000 мм, сорт B",
           "unit": "PIECE",
           "sourcePrice": 1950,
           "price": 1930,
@@ -6475,12 +6363,12 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 33
+          "sortOrder": 31
         },
         {
           "externalId": "7220",
           "sourceSku": "",
-          "size": "34×160 мм",
+          "size": "34×160×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 2850,
           "price": 2820,
@@ -6489,12 +6377,12 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 34
+          "sortOrder": 32
         },
         {
           "externalId": "11380",
           "sourceSku": "",
-          "size": "34×160 мм, сорт AB",
+          "size": "34×160×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 2500,
           "price": 2480,
@@ -6503,21 +6391,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 35
-        },
-        {
-          "externalId": "7089",
-          "sourceSku": "",
-          "size": "35×90 мм",
-          "unit": "PIECE",
-          "sourcePrice": 1500,
-          "price": 1490,
-          "pricePerCube": null,
-          "pricePerPiece": 1490,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 36
+          "sortOrder": 33
         },
         {
           "externalId": "6247",
@@ -6531,7 +6405,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 37
+          "sortOrder": 34
         },
         {
           "externalId": "6249",
@@ -6545,7 +6419,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 38
+          "sortOrder": 35
         },
         {
           "externalId": "6250",
@@ -6559,7 +6433,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 39
+          "sortOrder": 36
         },
         {
           "externalId": "5902",
@@ -6573,7 +6447,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 40
+          "sortOrder": 37
         },
         {
           "externalId": "9492",
@@ -6587,7 +6461,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 41
+          "sortOrder": 38
         },
         {
           "externalId": "6270",
@@ -6601,7 +6475,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 42
+          "sortOrder": 39
         },
         {
           "externalId": "6272",
@@ -6615,7 +6489,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 43
+          "sortOrder": 40
         },
         {
           "externalId": "6273",
@@ -6629,7 +6503,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 44
+          "sortOrder": 41
         },
         {
           "externalId": "9141",
@@ -6643,7 +6517,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 45
+          "sortOrder": 42
         },
         {
           "externalId": "1280",
@@ -6657,7 +6531,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 46
+          "sortOrder": 43
         },
         {
           "externalId": "1282",
@@ -6671,7 +6545,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 47
+          "sortOrder": 44
         },
         {
           "externalId": "1283",
@@ -6685,21 +6559,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 48
-        },
-        {
-          "externalId": "11148",
-          "sourceSku": "",
-          "size": "35×140 мм, сорт C",
-          "unit": "PIECE",
-          "sourcePrice": 1450,
-          "price": 1440,
-          "pricePerCube": null,
-          "pricePerPiece": 1440,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 49
+          "sortOrder": 45
         },
         {
           "externalId": "9143",
@@ -6713,7 +6573,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 50
+          "sortOrder": 46
         },
         {
           "externalId": "5903",
@@ -6727,7 +6587,21 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 51
+          "sortOrder": 47
+        },
+        {
+          "externalId": "11148",
+          "sourceSku": "",
+          "size": "35×140×6000 мм, сорт C",
+          "unit": "PIECE",
+          "sourcePrice": 1450,
+          "price": 1440,
+          "pricePerCube": null,
+          "pricePerPiece": 1440,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 48
         },
         {
           "externalId": "6099",
@@ -6741,7 +6615,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 52
+          "sortOrder": 49
         },
         {
           "externalId": "6108",
@@ -6755,7 +6629,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 53
+          "sortOrder": 50
         },
         {
           "externalId": "7485",
@@ -6769,7 +6643,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 54
+          "sortOrder": 51
         },
         {
           "externalId": "11786",
@@ -6783,7 +6657,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 55
+          "sortOrder": 52
         },
         {
           "externalId": "5904",
@@ -6797,7 +6671,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 56
+          "sortOrder": 53
         },
         {
           "externalId": "1274",
@@ -6811,7 +6685,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 57
+          "sortOrder": 54
         },
         {
           "externalId": "7251",
@@ -6825,7 +6699,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 58
+          "sortOrder": 55
         },
         {
           "externalId": "1276",
@@ -6839,7 +6713,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 59
+          "sortOrder": 56
         },
         {
           "externalId": "1277",
@@ -6853,21 +6727,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 60
-        },
-        {
-          "externalId": "7104",
-          "sourceSku": "",
-          "size": "45×140 мм, сорт ПРИМА",
-          "unit": "PIECE",
-          "sourcePrice": 3900,
-          "price": 3860,
-          "pricePerCube": null,
-          "pricePerPiece": 3860,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 61
+          "sortOrder": 57
         },
         {
           "externalId": "5905",
@@ -6881,7 +6741,21 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 62
+          "sortOrder": 58
+        },
+        {
+          "externalId": "7104",
+          "sourceSku": "",
+          "size": "45×140×6000 мм, сорт ПРИМА",
+          "unit": "PIECE",
+          "sourcePrice": 3900,
+          "price": 3860,
+          "pricePerCube": null,
+          "pricePerPiece": 3860,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 59
         },
         {
           "externalId": "6766",
@@ -6895,7 +6769,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 63
+          "sortOrder": 60
         },
         {
           "externalId": "7252",
@@ -6909,7 +6783,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 64
+          "sortOrder": 61
         },
         {
           "externalId": "6768",
@@ -6923,7 +6797,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 65
+          "sortOrder": 62
         },
         {
           "externalId": "6769",
@@ -6937,7 +6811,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 66
+          "sortOrder": 63
         },
         {
           "externalId": "6111",
@@ -6951,7 +6825,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 67
+          "sortOrder": 64
         },
         {
           "externalId": "6114",
@@ -6965,7 +6839,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 68
+          "sortOrder": 65
         },
         {
           "externalId": "6124",
@@ -6979,7 +6853,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 69
+          "sortOrder": 66
         },
         {
           "externalId": "14075",
@@ -6993,7 +6867,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 70
+          "sortOrder": 67
         },
         {
           "externalId": "14078",
@@ -7007,21 +6881,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 71
-        },
-        {
-          "externalId": "9136",
-          "sourceSku": "",
-          "size": "Стандарт",
-          "unit": "PIECE",
-          "sourcePrice": 1500,
-          "price": 1490,
-          "pricePerCube": null,
-          "pricePerPiece": 1490,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 72
+          "sortOrder": 68
         }
       ]
     },
@@ -7363,7 +7223,7 @@
         "https://pilmos.ru/wp-content/uploads/2022/08/doska_pola-listvennitsa1.jpg"
       ],
       "shortDescription": "Доска пола из лиственницы — доска пола для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Доска пола из лиственницы — доска пола из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×90 мм, 20×90 мм, сорт AB, 20×90 мм, сорт BC, 20×130 мм, 20×130 мм, сорт A, 20×130 мм, сорт AB, 20×130 мм, сорт BC, 25×140 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Доска пола из лиственницы — доска пола из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×90×6000 мм, 20×90×6000 мм, сорт AB, 20×90×6000 мм, сорт BC, 20×130×6000 мм, 20×130×6000 мм, сорт A, 20×130×6000 мм, сорт AB, 20×130×6000 мм, сорт BC, 25×140×6000 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -7371,7 +7231,7 @@
         {
           "externalId": "6118",
           "sourceSku": "",
-          "size": "20×90 мм",
+          "size": "20×90×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1950,
           "price": 1930,
@@ -7385,7 +7245,7 @@
         {
           "externalId": "6117",
           "sourceSku": "",
-          "size": "20×90 мм, сорт AB",
+          "size": "20×90×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 1700,
           "price": 1680,
@@ -7399,7 +7259,7 @@
         {
           "externalId": "6116",
           "sourceSku": "",
-          "size": "20×90 мм, сорт BC",
+          "size": "20×90×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 1180,
           "price": 1170,
@@ -7413,7 +7273,7 @@
         {
           "externalId": "6128",
           "sourceSku": "",
-          "size": "20×130 мм",
+          "size": "20×130×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 2370,
           "price": 2350,
@@ -7427,7 +7287,7 @@
         {
           "externalId": "7228",
           "sourceSku": "",
-          "size": "20×130 мм, сорт A",
+          "size": "20×130×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 1950,
           "price": 1930,
@@ -7441,7 +7301,7 @@
         {
           "externalId": "6130",
           "sourceSku": "",
-          "size": "20×130 мм, сорт AB",
+          "size": "20×130×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 1700,
           "price": 1680,
@@ -7455,7 +7315,7 @@
         {
           "externalId": "6131",
           "sourceSku": "",
-          "size": "20×130 мм, сорт BC",
+          "size": "20×130×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 1100,
           "price": 1090,
@@ -7469,7 +7329,7 @@
         {
           "externalId": "6138",
           "sourceSku": "",
-          "size": "25×140 мм",
+          "size": "25×140×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 2800,
           "price": 2770,
@@ -7483,7 +7343,7 @@
         {
           "externalId": "7227",
           "sourceSku": "",
-          "size": "25×140 мм, сорт A",
+          "size": "25×140×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 2600,
           "price": 2570,
@@ -7497,7 +7357,7 @@
         {
           "externalId": "6140",
           "sourceSku": "",
-          "size": "25×140 мм, сорт AB",
+          "size": "25×140×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 2300,
           "price": 2280,
@@ -7511,7 +7371,7 @@
         {
           "externalId": "6141",
           "sourceSku": "",
-          "size": "25×140 мм, сорт BC",
+          "size": "25×140×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 1700,
           "price": 1680,
@@ -7525,7 +7385,7 @@
         {
           "externalId": "6134",
           "sourceSku": "",
-          "size": "28×90 мм",
+          "size": "28×90×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 3000,
           "price": 2970,
@@ -7539,7 +7399,7 @@
         {
           "externalId": "7230",
           "sourceSku": "",
-          "size": "28×90 мм, сорт A",
+          "size": "28×90×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 2800,
           "price": 2770,
@@ -7553,7 +7413,7 @@
         {
           "externalId": "6136",
           "sourceSku": "",
-          "size": "28×90 мм, сорт AB",
+          "size": "28×90×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 2300,
           "price": 2280,
@@ -7567,7 +7427,7 @@
         {
           "externalId": "6137",
           "sourceSku": "",
-          "size": "28×90 мм, сорт BC",
+          "size": "28×90×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 1700,
           "price": 1680,
@@ -7581,7 +7441,7 @@
         {
           "externalId": "6142",
           "sourceSku": "",
-          "size": "28×120 мм",
+          "size": "28×120×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 3000,
           "price": 2970,
@@ -7595,7 +7455,7 @@
         {
           "externalId": "7231",
           "sourceSku": "",
-          "size": "28×120 мм, сорт A",
+          "size": "28×120×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 2800,
           "price": 2770,
@@ -7609,7 +7469,7 @@
         {
           "externalId": "6144",
           "sourceSku": "",
-          "size": "28×120 мм, сорт AB",
+          "size": "28×120×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 2300,
           "price": 2280,
@@ -7623,7 +7483,7 @@
         {
           "externalId": "6145",
           "sourceSku": "",
-          "size": "28×120 мм, сорт BC",
+          "size": "28×120×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 1700,
           "price": 1680,
@@ -7637,7 +7497,7 @@
         {
           "externalId": "6147",
           "sourceSku": "",
-          "size": "28×140 мм",
+          "size": "28×140×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 3100,
           "price": 3070,
@@ -7651,7 +7511,7 @@
         {
           "externalId": "12253",
           "sourceSku": "",
-          "size": "28×140 мм, сорт A",
+          "size": "28×140×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 2800,
           "price": 2770,
@@ -7665,7 +7525,7 @@
         {
           "externalId": "6149",
           "sourceSku": "",
-          "size": "28×140 мм, сорт AB",
+          "size": "28×140×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 2300,
           "price": 2280,
@@ -7679,7 +7539,7 @@
         {
           "externalId": "6150",
           "sourceSku": "",
-          "size": "28×140 мм, сорт BC",
+          "size": "28×140×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 1700,
           "price": 1680,
@@ -7693,7 +7553,7 @@
         {
           "externalId": "6163",
           "sourceSku": "",
-          "size": "35×90 мм",
+          "size": "35×90×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1580,
           "price": 1560,
@@ -7707,7 +7567,7 @@
         {
           "externalId": "7234",
           "sourceSku": "",
-          "size": "35×90 мм, сорт A",
+          "size": "35×90×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 3750,
           "price": 3710,
@@ -7721,7 +7581,7 @@
         {
           "externalId": "6184",
           "sourceSku": "",
-          "size": "35×110 мм",
+          "size": "35×110×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1680,
           "price": 1660,
@@ -7735,7 +7595,7 @@
         {
           "externalId": "7235",
           "sourceSku": "",
-          "size": "35×110 мм, сорт A",
+          "size": "35×110×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 3300,
           "price": 3270,
@@ -7749,7 +7609,7 @@
         {
           "externalId": "6153",
           "sourceSku": "",
-          "size": "35×115 мм",
+          "size": "35×115×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 3980,
           "price": 3940,
@@ -7763,7 +7623,7 @@
         {
           "externalId": "7233",
           "sourceSku": "",
-          "size": "35×115 мм, сорт A",
+          "size": "35×115×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 3750,
           "price": 3710,
@@ -7777,7 +7637,7 @@
         {
           "externalId": "6154",
           "sourceSku": "",
-          "size": "35×115 мм, сорт AB",
+          "size": "35×115×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 3100,
           "price": 3070,
@@ -7791,7 +7651,7 @@
         {
           "externalId": "6155",
           "sourceSku": "",
-          "size": "35×115 мм, сорт BC",
+          "size": "35×115×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 2200,
           "price": 2180,
@@ -7805,7 +7665,7 @@
         {
           "externalId": "6173",
           "sourceSku": "",
-          "size": "35×140 мм",
+          "size": "35×140×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1680,
           "price": 1660,
@@ -7819,7 +7679,7 @@
         {
           "externalId": "7226",
           "sourceSku": "",
-          "size": "35×140 мм, сорт A",
+          "size": "35×140×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 3750,
           "price": 3710,
@@ -7833,7 +7693,7 @@
         {
           "externalId": "6175",
           "sourceSku": "",
-          "size": "35×140 мм, сорт AB",
+          "size": "35×140×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 3100,
           "price": 3070,
@@ -7847,7 +7707,7 @@
         {
           "externalId": "6176",
           "sourceSku": "",
-          "size": "35×140 мм, сорт BC",
+          "size": "35×140×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 2200,
           "price": 2180,
@@ -7861,7 +7721,7 @@
         {
           "externalId": "6200",
           "sourceSku": "",
-          "size": "45×110 мм",
+          "size": "45×110×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1500,
           "price": 1490,
@@ -7875,7 +7735,7 @@
         {
           "externalId": "7236",
           "sourceSku": "",
-          "size": "45×110 мм, сорт A",
+          "size": "45×110×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 3840,
           "price": 3800,
@@ -7889,7 +7749,7 @@
         {
           "externalId": "6190",
           "sourceSku": "",
-          "size": "45×140 мм",
+          "size": "45×140×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1850,
           "price": 1830,
@@ -7903,7 +7763,7 @@
         {
           "externalId": "7237",
           "sourceSku": "",
-          "size": "45×140 мм, сорт A",
+          "size": "45×140×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 4850,
           "price": 4800,
@@ -7917,7 +7777,7 @@
         {
           "externalId": "6192",
           "sourceSku": "",
-          "size": "45×140 мм, сорт AB",
+          "size": "45×140×6000 мм, сорт AB",
           "unit": "PIECE",
           "sourcePrice": 4000,
           "price": 3960,
@@ -7931,7 +7791,7 @@
         {
           "externalId": "6193",
           "sourceSku": "",
-          "size": "45×140 мм, сорт BC",
+          "size": "45×140×6000 мм, сорт BC",
           "unit": "PIECE",
           "sourcePrice": 2450,
           "price": 2430,
@@ -8425,7 +8285,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/06/plankeni-1-jpg.webp"
       ],
       "shortDescription": "Планкен из лиственницы — планкен для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Планкен из лиственницы — планкен из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 14×90 мм 2 м, 20×100 мм, 20×120 мм, 20×140 мм, 20×140 мм, сорт ЭКСТРА, 20×140 мм, сорт AB, 20×140×1000 мм, сорт А, 20×140×1000 мм, сорт ПРИМА. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Планкен из лиственницы — планкен из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 14×90 мм 2 м, 20×100×6000 мм, 20×120×6000 мм, 20×140×1000 мм, сорт А, 20×140×1000 мм, сорт ПРИМА, 20×140×4000 мм, сорт A, 20×140×4000 мм, сорт AB, 20×140×4000 мм, сорт BC. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -8447,7 +8307,7 @@
         {
           "externalId": "1336",
           "sourceSku": "",
-          "size": "20×100 мм",
+          "size": "20×100×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 850,
           "price": 842,
@@ -8461,7 +8321,7 @@
         {
           "externalId": "1343",
           "sourceSku": "",
-          "size": "20×120 мм",
+          "size": "20×120×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 900,
           "price": 891,
@@ -8471,48 +8331,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 2
-        },
-        {
-          "externalId": "2471",
-          "sourceSku": "",
-          "size": "20×140 мм",
-          "unit": "PIECE",
-          "sourcePrice": 650,
-          "price": 644,
-          "pricePerCube": null,
-          "pricePerPiece": 644,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 3
-        },
-        {
-          "externalId": "11378",
-          "sourceSku": "",
-          "size": "20×140 мм, сорт ЭКСТРА",
-          "unit": "PIECE",
-          "sourcePrice": 2150,
-          "price": 2130,
-          "pricePerCube": null,
-          "pricePerPiece": 2130,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 4
-        },
-        {
-          "externalId": "11373",
-          "sourceSku": "",
-          "size": "20×140 мм, сорт AB",
-          "unit": "PIECE",
-          "sourcePrice": 1550,
-          "price": 1530,
-          "pricePerCube": null,
-          "pricePerPiece": 1530,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 5
         },
         {
           "externalId": "1410",
@@ -8526,7 +8344,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 6
+          "sortOrder": 3
         },
         {
           "externalId": "2939",
@@ -8540,7 +8358,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 7
+          "sortOrder": 4
         },
         {
           "externalId": "9581",
@@ -8554,7 +8372,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 8
+          "sortOrder": 5
         },
         {
           "externalId": "7491",
@@ -8568,7 +8386,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 9
+          "sortOrder": 6
         },
         {
           "externalId": "7492",
@@ -8582,12 +8400,54 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
+          "sortOrder": 7
+        },
+        {
+          "externalId": "2471",
+          "sourceSku": "",
+          "size": "20×140×6000 мм",
+          "unit": "PIECE",
+          "sourcePrice": 650,
+          "price": 644,
+          "pricePerCube": null,
+          "pricePerPiece": 644,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 8
+        },
+        {
+          "externalId": "11378",
+          "sourceSku": "",
+          "size": "20×140×6000 мм, сорт ЭКСТРА",
+          "unit": "PIECE",
+          "sourcePrice": 2150,
+          "price": 2130,
+          "pricePerCube": null,
+          "pricePerPiece": 2130,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 9
+        },
+        {
+          "externalId": "11373",
+          "sourceSku": "",
+          "size": "20×140×6000 мм, сорт AB",
+          "unit": "PIECE",
+          "sourcePrice": 1550,
+          "price": 1530,
+          "pricePerCube": null,
+          "pricePerPiece": 1530,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
           "sortOrder": 10
         },
         {
           "externalId": "6741",
           "sourceSku": "",
-          "size": "20×190 мм",
+          "size": "20×190×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 950,
           "price": 941,
@@ -8610,7 +8470,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/06/1144.970-e1694871182528.png"
       ],
       "shortDescription": "Террасная доска из лиственницы — террасная доска для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Террасная доска из лиственницы — террасная доска из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 28×90 мм 2-6 м, 28×120 мм 2-6 м, 28×140 мм 2 м, сорт а, 28×140 мм 2-4 м, 28×140 мм 6 м, 28×140 мм, сорт AB, 28×140×2000 мм, сорт AB, 35×90 мм 2-6 м. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Террасная доска из лиственницы — террасная доска из раздела «Лиственница». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 28×90 мм 2-6 м, 28×120 мм 2-6 м, 28×140 мм 2 м, сорт а, 28×140 мм 2-4 м, 28×140 мм 6 м, 28×140×2000 мм, сорт AB, 28×140×6000 мм, сорт AB, 35×90 мм 2-6 м. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -8686,20 +8546,6 @@
           "sortOrder": 4
         },
         {
-          "externalId": "11157",
-          "sourceSku": "",
-          "size": "28×140 мм, сорт AB",
-          "unit": "PIECE",
-          "sourcePrice": 1900,
-          "price": 1880,
-          "pricePerCube": null,
-          "pricePerPiece": 1880,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 5
-        },
-        {
           "externalId": "7023",
           "sourceSku": "123654789",
           "size": "28×140×2000 мм, сорт AB",
@@ -8708,6 +8554,20 @@
           "price": 1240,
           "pricePerCube": null,
           "pricePerPiece": 1240,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
+          "sortOrder": 5
+        },
+        {
+          "externalId": "11157",
+          "sourceSku": "",
+          "size": "28×140×6000 мм, сорт AB",
+          "unit": "PIECE",
+          "sourcePrice": 1900,
+          "price": 1880,
+          "pricePerCube": null,
+          "pricePerPiece": 1880,
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
@@ -8742,20 +8602,6 @@
           "sortOrder": 8
         },
         {
-          "externalId": "7282",
-          "sourceSku": "",
-          "size": "35×140 мм",
-          "unit": "PIECE",
-          "sourcePrice": 1500,
-          "price": 1490,
-          "pricePerCube": null,
-          "pricePerPiece": 1490,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 9
-        },
-        {
           "externalId": "13027",
           "sourceSku": "tdl35140sm-1",
           "size": "35×140 мм 2 м, сорт AB",
@@ -8767,7 +8613,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 10
+          "sortOrder": 9
         },
         {
           "externalId": "6377",
@@ -8781,12 +8627,26 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
+          "sortOrder": 10
+        },
+        {
+          "externalId": "7282",
+          "sourceSku": "",
+          "size": "35×140×6000 мм",
+          "unit": "PIECE",
+          "sourcePrice": 1500,
+          "price": 1490,
+          "pricePerCube": null,
+          "pricePerPiece": 1490,
+          "piecesPerCube": null,
+          "inStock": true,
+          "stockQty": null,
           "sortOrder": 11
         },
         {
           "externalId": "3410",
           "sourceSku": "",
-          "size": "35×140 мм, сорт а",
+          "size": "35×140×6000 мм, сорт а",
           "unit": "PIECE",
           "sourcePrice": 28000,
           "price": 27720,
@@ -9402,25 +9262,11 @@
         "https://pilmos.ru/wp-content/uploads/2023/06/304ee44a9bcc3f39f725388710af7b26-fotor-bg-remover-20230915212058.png"
       ],
       "shortDescription": "Фанера ламинированная 1220×2440 мм — фанера для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Фанера ламинированная 1220×2440 мм — фанера из раздела «Фанера и листовые материалы». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 0 мм, 18 мм, 18 мм, сорт 1/1, 21 мм, 21 мм, сорт 1/1, 24 мм, сорт 1/1, 27 мм, сорт 1/1, сорт 1/1. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Фанера ламинированная 1220×2440 мм — фанера из раздела «Фанера и листовые материалы». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 18 мм, 18 мм, сорт 1/1, 21 мм, 21 мм, сорт 1/1, 24 мм, сорт 1/1, 27 мм, сорт 1/1. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
       "variants": [
-        {
-          "externalId": "1741",
-          "sourceSku": "",
-          "size": "0 мм",
-          "unit": "PIECE",
-          "sourcePrice": 4200,
-          "price": 4160,
-          "pricePerCube": null,
-          "pricePerPiece": 4160,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 0
-        },
         {
           "externalId": "6620",
           "sourceSku": "",
@@ -9433,7 +9279,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 1
+          "sortOrder": 0
         },
         {
           "externalId": "6621",
@@ -9447,7 +9293,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 2
+          "sortOrder": 1
         },
         {
           "externalId": "6624",
@@ -9461,7 +9307,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 3
+          "sortOrder": 2
         },
         {
           "externalId": "6625",
@@ -9475,7 +9321,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 4
+          "sortOrder": 3
         },
         {
           "externalId": "6627",
@@ -9489,7 +9335,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 5
+          "sortOrder": 4
         },
         {
           "externalId": "6635",
@@ -9503,35 +9349,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 6
-        },
-        {
-          "externalId": "9464",
-          "sourceSku": "",
-          "size": "сорт 1/1",
-          "unit": "PIECE",
-          "sourcePrice": 2150,
-          "price": 2130,
-          "pricePerCube": null,
-          "pricePerPiece": 2130,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 7
-        },
-        {
-          "externalId": "9458",
-          "sourceSku": "",
-          "size": "Стандарт",
-          "unit": "PIECE",
-          "sourcePrice": 1150,
-          "price": 1140,
-          "pricePerCube": null,
-          "pricePerPiece": 1140,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 8
+          "sortOrder": 5
         }
       ]
     },
@@ -9545,25 +9363,11 @@
         "https://pilmos.ru/wp-content/uploads/2023/06/304ee44a9bcc3f39f725388710af7b26-fotor-bg-remover-20230915212058.png"
       ],
       "shortDescription": "Фанера ламинированная 1500×3000 мм — фанера для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Фанера ламинированная 1500×3000 мм — фанера из раздела «Фанера и листовые материалы». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 0 мм, 6 мм, сорт 1/1, 9 мм, сорт 1/1, 15 мм, сорт 1/1, 18 мм, 18 мм, сорт 1/1, 21 мм, 21 мм, сорт 1/1. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Фанера ламинированная 1500×3000 мм — фанера из раздела «Фанера и листовые материалы». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 6 мм, сорт 1/1, 9 мм, сорт 1/1, 15 мм, сорт 1/1, 18 мм, 18 мм, сорт 1/1, 21 мм, 21 мм, сорт 1/1, 24 мм, сорт 1/1. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
       "variants": [
-        {
-          "externalId": "9482",
-          "sourceSku": "",
-          "size": "0 мм",
-          "unit": "PIECE",
-          "sourcePrice": 6040,
-          "price": 5980,
-          "pricePerCube": null,
-          "pricePerPiece": 5980,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 0
-        },
         {
           "externalId": "1787",
           "sourceSku": "flb15306",
@@ -9576,7 +9380,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 1
+          "sortOrder": 0
         },
         {
           "externalId": "1780",
@@ -9590,7 +9394,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 2
+          "sortOrder": 1
         },
         {
           "externalId": "6643",
@@ -9604,7 +9408,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 3
+          "sortOrder": 2
         },
         {
           "externalId": "6649",
@@ -9618,7 +9422,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 4
+          "sortOrder": 3
         },
         {
           "externalId": "6648",
@@ -9632,7 +9436,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 5
+          "sortOrder": 4
         },
         {
           "externalId": "6654",
@@ -9646,7 +9450,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 6
+          "sortOrder": 5
         },
         {
           "externalId": "6653",
@@ -9660,7 +9464,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 7
+          "sortOrder": 6
         },
         {
           "externalId": "6655",
@@ -9674,7 +9478,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 8
+          "sortOrder": 7
         },
         {
           "externalId": "6659",
@@ -9688,7 +9492,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 9
+          "sortOrder": 8
         },
         {
           "externalId": "6662",
@@ -9702,7 +9506,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 10
+          "sortOrder": 9
         },
         {
           "externalId": "6689",
@@ -9716,21 +9520,7 @@
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 11
-        },
-        {
-          "externalId": "9472",
-          "sourceSku": "",
-          "size": "сорт 1/1",
-          "unit": "PIECE",
-          "sourcePrice": 3660,
-          "price": 3620,
-          "pricePerCube": null,
-          "pricePerPiece": 3620,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 12
+          "sortOrder": 10
         }
       ]
     },
@@ -9744,7 +9534,7 @@
         "https://pilmos.ru/wp-content/uploads/2022/08/fanera-fsf-jpeg-e1694870560200.webp"
       ],
       "shortDescription": "Фанера ФК — фанера для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Фанера ФК — фанера из раздела «Фанера и листовые материалы». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 30 мм, сорт 5, сорт 2/4. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Фанера ФК — фанера из раздела «Фанера и листовые материалы». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 30 мм, сорт 5. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -9762,20 +9552,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 0
-        },
-        {
-          "externalId": "9090",
-          "sourceSku": "",
-          "size": "сорт 2/4",
-          "unit": "PIECE",
-          "sourcePrice": 200,
-          "price": 198,
-          "pricePerCube": null,
-          "pricePerPiece": 198,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 1
         }
       ]
     },
@@ -9820,7 +9596,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/03/fanera-fsf-700x700-1-jpg-e1694803078897.webp"
       ],
       "shortDescription": "Фанера ФК 1300×1300 мм — фанера для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Фанера ФК 1300×1300 мм — фанера из раздела «Фанера и листовые материалы». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 9 мм, сорт 2/4, 9 мм, сорт 3/4, сорт 1. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Фанера ФК 1300×1300 мм — фанера из раздела «Фанера и листовые материалы». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 9 мм, сорт 2/4, 9 мм, сорт 3/4. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -9852,20 +9628,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 1
-        },
-        {
-          "externalId": "9095",
-          "sourceSku": "",
-          "size": "сорт 1",
-          "unit": "PIECE",
-          "sourcePrice": 200,
-          "price": 198,
-          "pricePerCube": null,
-          "pricePerPiece": 198,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 2
         }
       ]
     },
@@ -10219,90 +9981,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 23
-        },
-        {
-          "externalId": "9163",
-          "sourceSku": "",
-          "size": "сорт 1",
-          "unit": "PIECE",
-          "sourcePrice": 320,
-          "price": 317,
-          "pricePerCube": null,
-          "pricePerPiece": 317,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 24
-        },
-        {
-          "externalId": "9236",
-          "sourceSku": "",
-          "size": "сорт 1/2",
-          "unit": "PIECE",
-          "sourcePrice": 450,
-          "price": 446,
-          "pricePerCube": null,
-          "pricePerPiece": 446,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 25
-        },
-        {
-          "externalId": "9224",
-          "sourceSku": "",
-          "size": "сорт 2/2",
-          "unit": "PIECE",
-          "sourcePrice": 430,
-          "price": 426,
-          "pricePerCube": null,
-          "pricePerPiece": 426,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 26
-        },
-        {
-          "externalId": "9212",
-          "sourceSku": "",
-          "size": "сорт 2/3",
-          "unit": "PIECE",
-          "sourcePrice": 410,
-          "price": 406,
-          "pricePerCube": null,
-          "pricePerPiece": 406,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 27
-        },
-        {
-          "externalId": "9261",
-          "sourceSku": "",
-          "size": "сорт 2/4",
-          "unit": "PIECE",
-          "sourcePrice": 390,
-          "price": 386,
-          "pricePerCube": null,
-          "pricePerPiece": 386,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 28
-        },
-        {
-          "externalId": "9249",
-          "sourceSku": "",
-          "size": "сорт 3/4",
-          "unit": "PIECE",
-          "sourcePrice": 360,
-          "price": 356,
-          "pricePerCube": null,
-          "pricePerPiece": 356,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 29
         }
       ]
     },
@@ -10330,37 +10008,6 @@
           "price": 1490,
           "pricePerCube": null,
           "pricePerPiece": 1490,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 0
-        }
-      ]
-    },
-    {
-      "externalId": "4217",
-      "sourceSku": "",
-      "slug": "fanera-fsf-1000-2000-mm",
-      "name": "Фанера ФСФ 1000×2000 мм",
-      "categorySlug": "fanera",
-      "images": [
-        "https://pilmos.ru/wp-content/uploads/2023/03/fanera-fsf-700x700-1-jpg-e1694803078897.webp"
-      ],
-      "shortDescription": "Фанера ФСФ 1000×2000 мм — фанера для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Фанера ФСФ 1000×2000 мм — фанера из раздела «Фанера и листовые материалы». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: сорт 1. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
-      "saleUnit": "PIECE",
-      "active": true,
-      "featured": false,
-      "variants": [
-        {
-          "externalId": "9698",
-          "sourceSku": "",
-          "size": "сорт 1",
-          "unit": "PIECE",
-          "sourcePrice": 900,
-          "price": 891,
-          "pricePerCube": null,
-          "pricePerPiece": 891,
           "piecesPerCube": null,
           "inStock": true,
           "stockQty": null,
@@ -10494,20 +10141,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 7
-        },
-        {
-          "externalId": "9273",
-          "sourceSku": "",
-          "size": "сорт 4/4",
-          "unit": "PIECE",
-          "sourcePrice": 630,
-          "price": 624,
-          "pricePerCube": null,
-          "pricePerPiece": 624,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 8
         }
       ]
     },
@@ -10521,7 +10154,7 @@
         "https://pilmos.ru/wp-content/uploads/2022/08/fanera-fsf-jpeg-e1694870560200.webp"
       ],
       "shortDescription": "Фанера ФСФ березовая 1220×2440 мм — фанера для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Фанера ФСФ березовая 1220×2440 мм — фанера из раздела «Фанера и листовые материалы». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 24 мм, сорт 1/2, 24 мм, сорт 2/2, 24 мм, сорт 2/3, 24 мм, сорт 2/4, 24 мм, сорт 3/4, 24 мм, сорт 4/4, сорт 1/2, сорт 2/2. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Фанера ФСФ березовая 1220×2440 мм — фанера из раздела «Фанера и листовые материалы». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 24 мм, сорт 1/2, 24 мм, сорт 2/2, 24 мм, сорт 2/3, 24 мм, сорт 2/4, 24 мм, сорт 3/4, 24 мм, сорт 4/4. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -10609,90 +10242,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 5
-        },
-        {
-          "externalId": "9291",
-          "sourceSku": "",
-          "size": "сорт 1/2",
-          "unit": "PIECE",
-          "sourcePrice": 1240,
-          "price": 1230,
-          "pricePerCube": null,
-          "pricePerPiece": 1230,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 6
-        },
-        {
-          "externalId": "9300",
-          "sourceSku": "",
-          "size": "сорт 2/2",
-          "unit": "PIECE",
-          "sourcePrice": 1180,
-          "price": 1170,
-          "pricePerCube": null,
-          "pricePerPiece": 1170,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 7
-        },
-        {
-          "externalId": "9309",
-          "sourceSku": "",
-          "size": "сорт 2/3",
-          "unit": "PIECE",
-          "sourcePrice": 1130,
-          "price": 1120,
-          "pricePerCube": null,
-          "pricePerPiece": 1120,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 8
-        },
-        {
-          "externalId": "9318",
-          "sourceSku": "",
-          "size": "сорт 2/4",
-          "unit": "PIECE",
-          "sourcePrice": 1020,
-          "price": 1010,
-          "pricePerCube": null,
-          "pricePerPiece": 1010,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 9
-        },
-        {
-          "externalId": "9327",
-          "sourceSku": "",
-          "size": "сорт 3/4",
-          "unit": "PIECE",
-          "sourcePrice": 970,
-          "price": 960,
-          "pricePerCube": null,
-          "pricePerPiece": 960,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 10
-        },
-        {
-          "externalId": "9336",
-          "sourceSku": "",
-          "size": "сорт 4/4",
-          "unit": "PIECE",
-          "sourcePrice": 630,
-          "price": 624,
-          "pricePerCube": null,
-          "pricePerPiece": 624,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 11
         }
       ]
     },
@@ -11144,76 +10693,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 30
-        },
-        {
-          "externalId": "9432",
-          "sourceSku": "",
-          "size": "сорт 2/2",
-          "unit": "PIECE",
-          "sourcePrice": 2030,
-          "price": 2010,
-          "pricePerCube": null,
-          "pricePerPiece": 2010,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 31
-        },
-        {
-          "externalId": "9419",
-          "sourceSku": "",
-          "size": "сорт 2/3",
-          "unit": "PIECE",
-          "sourcePrice": 1840,
-          "price": 1820,
-          "pricePerCube": null,
-          "pricePerPiece": 1820,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 32
-        },
-        {
-          "externalId": "9406",
-          "sourceSku": "",
-          "size": "сорт 2/4",
-          "unit": "PIECE",
-          "sourcePrice": 1530,
-          "price": 1510,
-          "pricePerCube": null,
-          "pricePerPiece": 1510,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 33
-        },
-        {
-          "externalId": "9393",
-          "sourceSku": "",
-          "size": "сорт 3/4",
-          "unit": "PIECE",
-          "sourcePrice": 1470,
-          "price": 1460,
-          "pricePerCube": null,
-          "pricePerPiece": 1460,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 34
-        },
-        {
-          "externalId": "9380",
-          "sourceSku": "",
-          "size": "сорт 4/4",
-          "unit": "PIECE",
-          "sourcePrice": 1360,
-          "price": 1350,
-          "pricePerCube": null,
-          "pricePerPiece": 1350,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 35
         }
       ]
     },
@@ -11328,7 +10807,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/06/1425.750x0-e1694877625994.png"
       ],
       "shortDescription": "Вагонка из кедра — вагонка для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Вагонка из кедра — вагонка из раздела «Кедр». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 14×96 мм, 14×115 мм, 14×144 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Вагонка из кедра — вагонка из раздела «Кедр». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 14×96×6000 мм, 14×115×6000 мм, 14×144×6000 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -11336,7 +10815,7 @@
         {
           "externalId": "6888",
           "sourceSku": "",
-          "size": "14×96 мм",
+          "size": "14×96×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1200,
           "price": 1190,
@@ -11350,7 +10829,7 @@
         {
           "externalId": "6900",
           "sourceSku": "",
-          "size": "14×115 мм",
+          "size": "14×115×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1300,
           "price": 1290,
@@ -11364,7 +10843,7 @@
         {
           "externalId": "6894",
           "sourceSku": "",
-          "size": "14×144 мм",
+          "size": "14×144×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1700,
           "price": 1680,
@@ -11687,7 +11166,7 @@
         "https://pilmos.ru/wp-content/uploads/2025/08/dewatermark.ai_1754644164685-e1754644003193.webp"
       ],
       "shortDescription": "Имитация бруса из кедра — имитация бруса для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Имитация бруса из кедра — имитация бруса из раздела «Кедр». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×140 мм, 20×190 мм, 28×140 мм, 35×140 мм, 35×190 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Имитация бруса из кедра — имитация бруса из раздела «Кедр». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×140×6000 мм, 20×190×6000 мм, 28×140×6000 мм, 35×140×6000 мм, 35×190×6000 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -11695,7 +11174,7 @@
         {
           "externalId": "13770",
           "sourceSku": "ib20140kedr",
-          "size": "20×140 мм",
+          "size": "20×140×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1750,
           "price": 1730,
@@ -11709,7 +11188,7 @@
         {
           "externalId": "13777",
           "sourceSku": "ib20190kedr",
-          "size": "20×190 мм",
+          "size": "20×190×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 1950,
           "price": 1930,
@@ -11723,7 +11202,7 @@
         {
           "externalId": "13778",
           "sourceSku": "ib28140kedr",
-          "size": "28×140 мм",
+          "size": "28×140×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 2300,
           "price": 2280,
@@ -11737,7 +11216,7 @@
         {
           "externalId": "13779",
           "sourceSku": "ib35140kedr",
-          "size": "35×140 мм",
+          "size": "35×140×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 3300,
           "price": 3270,
@@ -11751,7 +11230,7 @@
         {
           "externalId": "13780",
           "sourceSku": "ib35190kedr",
-          "size": "35×190 мм",
+          "size": "35×190×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 3300,
           "price": 3270,
@@ -11774,7 +11253,7 @@
         "https://pilmos.ru/wp-content/uploads/2025/08/dewatermark.ai_1754645259779-e1754648355917.webp"
       ],
       "shortDescription": "Планкен из кедра — планкен для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Планкен из кедра — планкен из раздела «Кедр». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×100 мм, 20×120 мм, 20×140 мм, 20×190 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Планкен из кедра — планкен из раздела «Кедр». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 20×100×6000 мм, 20×120×6000 мм, 20×140×6000 мм, 20×190×6000 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -11782,7 +11261,7 @@
         {
           "externalId": "13781",
           "sourceSku": "sp20100kedr",
-          "size": "20×100 мм",
+          "size": "20×100×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 2000,
           "price": 1980,
@@ -11796,7 +11275,7 @@
         {
           "externalId": "13791",
           "sourceSku": "sp20120kedr",
-          "size": "20×120 мм",
+          "size": "20×120×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 2000,
           "price": 1980,
@@ -11810,7 +11289,7 @@
         {
           "externalId": "13792",
           "sourceSku": "sp20140kedr",
-          "size": "20×140 мм",
+          "size": "20×140×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 2100,
           "price": 2080,
@@ -11824,7 +11303,7 @@
         {
           "externalId": "13793",
           "sourceSku": "sp20190kedr",
-          "size": "20×190 мм",
+          "size": "20×190×6000 мм",
           "unit": "PIECE",
           "sourcePrice": 2000,
           "price": 1980,
@@ -11948,7 +11427,7 @@
         "https://pilmos.ru/wp-content/uploads/2021/09/285_original-e1694877307912.webp"
       ],
       "shortDescription": "Вагонка из липы — вагонка для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Вагонка из липы — вагонка из раздела «Липа и Осина». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 15×96 мм, сорт A, сорт Экстра. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Вагонка из липы — вагонка из раздела «Липа и Осина». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 15×96×6000 мм, сорт A. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -11956,7 +11435,7 @@
         {
           "externalId": "5120",
           "sourceSku": "",
-          "size": "15×96 мм, сорт A",
+          "size": "15×96×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 1050,
           "price": 1040,
@@ -11966,20 +11445,6 @@
           "inStock": true,
           "stockQty": null,
           "sortOrder": 0
-        },
-        {
-          "externalId": "5123",
-          "sourceSku": "",
-          "size": "сорт Экстра",
-          "unit": "PIECE",
-          "sourcePrice": 1200,
-          "price": 1190,
-          "pricePerCube": null,
-          "pricePerPiece": 1190,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 1
         }
       ]
     },
@@ -11993,7 +11458,7 @@
         "https://pilmos.ru/wp-content/uploads/2021/09/saunainter-sauna-materialy-dlja-sten-i-potolka-vagonka-iz-osiny-stp-15x125mm-1500-2400mm_yzccrf-jpg-e1694877510377.webp"
       ],
       "shortDescription": "Вагонка из осины — вагонка для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Вагонка из осины — вагонка из раздела «Липа и Осина». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 15×96 мм, сорт Экстра, 15×96 мм, сорт A. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Вагонка из осины — вагонка из раздела «Липа и Осина». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 15×96×6000 мм, сорт Экстра, 15×96×6000 мм, сорт A. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "PIECE",
       "active": true,
       "featured": false,
@@ -12001,7 +11466,7 @@
         {
           "externalId": "5783",
           "sourceSku": "",
-          "size": "15×96 мм, сорт Экстра",
+          "size": "15×96×6000 мм, сорт Экстра",
           "unit": "PIECE",
           "sourcePrice": 1150,
           "price": 1140,
@@ -12015,7 +11480,7 @@
         {
           "externalId": "5125",
           "sourceSku": "",
-          "size": "15×96 мм, сорт A",
+          "size": "15×96×6000 мм, сорт A",
           "unit": "PIECE",
           "sourcePrice": 1000,
           "price": 990,
@@ -12038,7 +11503,7 @@
         "https://pilmos.ru/wp-content/uploads/2023/06/50h100-yes-600x424-1-fotor-bg-remover-20230915204541.png"
       ],
       "shortDescription": "Доска обрезная из осины — доска для строительства и отделки. Проверим наличие, сортность и доставку перед отгрузкой.",
-      "description": "Доска обрезная из осины — доска из раздела «Липа и Осина». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 25×100×6000 мм, 25×100×6000 мм, сорт 2, 25×150 мм, сорт 2, 25×150×6000 мм, 25×150×6000 мм, сорт 2, 25×200×6000 мм, 25×200×6000 мм, сорт 2, 40×100×6000 мм. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
+      "description": "Доска обрезная из осины — доска из раздела «Липа и Осина». Подходит для строительных, отделочных и производственных задач. В наличии популярные размеры и варианты: 25×100×6000 мм, 25×100×6000 мм, сорт 2, 25×150×6000 мм, 25×150×6000 мм, сорт 2, 25×200×6000 мм, 25×200×6000 мм, сорт 2, 40×100×6000 мм, 40×100×6000 мм, сорт 4. ПилоРус уточняет наличие, сортность, цену партии и удобную доставку по Москве и Московской области перед оформлением заказа.",
       "saleUnit": "CUBE",
       "active": true,
       "featured": false,
@@ -12072,20 +11537,6 @@
           "sortOrder": 1
         },
         {
-          "externalId": "7321",
-          "sourceSku": "",
-          "size": "25×150 мм, сорт 2",
-          "unit": "CUBE",
-          "sourcePrice": 10000,
-          "price": 9900,
-          "pricePerCube": 9900,
-          "pricePerPiece": null,
-          "piecesPerCube": null,
-          "inStock": true,
-          "stockQty": null,
-          "sortOrder": 2
-        },
-        {
           "externalId": "5997",
           "sourceSku": "doo25150mm",
           "size": "25×150×6000 мм",
@@ -12097,11 +11548,11 @@
           "piecesPerCube": 44,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 3
+          "sortOrder": 2
         },
         {
-          "externalId": "14029",
-          "sourceSku": "doo25150mm-1",
+          "externalId": "7321",
+          "sourceSku": "",
           "size": "25×150×6000 мм, сорт 2",
           "unit": "CUBE",
           "sourcePrice": 9000,
@@ -12111,7 +11562,7 @@
           "piecesPerCube": 44,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 4
+          "sortOrder": 3
         },
         {
           "externalId": "6000",
@@ -12125,7 +11576,7 @@
           "piecesPerCube": 33,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 5
+          "sortOrder": 4
         },
         {
           "externalId": "14030",
@@ -12139,7 +11590,7 @@
           "piecesPerCube": 33,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 6
+          "sortOrder": 5
         },
         {
           "externalId": "6002",
@@ -12153,7 +11604,7 @@
           "piecesPerCube": 41,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 7
+          "sortOrder": 6
         },
         {
           "externalId": "14032",
@@ -12167,7 +11618,7 @@
           "piecesPerCube": 41,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 8
+          "sortOrder": 7
         },
         {
           "externalId": "6004",
@@ -12181,7 +11632,7 @@
           "piecesPerCube": 27,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 9
+          "sortOrder": 8
         },
         {
           "externalId": "14033",
@@ -12195,7 +11646,7 @@
           "piecesPerCube": 27,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 10
+          "sortOrder": 9
         },
         {
           "externalId": "6008",
@@ -12209,7 +11660,7 @@
           "piecesPerCube": 20,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 11
+          "sortOrder": 10
         },
         {
           "externalId": "14034",
@@ -12223,7 +11674,7 @@
           "piecesPerCube": 20,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 12
+          "sortOrder": 11
         },
         {
           "externalId": "6010",
@@ -12237,7 +11688,7 @@
           "piecesPerCube": 33,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 13
+          "sortOrder": 12
         },
         {
           "externalId": "14036",
@@ -12251,7 +11702,7 @@
           "piecesPerCube": 33,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 14
+          "sortOrder": 13
         },
         {
           "externalId": "6011",
@@ -12265,7 +11716,7 @@
           "piecesPerCube": 22,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 15
+          "sortOrder": 14
         },
         {
           "externalId": "14037",
@@ -12279,7 +11730,7 @@
           "piecesPerCube": 22,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 16
+          "sortOrder": 15
         },
         {
           "externalId": "6012",
@@ -12293,7 +11744,7 @@
           "piecesPerCube": 16,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 17
+          "sortOrder": 16
         },
         {
           "externalId": "14038",
@@ -12307,7 +11758,7 @@
           "piecesPerCube": 16,
           "inStock": true,
           "stockQty": null,
-          "sortOrder": 18
+          "sortOrder": 17
         }
       ]
     }

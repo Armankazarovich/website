@@ -59,7 +59,7 @@ export default async function CabinetOrderDetailPage({ params }: { params: { id:
   if (!order || order.userId !== session.user.id) notFound();
 
   const settings = await getSiteSettings();
-  const phoneLink = getSetting(settings, "phone_link") || "+74993720441";
+  const phoneLink = getSetting(settings, "phone_link") || "+74951352026";
 
   const currentIdx = STATUS_INDEX[order.status] ?? 0;
   const isCancelled = order.status === "CANCELLED";

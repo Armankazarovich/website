@@ -312,12 +312,13 @@ const contactRoute = read("app/api/contact/route.ts");
 const arayWidget = read("components/store/aray-widget.tsx");
 const arayNavigation = read("lib/aray-navigation.ts");
 check(
-  "Product page uses compact shared ARAY entry",
-  includesAll(productPage, ["ProductArayButton", "ProductShareButton", "productSku"]) &&
+  "Product page keeps buyer actions compact",
+  includesAll(productPage, ["ProductShareButton", "productSku"]) &&
+    !productPage.includes("ProductArayButton") &&
     !productPage.includes("ProductSellerPanel") &&
     includesAll(productActions, ["ProductArayButton", "data-product-aray-action", "dispatchArayPrompt", "ProductShareButton"]) &&
     includesAll(contactRoute, ["source === \"PRODUCT\"", "productTitle", "productSku", "Укажите телефон, email или вопрос"]),
-  "Product pages should open the shared ARAY widget instead of rendering a second large contact center under the buy controls.",
+  "Product pages should keep the buy controls focused; ARAY helper code may exist, but the public product page must not show an extra AI action.",
 );
 check(
   "AR Phone has external channel hub",

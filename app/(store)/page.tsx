@@ -215,7 +215,7 @@ const faqSchema = {
       "name": "Где купить пиломатериалы в Москве и Московской области?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "ПилоРус (ООО ДЕРЕВОЛИДЕР) — производитель пиломатериалов в г. Химки, Московская область. Адрес склада: ул. Заводская 2А, стр.28. Доставка по всей Москве и МО за 1-3 дня. Телефон: +7 (499) 372-04-41."
+        "text": "ПилоРус (ООО ДЕРЕВОЛИДЕР) — производитель пиломатериалов в г. Химки, Московская область. Адрес склада: ул. Заводская 2А, стр.28. Доставка по всей Москве и МО за 1-3 дня. Телефон: +7 (495) 135-20-26."
       }
     },
     {
@@ -256,8 +256,8 @@ const faqSchema = {
 export default async function HomePage() {
   const { categories, featuredProducts, promotions, reviews, settings } = await getData();
   const workingHours = getSetting(settings, "working_hours") || "Пн–Сб: 09:00–20:00, Вс: 09:00–18:00";
-  const phoneLink = getSetting(settings, "phone_link") || "+74993720441";
-  const phoneDisplay = getSetting(settings, "phone") || "+7 (499) 372-04-41";
+  const phoneLink = getSetting(settings, "phone_link") || "+74951352026";
+  const phoneDisplay = getSetting(settings, "phone") || "+7 (495) 135-20-26";
   const advantages = getAdvantages(workingHours);
   const TICKER_ITEMS = getTickerItems(workingHours);
 

@@ -18,7 +18,7 @@ export async function GET() {
   const siteUrl = siteUrlRow?.value || "https://pilo-rus.ru";
 
   const phoneRow = await prisma.siteSettings.findFirst({ where: { key: "phone_link", tenantId } });
-  const phone = phoneRow?.value?.replace(/\D/g, "") || "74993720441";
+  const phone = phoneRow?.value?.replace(/\D/g, "") || "74951352026";
 
   const addressRow = await prisma.siteSettings.findFirst({ where: { key: "address", tenantId } });
   const address = addressRow?.value || "Химки, ул. Заводская 2А, стр.28";

@@ -408,12 +408,12 @@ export default function AdminSitePage() {
               <Field
                 label="Телефон 1 (отображаемый)"
                 settingKey="phone"
-                placeholder="+7 (499) 372-04-41"
+                placeholder="+7 (495) 135-20-26"
               />
               <Field
                 label="Телефон 1 (для tel: ссылки)"
                 settingKey="phone_link"
-                placeholder="+74993720441"
+                placeholder="+74951352026"
               />
               <Field
                 label="Телефон 2 (отображаемый)"
@@ -433,7 +433,7 @@ export default function AdminSitePage() {
               <Field
                 label="Телефон 3 (для tel: ссылки)"
                 settingKey="phone3_link"
-                placeholder="+74951350203"
+                placeholder="+74951352026"
               />
               <Field
                 label="Email"
@@ -1057,11 +1057,11 @@ export default function AdminSitePage() {
                           Номер телефона
                         </label>
                         <input
-                          value={settings["whatsapp_number"] ?? "+74993720441"}
+                          value={settings["whatsapp_number"] ?? "+74951352026"}
                           onChange={(e) =>
                             set("whatsapp_number", e.target.value)
                           }
-                          placeholder="+74993720441"
+                          placeholder="+74951352026"
                           className="w-full min-h-11 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
                         <p className="text-xs text-muted-foreground mt-1">
@@ -1090,7 +1090,7 @@ export default function AdminSitePage() {
                       <span className="text-foreground font-mono">
                         wa.me/
                         {(
-                          settings["whatsapp_number"] ?? "+74993720441"
+                          settings["whatsapp_number"] ?? "+74951352026"
                         ).replace(/\D/g, "")}
                       </span>
                     </div>
@@ -1266,7 +1266,7 @@ export default function AdminSitePage() {
               {
                 key: "social_whatsapp",
                 label: "WhatsApp",
-                placeholder: "+74993720441",
+                placeholder: "+74951352026",
                 color: "text-[#25D366]",
                 Icon: () => (
                   <svg

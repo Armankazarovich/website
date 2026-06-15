@@ -286,6 +286,15 @@ function extractSize(text) {
   return "";
 }
 
+function withDefaultTimberLength(size) {
+  const value = normalizeSize(size);
+  const match = value.match(/^(\d{1,4}×\d{1,4}(?:\/\d{1,4})?)\s*мм((?:\s*,.*)?)$/i);
+  if (match) {
+    return `${match[1]}×6000 мм${match[2] || ""}`;
+  }
+  return value;
+}
+
 function normalizeKeyText(value) {
   return normalizeSize(value)
     .toLowerCase()
@@ -399,6 +408,14 @@ function prettifyVariantLabel(value) {
     .trim() || "Стандарт";
 }
 
+function isValidSheetThickness(value) {
+  const text = clean(value);
+  const match = text.match(/^(\d{1,2}(?:[,.]\d+)?)\s*(?:мм|mm)$/i);
+  if (!match) return false;
+  const thickness = Number(match[1].replace(",", "."));
+  return Number.isFinite(thickness) && thickness > 0 && thickness < 80;
+}
+
 function sheetFamilyName(productName, categoryText) {
   const text = `${productName} ${categoryText}`;
   const normalized = normalizeKeyText(text);
@@ -493,6 +510,7 @@ function buildDisplayVariant(product, variant) {
 
   if (product.categorySlug === "fanera") {
     const thickness = extractThickness(text);
+    if (!isValidSheetThickness(thickness)) return null;
     const grade = extractGrade(text);
     const size = prettifyVariantLabel(cleanVariantLabel([thickness, grade]));
     return {
@@ -507,12 +525,14 @@ function buildDisplayVariant(product, variant) {
     };
   }
 
-  const size = extractSize(text);
+  const size = withDefaultTimberLength(extractSize(text));
+  if (!size) return null;
   const grade = extractGrade(text);
   const forest = extractForest(text);
+  const displaySize = withDefaultTimberLength(prettifyVariantLabel(cleanVariantLabel([size, grade, forest])));
   return {
     ...variant,
-    size: prettifyVariantLabel(cleanVariantLabel([size, grade, forest])),
+    size: displaySize,
     sourcePrice,
     price,
     unit,
@@ -575,7 +595,8 @@ function groupProductsForStorefront(rawProducts) {
       if (image && !current.images.includes(image)) current.images.push(image);
     }
     for (const variant of product.variants) {
-      current.variants.push(buildDisplayVariant(product, variant));
+      const displayVariant = buildDisplayVariant(product, variant);
+      if (displayVariant) current.variants.push(displayVariant);
     }
     groups.set(group.key, current);
   }

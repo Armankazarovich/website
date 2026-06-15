@@ -38,10 +38,8 @@ export interface HeaderCategory {
   children?: HeaderCategory[];
 }
 
-// v3 - 2 phones (phone2 removed 20.04.2026 per client request)
 const DEFAULT_PHONES: PhoneItem[] = [
-  { display: "+7 (499) 372-04-41", tel: "+74993720441" },
-  { display: "+7 (495) 135-02-03", tel: "+74951350203" },
+  { display: "+7 (495) 135-20-26", tel: "+74951352026" },
 ];
 
 interface DynamicTypeInfo {

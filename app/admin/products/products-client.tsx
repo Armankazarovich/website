@@ -33,6 +33,8 @@ type Product = {
 
 type Category = { id: string; name: string };
 
+const PAGE_SIZE_PRESETS = [20, 40, 80];
+
 function adminPreviewSrc(src: string) {
   if (!src.startsWith("/")) return src;
   return `${src}${src.includes("?") ? "&" : "?"}adminPreview=1`;
@@ -83,6 +85,8 @@ export function ProductsClient({
   const [products, setProducts] = useState(init);
   const [catFilter, setCatFilter] = useState("ALL");
   const [sortBy, setSortBy] = useState("newest");
+  const [page, setPage] = useState(1);
+  const [pageSizeInput, setPageSizeInput] = useState("20");
   const urlQuery = searchParams.get("q") ?? "";
   const searchParamString = searchParams.toString();
   const [searchQuery, setSearchQuery] = useState(urlQuery);
@@ -231,6 +235,29 @@ export function ProductsClient({
     });
   }, [products, normalizedSearchQuery, catFilter, noPhotoOnly, hiddenOnly, urlActive, urlFeatured, sortBy]);
 
+  const pageSize = useMemo(() => {
+    const value = Number(pageSizeInput);
+    if (!Number.isFinite(value)) return 20;
+    return Math.min(500, Math.max(1, Math.floor(value)));
+  }, [pageSizeInput]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = filtered.length > 0 ? (currentPage - 1) * pageSize : 0;
+  const pageEnd = Math.min(pageStart + pageSize, filtered.length);
+  const visibleProducts = useMemo(
+    () => filtered.slice(pageStart, pageEnd),
+    [filtered, pageStart, pageEnd]
+  );
+
+  useEffect(() => {
+    setPage(1);
+  }, [normalizedSearchQuery, catFilter, noPhotoOnly, hiddenOnly, urlActive, urlFeatured, sortBy, pageSize]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
   /* счётчик скрытых от публики товаров (для бейджа) */
   const hiddenFromPublicCount = useMemo(
     () => products.filter((p) => !checkProductReadiness(p).ready).length,
@@ -238,7 +265,7 @@ export function ProductsClient({
   );
 
   useEffect(() => {
-    const visibleIds = new Set(filtered.map((product) => product.id));
+    const visibleIds = new Set(visibleProducts.map((product) => product.id));
     setSelected((prev) => {
       if (prev.size === 0) return prev;
       const next = new Set<string>();
@@ -247,10 +274,10 @@ export function ProductsClient({
       });
       return next.size === prev.size ? prev : next;
     });
-  }, [filtered]);
+  }, [visibleProducts]);
 
   /* ── selection helpers ── */
-  const allSelected = filtered.length > 0 && filtered.every(p => selected.has(p.id));
+  const allSelected = visibleProducts.length > 0 && visibleProducts.every(p => selected.has(p.id));
   const someSelected = selected.size > 0;
 
   const toggleSelect = (id: string) => {
@@ -265,7 +292,7 @@ export function ProductsClient({
     if (allSelected) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(filtered.map(p => p.id)));
+      setSelected(new Set(visibleProducts.map(p => p.id)));
     }
   };
 
@@ -609,7 +636,56 @@ export function ProductsClient({
           </select>
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         </div>
-        <span className="text-sm text-muted-foreground">{filtered.length} из {products.length}</span>
+        <div className="flex w-full flex-wrap items-center gap-2 text-sm text-muted-foreground sm:w-auto">
+          <span>
+            {filtered.length === 0 ? "0" : `${pageStart + 1}-${pageEnd}`} из {filtered.length}
+            {filtered.length !== products.length ? `, всего ${products.length}` : ""}
+          </span>
+          <div className="flex items-center gap-1 rounded-xl border border-border bg-background p-1">
+            {PAGE_SIZE_PRESETS.map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => setPageSizeInput(String(size))}
+                className={`h-8 rounded-lg px-2.5 text-xs font-semibold transition-colors ${
+                  pageSize === size ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                }`}
+              >
+                {size}
+              </button>
+            ))}
+            <input
+              type="number"
+              min={1}
+              max={500}
+              value={pageSizeInput}
+              onChange={(event) => setPageSizeInput(event.target.value)}
+              aria-label="Товаров на экране"
+              className="h-8 w-16 rounded-lg border border-border bg-background px-2 text-center text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage((value) => Math.max(1, value - 1))}
+              disabled={currentPage <= 1}
+              className="h-9 rounded-xl border border-border px-3 text-xs font-semibold text-foreground transition-colors hover:bg-accent disabled:opacity-40"
+            >
+              Назад
+            </button>
+            <span className="min-w-16 text-center text-xs">
+              {currentPage}/{totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+              disabled={currentPage >= totalPages}
+              className="h-9 rounded-xl border border-border px-3 text-xs font-semibold text-foreground transition-colors hover:bg-accent disabled:opacity-40"
+            >
+              Вперед
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* ── BULK ACTION BAR ── */}
@@ -705,7 +781,7 @@ export function ProductsClient({
               : "Ничего не найдено"}
           </div>
         )}
-        {filtered.map(p => (
+        {visibleProducts.map(p => (
           <div
             key={p.id}
             className={`bg-card border rounded-2xl p-4 transition-all ${!p.active ? "opacity-60" : ""} ${selected.has(p.id) ? "border-primary bg-primary/15" : "border-border"}`}
@@ -779,7 +855,7 @@ export function ProductsClient({
                   </td>
                 </tr>
               )}
-              {filtered.map(p => (
+              {visibleProducts.map(p => (
                 <tr
                   key={p.id}
                   className={`hover:bg-primary/[0.05] transition-colors ${!p.active ? "opacity-60" : ""} ${selected.has(p.id) ? "bg-primary/15" : ""}`}

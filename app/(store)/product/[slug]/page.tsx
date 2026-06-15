@@ -14,7 +14,7 @@ import { ProductGallery } from "@/components/store/product-gallery";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
 import { CompareButton } from "@/components/store/compare-button";
 import { WishlistButton } from "@/components/store/wishlist-button";
-import { ProductArayButton, ProductShareButton } from "@/components/store/product-page-actions";
+import { ProductShareButton } from "@/components/store/product-page-actions";
 import type { CompareItem } from "@/store/compare";
 import { auth } from "@/lib/auth";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
@@ -325,12 +325,6 @@ export default async function ProductPage({ params }: Props) {
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <CompareButton item={compareItem} mode="inline" />
               <WishlistButton item={compareItem} mode="inline" />
-              <ProductArayButton
-                productName={product.name}
-                productSku={sku}
-                productUrl={productUrl}
-                category={product.category.name}
-              />
               <ProductShareButton title={product.name} url={productUrl} />
               {isAdmin && (
                 <Link

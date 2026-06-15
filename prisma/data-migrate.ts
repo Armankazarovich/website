@@ -126,6 +126,8 @@ async function applyPilmosCatalogSnapshot() {
 
   let productsSynced = 0;
   let variantsSynced = 0;
+  let variantsDeleted = 0;
+  let variantsArchived = 0;
   for (const product of snapshot.products) {
     const category = categoryBySlug.get(product.categorySlug);
     if (!category || !product.images.length || !product.variants.length) continue;
@@ -188,13 +190,30 @@ async function applyPilmosCatalogSnapshot() {
     }
 
     if (desiredSizes.size > 0) {
-      await prisma.productVariant.updateMany({
-        where: {
-          productId: savedProduct.id,
-          size: { notIn: Array.from(desiredSizes) },
-        },
+      const obsoleteWhere = {
+        productId: savedProduct.id,
+        size: { notIn: Array.from(desiredSizes) },
+      };
+      const archived = await prisma.productVariant.updateMany({
+        where: obsoleteWhere,
         data: { inStock: false, stockQty: 0 },
       });
+      variantsArchived += archived.count;
+
+      const obsoleteVariants = await prisma.productVariant.findMany({
+        where: obsoleteWhere,
+        select: { id: true, _count: { select: { orderItems: true } } },
+      });
+      const removableIds = obsoleteVariants
+        .filter((variant) => variant._count.orderItems === 0)
+        .map((variant) => variant.id);
+
+      if (removableIds.length) {
+        const deleted = await prisma.productVariant.deleteMany({
+          where: { id: { in: removableIds } },
+        });
+        variantsDeleted += deleted.count;
+      }
     }
   }
 
@@ -226,11 +245,13 @@ async function applyPilmosCatalogSnapshot() {
       categories: categoriesSynced,
       products: productsSynced,
       variants: variantsSynced,
+      variantsArchived,
+      variantsDeleted,
       retiredLegacyProducts: retiredLegacyProducts.count,
     }),
   );
   console.log(
-    `[data-migrate] Pilmos catalog snapshot applied: ${productsSynced} products, ${variantsSynced} variants, ${categoriesSynced} categories, ${retiredLegacyProducts.count} legacy storefront products retired`,
+    `[data-migrate] Pilmos catalog snapshot applied: ${productsSynced} products, ${variantsSynced} variants, ${categoriesSynced} categories, ${variantsArchived} obsolete variants archived, ${variantsDeleted} obsolete variants deleted, ${retiredLegacyProducts.count} legacy storefront products retired`,
   );
 }
 
@@ -978,12 +999,14 @@ async function main() {
 
   try {
     const pilorusLegalSettings20260611: Record<string, string> = {
-      phone: "+7 (499) 372-04-41",
-      phone_link: "+74993720441",
-      phone2: "+7 (495) 135-02-03",
-      phone2_link: "+74951350203",
+      phone: "+7 (495) 135-20-26",
+      phone_link: "+74951352026",
+      phone2: "",
+      phone2_link: "",
       phone3: "",
       phone3_link: "",
+      social_whatsapp: "+74951352026",
+      whatsapp_number: "+74951352026",
       address: "Химки, ул. Заводская 2А, стр.28",
       company_name: "ООО «ДЕРЕВОЛИДЕР»",
       legal_full_name: "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ «ДЕРЕВОЛИДЕР»",
@@ -1017,7 +1040,7 @@ async function main() {
         sourceUrl: "https://pilo-rus.ru/",
         logoUrl: "/logo.svg",
         city: "Химки",
-        phone: "+7 (499) 372-04-41",
+        phone: "+7 (495) 135-20-26",
         publicDescription:
           "ПилоРус - продавец N1 и эталонная витрина биржи пиломатериалов. Основной каталог, проверенные цены, заявки и доставка идут через эту витрину.",
         specialization: "Пиломатериалы, фанера, стройматериалы и доставка по Москве и МО",

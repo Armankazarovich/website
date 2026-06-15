@@ -14,7 +14,7 @@ type ServiceRequestFormProps = {
 export function ServiceRequestForm({
   serviceTitle,
   serviceSlug,
-  phoneLink = "+74993720441",
+  phoneLink = "+74951352026",
 }: ServiceRequestFormProps) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
