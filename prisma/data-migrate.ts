@@ -5,7 +5,7 @@
  */
 
 import { Prisma, PrismaClient } from "@prisma/client";
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 const prisma = new PrismaClient();
 const DEFAULT_TENANT_ID = "pilorus";
@@ -37,6 +37,181 @@ async function upsertTenantLaunchSettings(patch: Record<string, string>) {
       } as Prisma.InputJsonObject,
     },
   });
+}
+
+type PilmosCatalogSnapshot = {
+  generatedAt: string;
+  source: string;
+  sourceCsv: string;
+  priceFactor: number;
+  categories: Array<{
+    slug: string;
+    name: string;
+    sortOrder: number;
+    image?: string | null;
+    seoTitle?: string | null;
+    seoDescription?: string | null;
+  }>;
+  products: Array<{
+    externalId?: string;
+    sourceSku?: string;
+    slug: string;
+    name: string;
+    categorySlug: string;
+    images: string[];
+    shortDescription?: string | null;
+    description?: string | null;
+    saleUnit: "CUBE" | "PIECE" | "BOTH";
+    active: boolean;
+    featured: boolean;
+    variants: Array<{
+      size: string;
+      pricePerCube?: number | null;
+      pricePerPiece?: number | null;
+      piecesPerCube?: number | null;
+      inStock: boolean;
+      stockQty?: number | null;
+      sortOrder: number;
+    }>;
+  }>;
+};
+
+function readPilmosCatalogSnapshot(): PilmosCatalogSnapshot | null {
+  const snapshotPath = join(process.cwd(), "prisma", "catalog", "pilmos-catalog-2026-06-14.json");
+  if (!existsSync(snapshotPath)) return null;
+  return JSON.parse(readFileSync(snapshotPath, "utf8")) as PilmosCatalogSnapshot;
+}
+
+function decimalOrNull(value?: number | null) {
+  if (value === null || value === undefined) return null;
+  if (!Number.isFinite(Number(value)) || Number(value) <= 0) return null;
+  return new Prisma.Decimal(value);
+}
+
+async function applyPilmosCatalogSnapshot() {
+  const snapshot = readPilmosCatalogSnapshot();
+  if (!snapshot) return;
+
+  const categoryBySlug = new Map<string, { id: string; slug: string }>();
+  let categoriesSynced = 0;
+  for (const category of snapshot.categories) {
+    const saved = await prisma.category.upsert({
+      where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: category.slug } },
+      create: {
+        tenantId: DEFAULT_TENANT_ID,
+        slug: category.slug,
+        name: category.name,
+        image: category.image || null,
+        sortOrder: category.sortOrder,
+        showInMenu: true,
+        showInFooter: true,
+        seoTitle: category.seoTitle || null,
+        seoDescription: category.seoDescription || null,
+      },
+      update: {
+        name: category.name,
+        image: category.image || null,
+        sortOrder: category.sortOrder,
+        showInMenu: true,
+        showInFooter: true,
+        seoTitle: category.seoTitle || null,
+        seoDescription: category.seoDescription || null,
+      },
+      select: { id: true, slug: true },
+    });
+    categoryBySlug.set(saved.slug, saved);
+    categoriesSynced++;
+  }
+
+  let productsSynced = 0;
+  let variantsSynced = 0;
+  for (const product of snapshot.products) {
+    const category = categoryBySlug.get(product.categorySlug);
+    if (!category || !product.images.length || !product.variants.length) continue;
+
+    const productData = {
+      name: product.name,
+      shortDescription: product.shortDescription || null,
+      description: product.description || product.shortDescription || product.name,
+      categoryId: category.id,
+      images: product.images,
+      saleUnit: product.saleUnit,
+      active: product.active,
+      featured: product.featured,
+    };
+
+    const savedProduct = await prisma.product.upsert({
+      where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug: product.slug } },
+      create: {
+        tenantId: DEFAULT_TENANT_ID,
+        slug: product.slug,
+        ...productData,
+      },
+      update: productData,
+      select: { id: true },
+    });
+    productsSynced++;
+
+    const existingVariants = await prisma.productVariant.findMany({
+      where: { productId: savedProduct.id },
+      select: { id: true, size: true },
+    });
+    const variantBySize = new Map(existingVariants.map((variant) => [variant.size, variant]));
+    const desiredSizes = new Set(product.variants.map((variant) => variant.size));
+
+    for (const variant of product.variants) {
+      const variantData = {
+        size: variant.size,
+        pricePerCube: decimalOrNull(variant.pricePerCube),
+        pricePerPiece: decimalOrNull(variant.pricePerPiece),
+        piecesPerCube: variant.piecesPerCube ?? null,
+        inStock: variant.inStock,
+        stockQty: variant.stockQty ?? null,
+        sortOrder: variant.sortOrder,
+      };
+      const existing = variantBySize.get(variant.size);
+      if (existing) {
+        await prisma.productVariant.update({
+          where: { id: existing.id },
+          data: variantData,
+        });
+      } else {
+        await prisma.productVariant.create({
+          data: {
+            productId: savedProduct.id,
+            ...variantData,
+          },
+        });
+      }
+      variantsSynced++;
+    }
+
+    if (desiredSizes.size > 0) {
+      await prisma.productVariant.updateMany({
+        where: {
+          productId: savedProduct.id,
+          size: { notIn: Array.from(desiredSizes) },
+        },
+        data: { inStock: false, stockQty: 0 },
+      });
+    }
+  }
+
+  await upsertSetting(
+    "catalog_pilmos_snapshot_20260614",
+    JSON.stringify({
+      generatedAt: snapshot.generatedAt,
+      source: snapshot.source,
+      sourceCsv: snapshot.sourceCsv,
+      priceFactor: snapshot.priceFactor,
+      categories: categoriesSynced,
+      products: productsSynced,
+      variants: variantsSynced,
+    }),
+  );
+  console.log(
+    `[data-migrate] Pilmos catalog snapshot applied: ${productsSynced} products, ${variantsSynced} variants, ${categoriesSynced} categories`,
+  );
 }
 
 async function ensureLaunchPromotion({
@@ -773,7 +948,14 @@ async function main() {
     console.log("[data-migrate] Draft storefront product cleanup skipped:", e.message);
   }
 
+  try {
+    await applyPilmosCatalogSnapshot();
+  } catch (e: any) {
+    console.log("[data-migrate] Pilmos catalog snapshot skipped:", e.message);
+  }
+
   console.log("[data-migrate] Готово.");
+
   try {
     const pilorusLegalSettings20260611: Record<string, string> = {
       phone: "+7 (499) 372-04-41",
