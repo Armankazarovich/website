@@ -248,7 +248,7 @@ export default function ComparePage() {
               <div>
                 <p className="font-semibold">Нужно выбрать лучший вариант?</p>
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  Арай может объяснить разницу и помочь посчитать объем под задачу.
+                  Менеджер поможет сравнить позиции и посчитать объем под задачу.
                 </p>
               </div>
               <Button asChild>

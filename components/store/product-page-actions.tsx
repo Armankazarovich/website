@@ -65,7 +65,7 @@ const REQUEST_MODES = [
 ] as const;
 
 const CHANNELS = [
-  { id: "aray", label: "ARAY", helper: "единая история" },
+  { id: "aray", label: "Помощь", helper: "вопрос сохранен" },
   { id: "telegram", label: "Telegram", helper: "если подключен" },
   { id: "whatsapp", label: "WhatsApp", helper: "быстрый чат" },
   { id: "email", label: "Почта", helper: "заявка/рассылка" },
@@ -157,11 +157,11 @@ export function ProductArayButton({
 
     dispatchArayPrompt({
       text: [
-        "Открой единый ARAY-виджет и помоги клиенту по товару ПилоРус.",
+        "Открой помощника и помоги клиенту по товару ПилоРус.",
         context,
         "Спроси коротко: нужен объем, размер, доставка или оформление заказа.",
       ].join("\n\n"),
-      displayText: "Спросить Арая по товару",
+      displayText: "Вопрос по товару",
       context,
     });
     trackArayMetrikaGoal("product_aray_open", { product: productName, sku: productSku });
@@ -175,7 +175,7 @@ export function ProductArayButton({
       className={cn("store-action-button store-action-button-inline", className)}
     >
       <Bot className="h-4 w-4" />
-      Спросить Арая
+      Задать вопрос
     </button>
   );
 }
@@ -310,7 +310,7 @@ export function ProductSellerPanel({
           <div className="min-w-0">
             <h2 className="text-base font-bold leading-tight">Вопрос по товару</h2>
             <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              Напишите менеджеру. Арай привяжет вопрос к товару и CRM.
+              Напишите менеджеру. Вопрос сохранится рядом с товаром.
             </p>
           </div>
         </div>
@@ -320,7 +320,7 @@ export function ProductSellerPanel({
           className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-primary/25 bg-primary/10 px-2.5 text-xs font-bold text-primary transition hover:bg-primary/15"
         >
           <Bot className="h-3.5 w-3.5" />
-          ARAY
+          Помощь
         </button>
       </div>
 
@@ -344,10 +344,10 @@ export function ProductSellerPanel({
         <div className="mb-2 flex items-center justify-between gap-2 px-1">
           <div className="min-w-0">
             <p className="text-[11px] font-bold text-foreground">Канал связи</p>
-            <p className="truncate text-[10px] text-muted-foreground">Скажите Араю: кому, где найти и через что написать.</p>
+            <p className="truncate text-[10px] text-muted-foreground">Выберите канал: кому, где найти и через что написать.</p>
           </div>
           <span className="rounded-full bg-primary/10 px-2 py-1 text-[10px] font-semibold text-primary">
-            через ARAY
+            быстро
           </span>
         </div>
         <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">

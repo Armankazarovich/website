@@ -96,9 +96,9 @@ function IconShield({ className }: { className?: string }) {
 }
 
 export const metadata: Metadata = {
-  title: "Пиломатериалы от производителя в Химках — доска, брус, вагонка",
-  description: "Купить пиломатериалы от производителя в Химках. Доска, брус, вагонка, блок-хаус. Доставка по Москве и МО за 1–3 дня.",
-  keywords: "пиломатериалы от производителя, купить доску в Химках, брус Москва, вагонка блок-хаус, доска обрезная цена, пиломатериалы Подмосковье",
+  title: "Пиломатериалы от производителя в Химках — доска, брус, вагонка с доставкой",
+  description: "Купить пиломатериалы от производителя в Химках: доска, брус, вагонка, блок-хаус, фанера и листовые материалы. Цены, наличие и доставка по Москве и МО за 1–3 дня.",
+  keywords: "пиломатериалы от производителя, купить доску в Химках, брус Москва, вагонка блок-хаус, фанера, доска обрезная цена, пиломатериалы Подмосковье",
   openGraph: {
     title: "ПилоРус — Пиломатериалы от производителя в Химках",
     description: "Доска, брус, вагонка, блок-хаус напрямую с завода. Доставка 1-3 дня.",
@@ -284,7 +284,7 @@ export default async function HomePage() {
         {/* Background image — slow Ken Burns zoom */}
         <div className="absolute inset-0 overflow-hidden">
           <Image
-            src="/images/production/hero-main.jpg"
+            src="/images/production/hero-main.webp"
             alt="Лесопилка ПилоРус — производство пиломатериалов"
             fill
             className="object-cover object-center hero-zoom"
@@ -311,7 +311,7 @@ export default async function HomePage() {
         />
 
         {/* Content */}
-        <div className="container relative z-10 pt-24 pb-16 lg:pt-24 lg:pb-14">
+        <div className="container relative z-10 pb-10 pt-20 lg:pb-10 lg:pt-16 2xl:pb-14 2xl:pt-24">
           <div className="max-w-2xl xl:max-w-[700px]">
 
             {/* Badge — glassmorphism */}
@@ -339,6 +339,9 @@ export default async function HomePage() {
               Доска, брус, вагонка, блок-хаус — напрямую с завода.{" "}
               Доставка по Москве и&nbsp;МО за&nbsp;1–3&nbsp;дня.
             </p>
+            <p className="-mt-6 mb-10 max-w-2xl text-sm font-semibold leading-relaxed text-white/75 sm:text-base">
+              Подберем сорт, сечение и объем под вашу задачу, проверим наличие перед отгрузкой и подготовим счет для ИП, ООО или частного заказа.
+            </p>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
@@ -363,7 +366,7 @@ export default async function HomePage() {
             </div>
 
             {/* Quick category shortcuts */}
-            <div className="pt-5 border-t border-white/10">
+            <div className="hidden border-t border-white/10 pt-5 2xl:block">
               <p className="text-[10px] text-white/30 uppercase tracking-widest mb-3">Быстрый переход</p>
               <div className="flex flex-wrap gap-2">
                 {([
@@ -393,7 +396,7 @@ export default async function HomePage() {
             </div>
 
             {/* Stats row */}
-            <div className="grid grid-cols-4 gap-3 pr-16 mt-8 sm:flex sm:flex-wrap sm:gap-x-8 sm:gap-y-4 sm:pr-0 sm:mt-10">
+            <div className="mt-10 hidden flex-wrap gap-x-8 gap-y-4 2xl:flex">
               {[
                 { value: "2000 м²", label: "Площадь склада" },
                 { value: "1–3 дня", label: "Срок доставки" },

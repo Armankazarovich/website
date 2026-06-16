@@ -595,7 +595,7 @@ async function main() {
   // Если файл upload-* существует (пользователь заменил фото) — не трогать.
   const stableImages: Record<string, string> = {
     "sosna-el":    "/images/categories/sosna-el.webp",
-    "listvennitsa":"/images/categories/listvennitsa.png",
+    "listvennitsa":"/images/categories/listvennitsa.webp",
     "lipa-osina":  "/images/categories/lipa-osina.webp",
     "fanera":      "/images/categories/fanera.webp",
     "kedr":        "/images/categories/kedr.png",
@@ -1010,6 +1010,11 @@ async function main() {
       social_whatsapp: "+74951352026",
       whatsapp_number: "+74951352026",
       aray_enabled: "false",
+      public_site_name: "ПилоРус",
+      brand_name: "ПилоРус",
+      catalog_title: "Каталог пиломатериалов с ценами",
+      catalog_description:
+        "Каталог ПилоРус: доска, брус, вагонка, блок-хаус, фанера и листовые материалы с актуальными ценами, размерами и доставкой по Москве и Московской области.",
       address: "Химки, ул. Заводская 2А, стр.28",
       company_name: "ООО «ДЕРЕВОЛИДЕР»",
       legal_full_name: "ОБЩЕСТВО С ОГРАНИЧЕННОЙ ОТВЕТСТВЕННОСТЬЮ «ДЕРЕВОЛИДЕР»",
@@ -1032,6 +1037,38 @@ async function main() {
     console.log("[data-migrate] PiloRus contacts and legal requisites updated (2026-06-11)");
   } catch (e: any) {
     console.log("[data-migrate] PiloRus contacts/legal settings update skipped:", e.message);
+  }
+
+  try {
+    const imageReplacements = new Map<string, string>([
+      ["/images/products/terrasnaya-doska-listv.png", "/images/products/terrasnaya-doska-listv.webp"],
+      ["/images/products/mdf-list.png", "/images/products/mdf-list.webp"],
+    ]);
+    const categoriesUpdated = await prisma.category.updateMany({
+      where: { image: "/images/categories/listvennitsa.png" },
+      data: { image: "/images/categories/listvennitsa.webp" },
+    });
+    const productsWithOldImages = await prisma.product.findMany({
+      where: {
+        OR: [...imageReplacements.keys()].map((image) => ({ images: { has: image } })),
+      },
+      select: { id: true, images: true },
+    });
+    let productsUpdated = 0;
+    for (const product of productsWithOldImages) {
+      const images = product.images.map((image) => imageReplacements.get(image) || image);
+      if (JSON.stringify(images) !== JSON.stringify(product.images)) {
+        await prisma.product.update({ where: { id: product.id }, data: { images } });
+        productsUpdated += 1;
+      }
+    }
+    if (categoriesUpdated.count > 0 || productsUpdated > 0) {
+      console.log(
+        `[data-migrate] PiloRus WebP image references updated: categories=${categoriesUpdated.count}, products=${productsUpdated}`,
+      );
+    }
+  } catch (e: any) {
+    console.log("[data-migrate] PiloRus WebP image reference update skipped:", e.message);
   }
 
   try {

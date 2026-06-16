@@ -42,7 +42,6 @@ export function CategoryCard({ slug, name, image, productCount, className }: Cat
           loading="lazy"
           className="object-cover group-hover:scale-[1.04] transition-transform duration-500"
           sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 30vw"
-          unoptimized
           onError={() => setImgError(true)}
         />
       ) : (

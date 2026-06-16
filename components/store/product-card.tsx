@@ -469,7 +469,7 @@ export function ProductCard({
           {images[0] && !imgError ? (
             <Image src={images[0]} alt={name} fill loading="lazy"
               className="object-cover transition-opacity duration-200 group-hover:opacity-95"
-              sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 280px" unoptimized
+              sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 280px"
               onError={() => setImgError(true)} />
           ) : (
             <div className={`absolute inset-0 ${FALLBACK_GRADIENT}`} />
@@ -589,7 +589,6 @@ export function ProductCard({
             loading="lazy"
             className="object-cover transition-opacity duration-200 group-hover:opacity-95"
             sizes="(max-width:640px) 90vw, (max-width:1024px) 45vw, 280px"
-            unoptimized
             onError={() => setImgError(true)}
           />
         ) : (

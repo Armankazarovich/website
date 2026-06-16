@@ -78,7 +78,6 @@ export function ProductGallery({ images, name, inStock, availability }: ProductG
                   fill
                   className="object-cover"
                   sizes="(max-width:768px) 100vw, (max-width:1024px) 50vw, 600px"
-                  unoptimized
                 />
               </div>
             )}
@@ -98,7 +97,6 @@ export function ProductGallery({ images, name, inStock, availability }: ProductG
                 className="object-cover"
                 priority={active === 0}
                 sizes="(max-width:768px) 100vw, (max-width:1024px) 50vw, 600px"
-                unoptimized
               />
             </div>
 
@@ -184,7 +182,7 @@ export function ProductGallery({ images, name, inStock, availability }: ProductG
                   : "border-border opacity-55 hover:opacity-100 hover:border-primary/40 hover:scale-105"
               )}
             >
-              <Image src={img} alt={`${name} ${i + 1}`} fill className="object-cover" unoptimized />
+              <Image src={img} alt={`${name} ${i + 1}`} fill className="object-cover" sizes="64px" />
             </button>
           ))}
         </div>

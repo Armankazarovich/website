@@ -104,7 +104,7 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
     }
   }
   return {
-    title: `${catalogTitle} — ${siteName}`,
+    title: catalogTitle,
     description: catalogDescription,
     alternates: { canonical: "https://pilo-rus.ru/catalog" },
     robots,

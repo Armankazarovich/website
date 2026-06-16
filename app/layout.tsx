@@ -241,13 +241,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {localDevCacheResetScript && (
           <script dangerouslySetInnerHTML={{ __html: localDevCacheResetScript }} />
         )}
-        <link rel="preload" href="/fonts/Roboto-Regular.woff" as="font" type="font/woff" crossOrigin="anonymous" />
-        <link rel="preload" href="/fonts/Roboto-Bold.woff" as="font" type="font/woff" crossOrigin="anonymous" />
-        <link rel="preconnect" href="https://videos.pexels.com" />
-        <link rel="dns-prefetch" href="https://videos.pexels.com" />
-        <link rel="preconnect" href="https://translate.google.com" />
-        <link rel="preconnect" href="https://translate.googleapis.com" />
-        <link rel="dns-prefetch" href="https://translate.google.com" />
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icons/icon-192x192.png" type="image/png" sizes="192x192" />
         <link rel="icon" href="/icons/icon-96x96.png" type="image/png" sizes="96x96" />
