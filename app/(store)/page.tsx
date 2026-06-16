@@ -4,6 +4,7 @@ import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 
 // Кэш 60 сек — быстрее чем force-dynamic, но данные актуальны
 export const revalidate = 60;
@@ -111,17 +112,23 @@ export const metadata: Metadata = {
 };
 
 async function getData() {
-  const publicProductFilter = getPublicProductsFilter();
+  const tenantId = DEFAULT_TENANT_ID;
+  const publicProductFilter = { tenantId, ...getPublicProductsFilter() };
   const publicVariantFilter = getPublicVariantsFilter();
   const [categories, featuredProducts, promotions, reviews, settings] = await Promise.all([
     prisma.category.findMany({
-      where: { showInMenu: true },
+      where: {
+        tenantId,
+        showInMenu: true,
+        parentId: null,
+        products: { some: publicProductFilter },
+      },
       orderBy: { sortOrder: "asc" },
       include: { _count: { select: { products: { where: publicProductFilter } } } },
       take: 6,
     }),
     prisma.product.findMany({
-      where: { ...publicProductFilter, featured: true },
+      where: { ...publicProductFilter, featured: true, category: { tenantId, showInMenu: true } },
       include: {
         category: true,
         variants: { where: publicVariantFilter, orderBy: { pricePerCube: "asc" } },
@@ -130,6 +137,7 @@ async function getData() {
     }),
     prisma.promotion.findMany({
       where: {
+        tenantId,
         active: true,
         OR: [{ validUntil: null }, { validUntil: { gte: new Date() } }],
       },
@@ -137,7 +145,7 @@ async function getData() {
       take: 3,
     }),
     prisma.review.findMany({
-      where: { approved: true },
+      where: { tenantId, approved: true },
       orderBy: { createdAt: "desc" },
       take: 6,
     }),
@@ -349,7 +357,8 @@ export default async function HomePage() {
                 className="inline-flex items-center justify-center gap-2 h-14 px-8 rounded-xl bg-white/10 hover:bg-white/18 active:scale-95 border border-white/25 hover:border-white/45 text-white text-base sm:text-lg font-semibold backdrop-blur-md transition-all duration-200 shadow-lg"
               >
                 <Phone className="w-5 h-5 shrink-0 text-brand-orange" />
-                Позвонить нам
+                <span className="lg:hidden">Позвонить нам</span>
+                <span className="hidden lg:inline">{phoneDisplay}</span>
               </a>
             </div>
 
@@ -485,37 +494,34 @@ export default async function HomePage() {
               <p className="text-muted-foreground">Широкий ассортимент пиломатериалов напрямую с производства</p>
             </div>
 
-            {/* Bento-сетка: мобиль 2x2, десктоп — hero+side+wide */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 lg:grid-rows-[240px_240px_160px] gap-3 sm:gap-4 mb-8">
-              {/* Hero — большая карточка, слева */}
+            {/* Сетка категорий: все направления видны без обрезанных баннеров */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-6 mb-8">
               {categories[0] && (
-                <div className="h-44 sm:h-56 lg:col-span-2 lg:row-span-2 lg:h-full">
+                <div className="col-span-2 h-44 sm:h-56 lg:col-span-3 lg:row-span-2 lg:h-[500px]">
                   <CategoryCard slug={categories[0].slug} name={categories[0].name} image={categories[0].image} productCount={categories[0]._count.products} className="h-full" />
                 </div>
               )}
-              {/* Side top */}
               {categories[1] && (
-                <div className="h-44 sm:h-56 lg:h-full">
+                <div className="h-44 sm:h-56 lg:col-span-3 lg:h-[242px]">
                   <CategoryCard slug={categories[1].slug} name={categories[1].name} image={categories[1].image} productCount={categories[1]._count.products} className="h-full" />
                 </div>
               )}
-              {/* Side bottom — скрыта на мобиле, видна на десктопе */}
               {categories[2] && (
-                <div className="hidden lg:block lg:h-full">
+                <div className="h-44 sm:h-56 lg:col-span-3 lg:h-[242px]">
                   <CategoryCard slug={categories[2].slug} name={categories[2].name} image={categories[2].image} productCount={categories[2]._count.products} className="h-full" />
                 </div>
               )}
-              {/* Wide banner — нижняя строка (мобиль: на всю ширину вместо скрытой) */}
-              {categories[2] && (
-                <div className="col-span-2 h-36 sm:h-44 lg:hidden">
-                  <CategoryCard slug={categories[2].slug} name={categories[2].name} image={categories[2].image} productCount={categories[2]._count.products} className="h-full" />
+              {categories.slice(3, 6).map((category) => (
+                <div key={category.id} className="col-span-2 h-36 sm:h-44 lg:col-span-2 lg:h-56">
+                  <CategoryCard
+                    slug={category.slug}
+                    name={category.name}
+                    image={category.image}
+                    productCount={category._count.products}
+                    className="h-full"
+                  />
                 </div>
-              )}
-              {categories[3] && (
-                <div className="col-span-2 h-36 sm:h-44 lg:col-span-3 lg:h-full">
-                  <CategoryCard slug={categories[3].slug} name={categories[3].name} image={categories[3].image} productCount={categories[3]._count.products} className="h-full" />
-                </div>
-              )}
+              ))}
             </div>
 
             <div className="text-center">

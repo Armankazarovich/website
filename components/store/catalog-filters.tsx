@@ -68,7 +68,7 @@ export function CatalogFilters({
     () => sizes.some(s => isCrossSectionFormat(s)),
     [sizes]
   );
-  const sizeLabel = hasCrossSections ? "Сечение" : "Размер";
+  const sizeLabel = "Размеры";
 
   // Группировка по сечению (только для формата с ×)
   const grouped = useMemo(() => groupSizesByCrossSection(sizes), [sizes]);
@@ -280,7 +280,7 @@ export function CatalogFilters({
                   {/* Полные размеры выбранного сечения */}
                   {visibleCS && grouped.has(visibleCS) && (
                     <div className="pt-2 border-t border-border/50">
-                      <p className="text-[10px] text-muted-foreground/60 mb-1.5 font-medium">Сечение {visibleCS} — длины:</p>
+                      <p className="text-[10px] text-muted-foreground/60 mb-1.5 font-medium">Размер {visibleCS} — варианты:</p>
                       <div className="flex flex-wrap gap-1.5">
                         {grouped.get(visibleCS)!.map((size) => (
                           <button
@@ -300,7 +300,7 @@ export function CatalogFilters({
                   )}
 
                   <p className="text-[10px] text-muted-foreground/40">
-                    {crossSections.length} сечений · {sizes.length} размеров
+                    {crossSections.length} сечений · {sizes.length} вариантов
                   </p>
                 </div>
               ) : (
