@@ -9,6 +9,15 @@ import { getCurrentTenantId } from "@/lib/tenant-context";
 export async function getSiteSettings(): Promise<Record<string, string>> {
   try {
     const tenantId = getCurrentTenantId();
+    return getSiteSettingsForTenant(tenantId);
+  } catch (e) {
+    console.warn("[site-settings] DB unavailable, using defaults:", (e as Error).message);
+    return {};
+  }
+}
+
+export async function getSiteSettingsForTenant(tenantId: string): Promise<Record<string, string>> {
+  try {
     const rows = await prisma.siteSettings.findMany({ where: { tenantId } });
     const result: Record<string, string> = {};
     for (const row of rows) result[row.key] = row.value;
@@ -85,7 +94,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   photo_aspect_ratio: "3/4",
   card_style: "classic",
   default_palette: "sber",
-  aray_enabled: "false",
+  aray_enabled: "true",
 };
 
 export function getSetting(settings: Record<string, string>, key: string): string {

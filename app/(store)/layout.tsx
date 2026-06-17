@@ -9,6 +9,7 @@ import { RouteTransition } from "@/components/layout/route-transition";
 import { StoreSettingsProvider } from "@/lib/store-settings-context";
 import { getStoreShellData } from "@/lib/store-shell-data";
 import { getPublicStoreStories } from "@/lib/store-stories";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 
 // ── Lazy-load тяжёлых клиентских компонентов (не блокируют первую отрисовку) ──
 const ArayGlobalAssistant = dynamic(
@@ -112,8 +113,8 @@ export default async function StoreLayout({
     photoAspect,
     cardStyle,
     arayEnabled,
-  } = await getStoreShellData();
-  const stories = await getPublicStoreStories({ take: 18 });
+  } = await getStoreShellData(DEFAULT_TENANT_ID);
+  const stories = await getPublicStoreStories({ take: 18, tenantId: DEFAULT_TENANT_ID });
 
   return (
     <StoreSettingsProvider cardStyle={cardStyle} photoAspect={photoAspect}>

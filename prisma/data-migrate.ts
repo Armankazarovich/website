@@ -88,6 +88,69 @@ function decimalOrNull(value?: number | null) {
   return new Prisma.Decimal(value);
 }
 
+type PilmosSnapshotProduct = PilmosCatalogSnapshot["products"][number];
+type PilmosSnapshotVariant = PilmosSnapshotProduct["variants"][number];
+
+const TIMBER_PRICE_CATEGORY_SLUGS = new Set(["sosna-el", "listvennitsa", "kedr", "lipa-osina"]);
+
+function normalizeDimensionText(value: string) {
+  return String(value || "")
+    .replace(/[\u00d7\u0445\u0425*]/g, "x")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function hasCubeUnitHint(value: string) {
+  return /(?:^|[\s/])(?:m3|m\^3|m\u00b3|\u043c3|\u043c\^3|\u043c\u00b3)(?:$|[\s/.,;])/i.test(
+    String(value || ""),
+  );
+}
+
+function piecesPerCubeFromSize(value: string) {
+  const match = normalizeDimensionText(value).match(/(\d{1,4})\s*x\s*(\d{1,4})\s*x\s*(\d{3,5})/);
+  if (!match) return null;
+
+  const width = Number(match[1]);
+  const height = Number(match[2]);
+  const length = Number(match[3]);
+  const volume = (width / 1000) * (height / 1000) * (length / 1000);
+
+  if (!Number.isFinite(volume) || volume <= 0) return null;
+  return Math.max(1, Math.floor(1 / volume));
+}
+
+function normalizePilmosSnapshotVariant(
+  categorySlug: string,
+  variant: PilmosSnapshotVariant,
+): PilmosSnapshotVariant {
+  const pricePerPiece = Number(variant.pricePerPiece || 0);
+  const pricePerCube = Number(variant.pricePerCube || 0);
+
+  if (!pricePerPiece || pricePerCube) return variant;
+
+  const piecesPerCube = piecesPerCubeFromSize(variant.size);
+  const shouldPromoteToCube =
+    hasCubeUnitHint(variant.size) ||
+    (TIMBER_PRICE_CATEGORY_SLUGS.has(categorySlug) && pricePerPiece >= 10000 && Boolean(piecesPerCube));
+
+  if (!shouldPromoteToCube) return variant;
+
+  return {
+    ...variant,
+    pricePerCube: pricePerPiece,
+    pricePerPiece: null,
+    piecesPerCube: piecesPerCube ?? variant.piecesPerCube ?? null,
+  };
+}
+
+function saleUnitFromSnapshotVariants(variants: PilmosSnapshotVariant[]): "CUBE" | "PIECE" | "BOTH" {
+  const hasCube = variants.some((variant) => Number(variant.pricePerCube || 0) > 0);
+  const hasPiece = variants.some((variant) => Number(variant.pricePerPiece || 0) > 0);
+
+  if (hasCube && hasPiece) return "BOTH";
+  return hasCube ? "CUBE" : "PIECE";
+}
+
 async function applyPilmosCatalogSnapshot() {
   const snapshot = readPilmosCatalogSnapshot();
   if (!snapshot) return;
@@ -130,7 +193,10 @@ async function applyPilmosCatalogSnapshot() {
   let variantsArchived = 0;
   for (const product of snapshot.products) {
     const category = categoryBySlug.get(product.categorySlug);
-    if (!category || !product.images.length || !product.variants.length) continue;
+    const normalizedVariants = product.variants.map((variant) =>
+      normalizePilmosSnapshotVariant(product.categorySlug, variant),
+    );
+    if (!category || !product.images.length || !normalizedVariants.length) continue;
 
     const productData = {
       name: product.name,
@@ -138,7 +204,7 @@ async function applyPilmosCatalogSnapshot() {
       description: product.description || product.shortDescription || product.name,
       categoryId: category.id,
       images: product.images,
-      saleUnit: product.saleUnit,
+      saleUnit: saleUnitFromSnapshotVariants(normalizedVariants),
       active: product.active,
       featured: product.featured,
     };
@@ -160,9 +226,9 @@ async function applyPilmosCatalogSnapshot() {
       select: { id: true, size: true },
     });
     const variantBySize = new Map(existingVariants.map((variant) => [variant.size, variant]));
-    const desiredSizes = new Set(product.variants.map((variant) => variant.size));
+    const desiredSizes = new Set(normalizedVariants.map((variant) => variant.size));
 
-    for (const variant of product.variants) {
+    for (const variant of normalizedVariants) {
       const variantData = {
         size: variant.size,
         pricePerCube: decimalOrNull(variant.pricePerCube),
@@ -1009,7 +1075,7 @@ async function main() {
       phone3_link: "",
       social_whatsapp: "+74951352026",
       whatsapp_number: "+74951352026",
-      aray_enabled: "false",
+      aray_enabled: "true",
       public_site_name: "ПилоРус",
       brand_name: "ПилоРус",
       catalog_title: "Каталог пиломатериалов с ценами",

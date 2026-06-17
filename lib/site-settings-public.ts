@@ -58,7 +58,7 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   photo_aspect_ratio: "3/4",
   card_style: "classic",
   default_palette: "sber",
-  aray_enabled: "false",
+  aray_enabled: "true",
 };
 
 export function getSetting(

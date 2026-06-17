@@ -465,7 +465,7 @@ export function ProductCard({
       <div className={wrapperClass}>
         <AdminEditButton href={productEditTarget.adminHref} mode="overlay" label={productEditTarget.adminLabel} />
         {/* Full-bleed image */}
-        <Link prefetch href={`/product/${slug}`} className="absolute inset-0">
+        <Link prefetch={false} href={`/product/${slug}`} className="absolute inset-0">
           {images[0] && !imgError ? (
             <Image src={images[0]} alt={name} fill loading="lazy"
               className="object-cover transition-opacity duration-200 group-hover:opacity-95"
@@ -497,7 +497,7 @@ export function ProductCard({
         {/* Bottom overlay content */}
         <div className="absolute bottom-0 left-0 right-0 z-10 p-3">
           <p className="text-[10px] text-white/50 uppercase tracking-wider mb-0.5">{category}</p>
-          <Link prefetch href={`/product/${slug}`}>
+          <Link prefetch={false} href={`/product/${slug}`}>
             <h3 className="font-display font-semibold text-sm text-white leading-snug line-clamp-2 mb-2 hover:text-white/80 transition-colors">
               {name}
             </h3>
@@ -580,7 +580,7 @@ export function ProductCard({
       )}
 
       {/* ── Изображение ── */}
-      <Link prefetch href={`/product/${slug}`} className="store-product-card-media block relative overflow-hidden" style={{ aspectRatio: "var(--catalog-card-photo-aspect, var(--photo-aspect, 3/4))" }}>
+      <Link prefetch={false} href={`/product/${slug}`} className="store-product-card-media block relative overflow-hidden" style={{ aspectRatio: "var(--catalog-card-photo-aspect, var(--photo-aspect, 3/4))" }}>
         {images[0] && !imgError ? (
           <Image
             src={images[0]}
@@ -658,7 +658,7 @@ export function ProductCard({
         </div>
 
         {/* Название */}
-        <Link prefetch href={`/product/${slug}`}>
+        <Link prefetch={false} href={`/product/${slug}`}>
           <h3
             title={name}
             className="store-product-card-title mb-1 min-h-[1.9rem] font-display text-[15px] leading-[1.16] transition-colors line-clamp-2 sm:min-h-[2.1rem] sm:text-[18px]"

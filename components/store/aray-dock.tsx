@@ -178,6 +178,7 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
   if (isTerminalWorkspace) {
     return (
       <div
+        data-aray-dock
         className="fixed z-[55] hidden pointer-events-none lg:block"
         style={{
           left: "calc(0.75rem + 3.75rem + 0.75rem)",
@@ -216,6 +217,7 @@ export function ArayDock({ enabled = true }: ArayDockProps) {
 
   return (
     <div
+      data-aray-dock
       className="aray-dock-root fixed left-0 right-0 z-[55] hidden pointer-events-none lg:block"
       style={rootStyle}
       aria-label="ARAY — единый чат"

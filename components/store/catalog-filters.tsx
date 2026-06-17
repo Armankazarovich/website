@@ -68,7 +68,11 @@ export function CatalogFilters({
     () => sizes.some(s => isCrossSectionFormat(s)),
     [sizes]
   );
-  const sizeLabel = "Размеры";
+  const hasSheetSizes = useMemo(
+    () => sizes.some((s) => /(?:мм|\d+\s*[×xXхХ]\s*\d+)/i.test(s) && !/\d+\s*[×xXхХ]\s*\d+\s*[×xXхХ]\s*\d+/.test(s)),
+    [sizes],
+  );
+  const sizeLabel = hasCrossSections && !hasSheetSizes ? "Сечение и длина" : "Толщина и формат";
 
   // Группировка по сечению (только для формата с ×)
   const grouped = useMemo(() => groupSizesByCrossSection(sizes), [sizes]);

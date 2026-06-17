@@ -100,8 +100,8 @@ check(
   Boolean(packageJson.scripts?.["browser:cart:check"]) &&
     exists("scripts/validate-browser-cart-flow.js") &&
     read("scripts/deploy-preflight.js").includes("browser:cart:check") &&
-    includesAll(read("scripts/validate-browser-cart-flow.js"), ["data-product-aray-action", "data-product-share", "hides bulky duplicate contact form"]),
-  "Deploy must include a real browser add-to-cart/cart-page/product-page scenario and keep product contact routed through the compact ARAY entry.",
+    includesAll(read("scripts/validate-browser-cart-flow.js"), ["data-aray-dock", "data-product-share", "hides bulky duplicate contact form"]),
+  "Deploy must include a real browser add-to-cart/cart-page/product-page scenario and keep the product page clean while global ARAY stays available.",
 );
 check(
   "Browser stories responsive guard is available",

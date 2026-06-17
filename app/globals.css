@@ -1999,9 +1999,9 @@ button, a, [role="button"], input, select, textarea {
   display: flex;
   min-height: 1.7rem;
   align-items: center;
-  flex-wrap: nowrap;
-  gap: 0.5rem;
-  overflow: visible;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+  overflow: hidden;
   scrollbar-width: none;
 }
 
@@ -2012,14 +2012,14 @@ button, a, [role="button"], input, select, textarea {
 .store-smart-tag {
   position: relative;
   display: inline-flex;
-  width: 1.55rem;
-  max-width: 1.55rem;
-  height: 1.55rem;
+  width: auto;
+  max-width: 100%;
+  min-height: 1.55rem;
   align-items: center;
-  justify-content: center;
-  gap: 0;
+  justify-content: flex-start;
+  gap: 0.3rem;
   overflow: visible;
-  border: 1px solid transparent;
+  border: 1px solid hsl(106 58% 46% / 0.22);
   border-radius: 999px;
   background: hsl(106 58% 46% / 0.07);
   color: hsl(112 72% 38%);
@@ -2027,7 +2027,7 @@ button, a, [role="button"], input, select, textarea {
   line-height: 1.2;
   letter-spacing: 0;
   outline: none;
-  padding: 0;
+  padding: 0 0.48rem;
   transition:
     border-color 0.16s ease,
     color 0.16s ease,
@@ -2054,44 +2054,27 @@ button, a, [role="button"], input, select, textarea {
 }
 
 .store-smart-tag-label {
-  position: absolute;
-  left: calc(100% + 0.54rem);
-  top: 50%;
-  z-index: 70;
+  position: static;
   display: inline-flex;
-  width: max-content;
-  max-width: min(10.2rem, 58vw);
-  min-height: 1.42rem;
+  max-width: 8.4rem;
   align-items: center;
   overflow: hidden;
-  border: 1px solid hsl(30 18% 78% / 0.70);
-  border-radius: 999px;
-  background:
-    linear-gradient(180deg, hsl(var(--card) / 0.96), hsl(var(--background) / 0.92));
   color: hsl(var(--foreground) / 0.86);
   font-size: 0.62rem;
   font-weight: 760;
-  line-height: 1;
-  opacity: 0;
-  padding: 0 0.52rem;
+  line-height: 1.05;
+  opacity: 1;
   pointer-events: none;
   text-overflow: ellipsis;
   white-space: nowrap;
-  transform: translate(-0.24rem, -50%);
-  transition:
-    opacity 0.16s ease,
-    transform 0.16s ease;
-  box-shadow:
-    0 8px 16px -16px hsl(24 18% 8% / 0.22),
-    0 0 0 2px hsl(var(--background) / 0.72),
-    inset 0 1px 0 hsl(0 0% 100% / 0.28);
+  transform: none;
+  transition: color 0.16s ease;
 }
 
 .store-smart-tag:hover .store-smart-tag-label,
 .store-smart-tag:focus-visible .store-smart-tag-label {
-  opacity: 1;
   color: hsl(var(--foreground) / 0.92);
-  transform: translate(0, -50%);
+  transform: none;
 }
 
 .store-card-teaser {
@@ -3876,16 +3859,15 @@ button, a, [role="button"], input, select, textarea {
     min-height: 1.9rem;
     max-height: none;
     gap: 0.42rem;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .store-product-card .store-smart-tag {
-    width: 1.78rem;
-    max-width: 1.78rem;
-    height: 1.78rem;
-    min-height: 1.78rem;
-    border-radius: 0.58rem;
-    padding-inline: 0;
+    width: auto;
+    max-width: 100%;
+    min-height: 1.62rem;
+    border-radius: 999px;
+    padding-inline: 0.5rem;
   }
 
   .store-product-card .store-smart-tag-icon {
@@ -3895,6 +3877,7 @@ button, a, [role="button"], input, select, textarea {
 
   .store-product-card .store-smart-tag-label {
     font-size: 0.6rem;
+    max-width: 7.8rem;
   }
 
   .store-product-card .store-mobile-size-trigger {
@@ -4286,13 +4269,7 @@ button, a, [role="button"], input, select, textarea {
 }
 
 .dark .store-smart-tag-label {
-  border-color: hsl(var(--border) / 0.58);
-  background:
-    linear-gradient(180deg, hsl(24 18% 12% / 0.98), hsl(24 18% 7% / 0.96));
-  box-shadow:
-    0 12px 22px -16px hsl(0 0% 0% / 0.54),
-    0 0 0 3px hsl(24 18% 7% / 0.86),
-    inset 0 1px 0 hsl(0 0% 100% / 0.07);
+  color: hsl(var(--foreground) / 0.86);
 }
 
 .dark .store-card-variant-count {
@@ -4369,7 +4346,7 @@ button, a, [role="button"], input, select, textarea {
     min-height: 1.6rem;
     flex-wrap: wrap;
     gap: 0.38rem 0.62rem;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .store-product-card .store-smart-tag {
@@ -4379,11 +4356,11 @@ button, a, [role="button"], input, select, textarea {
     min-height: 1.35rem;
     justify-content: flex-start;
     gap: 0.32rem;
-    border: 0;
-    background: transparent;
-    border-radius: 0;
+    border: 1px solid hsl(106 58% 46% / 0.18);
+    background: hsl(106 58% 46% / 0.06);
+    border-radius: 999px;
     color: hsl(112 68% 40%);
-    padding: 0;
+    padding: 0 0.42rem;
   }
 
   .store-product-card .store-smart-tag:hover,

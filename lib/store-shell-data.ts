@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { getAvailableTypes, type ProductTypeInfo } from "@/lib/product-types";
 import { applyProductTypeSettings, getProductTypeSettings } from "@/lib/product-type-settings";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
-import { getPhones, getSetting, getSiteSettings } from "@/lib/site-settings";
-import { getCurrentTenantId } from "@/lib/tenant-context";
+import { getPhones, getSetting, getSiteSettingsForTenant } from "@/lib/site-settings";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 
 export type StoreShellCategory = {
   id: string;
@@ -109,7 +109,7 @@ const getCachedStoreShellData = unstable_cache(
         orderBy: { sortOrder: "asc" },
         select: { id: true, name: true, slug: true },
       }),
-      getSiteSettings(),
+      getSiteSettingsForTenant(tenantId),
       getProductTypeSettings(),
       prisma.product.findMany({
         where: { ...publicProductFilter, category: { tenantId, showInMenu: true } },
@@ -147,6 +147,6 @@ const getCachedStoreShellData = unstable_cache(
   { revalidate: 60, tags: ["store-shell-data"] },
 );
 
-export function getStoreShellData() {
-  return getCachedStoreShellData(getCurrentTenantId());
+export function getStoreShellData(tenantId = DEFAULT_TENANT_ID) {
+  return getCachedStoreShellData(tenantId);
 }

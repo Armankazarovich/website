@@ -38,6 +38,7 @@ type StoryQuery = {
   take?: number;
   entityType?: string | null;
   entityId?: string | null;
+  tenantId?: string | null;
 };
 
 function cleanToken(value?: string | null) {
@@ -160,10 +161,11 @@ export async function getPublicStoreStories({
   take = 16,
   entityType,
   entityId,
+  tenantId: inputTenantId,
 }: StoryQuery = {}): Promise<PublicStoreStory[]> {
   const safeTake = Math.min(Math.max(Number(take) || 16, 1), 80);
   const now = new Date();
-  const tenantId = getCurrentTenantId();
+  const tenantId = cleanToken(inputTenantId) || getCurrentTenantId();
   const relatedType = cleanToken(entityType);
   const relatedId = cleanToken(entityId);
   const orderBy = [

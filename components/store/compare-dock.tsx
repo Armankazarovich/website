@@ -108,7 +108,6 @@ export function CompareDock() {
   const hydrateWishlist = useWishlistStore((state) => state.hydrateWishlist);
   const removeWishlist = useWishlistStore((state) => state.remove);
   const floatingChromeHidden = useFloatingChromeHidden();
-  useAdminOverlayGuard(open);
 
   useEffect(() => {
     hydrateCompare();
@@ -124,6 +123,7 @@ export function CompareDock() {
   const showCompare = compareCount > 0 && !pathname.startsWith("/compare");
   const showWishlist = wishlistCount > 0 && !pathname.startsWith("/wishlist");
   const visibleCount = (showCompare ? compareCount : 0) + (showWishlist ? wishlistCount : 0);
+  const panelOpen = open && visibleCount > 0;
   const safeActiveTab: SelectionTab =
     activeTab === "compare" && showCompare
       ? "compare"
@@ -140,7 +140,13 @@ export function CompareDock() {
     if (safeActiveTab !== activeTab) setActiveTab(safeActiveTab);
   }, [activeTab, safeActiveTab]);
 
-  if (visibleCount === 0 || (floatingChromeHidden && !open)) return null;
+  useEffect(() => {
+    if (open && visibleCount === 0) setOpen(false);
+  }, [open, visibleCount]);
+
+  useAdminOverlayGuard(panelOpen);
+
+  if (visibleCount === 0 || (floatingChromeHidden && !panelOpen)) return null;
 
   return (
     <>
@@ -179,7 +185,7 @@ export function CompareDock() {
       </motion.button>
 
       <AnimatePresence>
-        {open && (
+        {panelOpen && (
           <>
             <motion.div
               className="fixed inset-0 z-[70] bg-background/70 sm:hidden"

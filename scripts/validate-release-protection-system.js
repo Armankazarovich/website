@@ -102,11 +102,11 @@ check(
       "pilo-rus-cart",
       "data-cart-item",
       "data-cart-empty-state",
-      "data-product-aray-action",
+      "data-aray-dock",
       "hides bulky duplicate contact form",
       "Chrome DevTools",
     ]),
-  "Deploy must include a real browser add-to-cart, cart-page, and compact ARAY product-action scenario.",
+  "Deploy must include a real browser add-to-cart, cart-page, and clean product-page scenario with global ARAY available.",
 );
 
 check(

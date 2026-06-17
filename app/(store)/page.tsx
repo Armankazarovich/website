@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
+import { getSiteSettingsForTenant, getSetting, getPhones } from "@/lib/site-settings";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 
@@ -149,7 +149,7 @@ async function getData() {
       orderBy: { createdAt: "desc" },
       take: 6,
     }),
-    getSiteSettings(),
+    getSiteSettingsForTenant(tenantId),
   ]);
   return { categories, featuredProducts, promotions, reviews, settings };
 }

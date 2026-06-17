@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 import React, { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -9,18 +9,18 @@ import { VariantSelector } from "@/components/store/variant-selector";
 import { VariantCards } from "@/components/store/variant-cards";
 import { ProductCard } from "@/components/store/product-card";
 import { DescriptionAccordion } from "@/components/store/description-accordion";
-import { Phone, ArrowLeft, ExternalLink, Calculator, Pencil } from "lucide-react";
+import { Phone, ArrowLeft, ExternalLink, Calculator } from "lucide-react";
 import { ProductGallery } from "@/components/store/product-gallery";
 import { AdminEditButton } from "@/components/admin/admin-edit-button";
 import { CompareButton } from "@/components/store/compare-button";
 import { WishlistButton } from "@/components/store/wishlist-button";
 import { ProductShareButton } from "@/components/store/product-page-actions";
 import type { CompareItem } from "@/store/compare";
-import { auth } from "@/lib/auth";
-import { getSiteSettings, getSetting, getPhones } from "@/lib/site-settings";
+import { getSiteSettingsForTenant, getSetting, getPhones } from "@/lib/site-settings";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { getProductEditTarget, getPublicEditTarget } from "@/lib/public-edit-targets";
 import { getProductAvailability } from "@/lib/product-availability";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 // ReviewForm is now rendered inside DescriptionAccordion
 
 interface Props {
@@ -60,7 +60,7 @@ function productSku(slug: string, id: string) {
 
 const getProductBySlug = cache(async (slug: string) =>
   prisma.product.findFirst({
-    where: { slug, ...getPublicProductsFilter() },
+    where: { tenantId: DEFAULT_TENANT_ID, slug, ...getPublicProductsFilter() },
     include: {
       category: true,
       variants: { where: getPublicVariantsFilter(), orderBy: { size: "asc" } },
@@ -108,10 +108,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ProductPage({ params }: Props) {
-  const sessionPromise = auth();
   const productPromise = getProductBySlug(params.slug);
-  const siteSettingsPromise = getSiteSettings();
-  const yandexMapsSettingPromise = getSiteSetting("yandex_maps_review_url");
+  const siteSettingsPromise = getSiteSettingsForTenant(DEFAULT_TENANT_ID);
+  const yandexMapsSettingPromise = getSiteSetting("yandex_maps_review_url", DEFAULT_TENANT_ID);
 
   const product = await productPromise;
 
@@ -119,6 +118,7 @@ export default async function ProductPage({ params }: Props) {
 
   const relatedPromise = prisma.product.findMany({
     where: {
+      tenantId: DEFAULT_TENANT_ID,
       ...getPublicProductsFilter(),
       categoryId: product.categoryId,
       NOT: { id: product.id },
@@ -138,26 +138,12 @@ export default async function ProductPage({ params }: Props) {
     take: 10,
   });
 
-  const currentUserProfilePromise = sessionPromise.then((session) => {
-    const currentUserId = session?.user?.id || null;
-    return currentUserId
-      ? prisma.user.findUnique({
-          where: { id: currentUserId },
-          select: { name: true, email: true, avatarUrl: true },
-        })
-      : Promise.resolve(null);
-  });
-
-  const [session, siteSettings, yandexMapsSetting, related, reviews, currentUserProfile] = await Promise.all([
-    sessionPromise,
+  const [siteSettings, yandexMapsSetting, related, reviews] = await Promise.all([
     siteSettingsPromise,
     yandexMapsSettingPromise,
     relatedPromise,
     reviewsPromise,
-    currentUserProfilePromise,
   ]);
-  const role = (session?.user as any)?.role;
-  const isAdmin = session && ["ADMIN", "SUPER_ADMIN", "MANAGER", "SELLER"].includes(role);
   const yandexMapsUrl = yandexMapsSetting?.value || "";
   const showReviewsBlock = (siteSettings.product_page_show_reviews ?? "true") !== "false";
   const showRelatedProducts = (siteSettings.product_page_show_related ?? "true") !== "false";
@@ -326,16 +312,12 @@ export default async function ProductPage({ params }: Props) {
               <CompareButton item={compareItem} mode="inline" />
               <WishlistButton item={compareItem} mode="inline" />
               <ProductShareButton title={product.name} url={productUrl} />
-              {isAdmin && (
-                <Link
-                  href={productEditTarget.adminHref}
-                  className="inline-flex min-h-[40px] items-center gap-2 rounded-xl border border-primary/30 bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
-                  title="Редактировать товар в админке"
-                >
-                  <Pencil className="h-4 w-4" />
-                  <span>{productEditTarget.adminLabel}</span>
-                </Link>
-              )}
+              <AdminEditButton
+                href={productEditTarget.adminHref}
+                mode="inline"
+                label={productEditTarget.adminLabel}
+                className="min-h-[40px] rounded-xl px-3 text-sm font-semibold"
+              />
             </div>
           </div>
 
@@ -478,10 +460,10 @@ export default async function ProductPage({ params }: Props) {
           showReviews={showReviewsBlock}
           productId={product.id}
           productName={product.name}
-          userName={currentUserProfile?.name || session?.user?.name || null}
-          userEmail={currentUserProfile?.email || session?.user?.email || null}
-          userAvatar={currentUserProfile?.avatarUrl || (session?.user as any)?.avatarUrl || null}
-          isLoggedIn={!!session?.user}
+          userName={null}
+          userEmail={null}
+          userAvatar={null}
+          isLoggedIn={false}
         />
       </section>
 

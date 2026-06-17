@@ -409,9 +409,14 @@ async function runBrowserFlow(browserPath) {
     );
 
     await navigate(client, `${baseUrl}${productHref}`);
-    await waitForCondition(client, "document.querySelector('[data-product-aray-action]') !== null", 20000);
+    await waitForCondition(
+      client,
+      "document.querySelector('[data-product-share]') !== null && document.querySelector('a[href^=\"tel:\"]') !== null",
+      20000,
+    );
     const productPageState = await client.evaluate(`(${() => ({
-      arayButton: Boolean(document.querySelector("[data-product-aray-action]")),
+      inlineArayButton: Boolean(document.querySelector("[data-product-aray-action]")),
+      arayDock: Boolean(document.querySelector("[data-aray-dock]")),
       shareButton: Boolean(document.querySelector("[data-product-share]")),
       phoneLink: Boolean(document.querySelector('a[href^="tel:"]')),
       sellerPanel: Boolean(document.querySelector("[data-product-seller-panel]")),
@@ -422,9 +427,12 @@ async function runBrowserFlow(browserPath) {
       text: document.body.innerText.slice(0, 4000),
     })})()`);
     check(
-      "Product page has compact ARAY and sharing controls",
-      productPageState.arayButton && productPageState.shareButton && productPageState.phoneLink,
-      `aray: ${productPageState.arayButton}, share: ${productPageState.shareButton}, phone: ${productPageState.phoneLink}`,
+      "Product page keeps clean actions and global ARAY",
+      !productPageState.inlineArayButton &&
+        productPageState.arayDock &&
+        productPageState.shareButton &&
+        productPageState.phoneLink,
+      `inline aray: ${productPageState.inlineArayButton}, dock: ${productPageState.arayDock}, share: ${productPageState.shareButton}, phone: ${productPageState.phoneLink}`,
     );
     check(
       "Product page hides bulky duplicate contact form",

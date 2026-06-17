@@ -56,11 +56,18 @@ const CATEGORY_DEFS = {
     seoDescription: "Лиственница для фасада, террасы, строительства и отделки. Актуальные размеры, цены и доставка по Москве и Московской области.",
   },
   fanera: {
-    name: "Фанера и листовые материалы",
+    name: "Фанера",
     sortOrder: 4,
     image: "/images/products/fanera-fsf-bereza-1220.webp",
     seoTitle: "Фанера и листовые материалы — цены и наличие",
     seoDescription: "Фанера, OSB, ДСП, ДВП, МДФ и другие листовые материалы для строительства, ремонта и производства.",
+  },
+  "dsp-mdf-osb": {
+    name: "ДСП, ДВП, МДФ, ЦСП, OSB",
+    sortOrder: 4.5,
+    image: "/images/products/osb-3-1220.webp",
+    seoTitle: "ДСП, ДВП, МДФ, ЦСП и OSB — листовые материалы",
+    seoDescription: "ДСП, ДВП, МДФ, ЦСП и OSB в листах: толщины, форматы, цены за штуку и доставка по Москве и Московской области.",
   },
   kedr: {
     name: "Кедр",
@@ -288,6 +295,17 @@ function extractSize(text) {
 
 function withDefaultTimberLength(size) {
   const value = normalizeSize(size);
+  const sixMeterRange = value.match(/^(\d{1,4}×\d{1,4})\s*мм\s*2\s*[-–]\s*6\s*м((?:\s*,.*)?)$/i);
+  if (sixMeterRange) {
+    return `${sixMeterRange[1]}×6000 мм${sixMeterRange[2] || ""}`;
+  }
+  const meterLength = value.match(/^(\d{1,4}×\d{1,4})\s*мм\s+(\d)(?:[,.](\d))?\s*м((?:\s*,.*)?)$/i);
+  if (meterLength) {
+    const meters = Number(`${meterLength[2]}.${meterLength[3] || "0"}`);
+    if (Number.isFinite(meters) && meters > 0) {
+      return `${meterLength[1]}×${Math.round(meters * 1000)} мм${meterLength[4] || ""}`;
+    }
+  }
   const match = value.match(/^(\d{1,4}×\d{1,4}(?:\/\d{1,4})?)\s*мм((?:\s*,.*)?)$/i);
   if (match) {
     return `${match[1]}×6000 мм${match[2] || ""}`;
@@ -479,10 +497,14 @@ function woodStandard(productName, categoryText) {
   return "";
 }
 
+function isSheetCategorySlug(slug) {
+  return slug === "fanera" || slug === "dsp-mdf-osb";
+}
+
 function buildStorefrontGroup(product) {
   if (isExcludedImportProduct(product)) return null;
 
-  if (product.categorySlug === "fanera") {
+  if (isSheetCategorySlug(product.categorySlug)) {
     const name = sheetFamilyName(product.name, product.sourceCategoryText);
     return {
       key: `${product.categorySlug}|${normalizeKeyText(name)}`,
@@ -508,7 +530,7 @@ function buildDisplayVariant(product, variant) {
   const price = variant.price;
   const unit = variant.unit;
 
-  if (product.categorySlug === "fanera") {
+  if (isSheetCategorySlug(product.categorySlug)) {
     const thickness = extractThickness(text);
     if (!isValidSheetThickness(thickness)) return null;
     const grade = extractGrade(text);
@@ -530,16 +552,37 @@ function buildDisplayVariant(product, variant) {
   const grade = extractGrade(text);
   const forest = extractForest(text);
   const displaySize = withDefaultTimberLength(prettifyVariantLabel(cleanVariantLabel([size, grade, forest])));
+  const forcedPiecesPerCube = shouldForceHighTimberCube(product, variant, displaySize);
+  const displayUnit = forcedPiecesPerCube ? "CUBE" : unit;
   return {
     ...variant,
     size: displaySize,
     sourcePrice,
     price,
-    unit,
-    pricePerCube: unit === "CUBE" ? price : null,
-    pricePerPiece: unit === "PIECE" ? price : null,
-    piecesPerCube: unit === "CUBE" ? piecesPerCube(size) : null,
+    unit: displayUnit,
+    pricePerCube: displayUnit === "CUBE" ? price : null,
+    pricePerPiece: displayUnit === "PIECE" ? price : null,
+    piecesPerCube: displayUnit === "CUBE" ? forcedPiecesPerCube || robustPiecesPerCube(size) || piecesPerCube(size) : null,
   };
+}
+
+function robustPiecesPerCube(size) {
+  const numbers = clean(size).match(/\d+/g)?.map(Number) || [];
+  if (numbers.length < 3 || numbers[2] < 1000) return null;
+  const volume = (numbers[0] / 1000) * (numbers[1] / 1000) * (numbers[2] / 1000);
+  if (!Number.isFinite(volume) || volume <= 0) return null;
+  return Math.max(1, Math.floor(1 / volume));
+}
+
+function sizeHasCubeUnitHint(value) {
+  return /(?:^|[\s/])(?:m3|m\^3|m\u00b3|\u043c3|\u043c\^3|\u043c\u00b3)(?:$|[\s/.,;])/i.test(clean(value));
+}
+
+function shouldForceHighTimberCube(product, variant, displaySize) {
+  if (product.categorySlug === "fanera" || product.categorySlug === "dsp-mdf-osb") return null;
+  if (variant.unit !== "PIECE") return null;
+  if (!sizeHasCubeUnitHint(displaySize) && Number(variant.price) < 10000) return null;
+  return robustPiecesPerCube(displaySize);
 }
 
 function mergeVariantPrices(variants) {
@@ -651,7 +694,8 @@ function productKind(name, categoryText) {
 
 function categoryFor(name, categoryText) {
   const text = `${name} ${categoryText}`.toLowerCase();
-  if (/(фанер|osb|осб|дсп|двп|оргалит|мдф|цсп|листов|плит)/.test(text)) return "fanera";
+  if (/(osb|осб|дсп|двп|оргалит|мдф|цсп)/.test(text)) return "dsp-mdf-osb";
+  if (/(фанер|листов|плит)/.test(text)) return "fanera";
   if (/листвен/.test(text)) return "listvennitsa";
   if (/кедр/.test(text)) return "kedr";
   if (/(липа|осин)/.test(text)) return "lipa-osina";

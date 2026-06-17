@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 import type { Metadata } from "next";
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
@@ -31,17 +31,17 @@ import {
   Grid3x3,
   LayoutGrid,
 } from "lucide-react";
-import { getSiteSettings, getPhones, getSetting } from "@/lib/site-settings";
+import { getSiteSettingsForTenant, getPhones, getSetting } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
 import { RoutePrefetcher } from "@/components/shared/route-prefetcher";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { getProductAvailability } from "@/lib/product-availability";
-import { getCurrentTenantId } from "@/lib/tenant-context";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 
 export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
-  const tenantId = getCurrentTenantId();
+  const tenantId = DEFAULT_TENANT_ID;
   const robots = getCatalogRobots(searchParams);
-  const settings = await getSiteSettings();
+  const settings = await getSiteSettingsForTenant(tenantId);
   const siteName = getSetting(settings, "public_site_name") || getSetting(settings, "brand_name") || getSetting(settings, "company_name");
   const city = getSetting(settings, "company_city");
   const citySuffix = city && city !== "регион уточняется" ? ` в ${city}` : "";
@@ -165,7 +165,7 @@ export default async function CatalogPage({
   searchParams: SearchParams;
 }) {
   const page = parseInt(searchParams.page || "1");
-  const perPage = 24;
+  const perPage = 20;
   const currentSize = searchParams.size || "";
   const currentType = searchParams.type || "";
   const currentInStock = searchParams.instock === "1";
@@ -173,8 +173,8 @@ export default async function CatalogPage({
   const currentMaxPrice = searchParams.maxprice ? Number(searchParams.maxprice) : null;
   const currentSearch = (searchParams.search || "").trim();
   const catalogView = getCatalogView(searchParams.view);
-  const tenantId = getCurrentTenantId();
-  const settings = await getSiteSettings();
+  const tenantId = DEFAULT_TENANT_ID;
+  const settings = await getSiteSettingsForTenant(tenantId);
   const isArayCheckingSite = settings.aray_site_status === "checking";
 
   // Build variant sub-filter (user-driven: size, instock, price)
@@ -288,7 +288,7 @@ export default async function CatalogPage({
     images: { isEmpty: false },
     category: categoryFilter,
     ...searchFilter,
-    variants: { some: combinedTypesVariantSome },
+    variants: { some: publicVariantSome },
   };
 
   const whereForPriceRange: Prisma.ProductWhereInput = {
@@ -638,7 +638,7 @@ export default async function CatalogPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogItemListSchema) }}
       />
-      <RoutePrefetcher hrefs={prefetchHrefs} />
+      <RoutePrefetcher hrefs={prefetchHrefs} delayMs={1800} limit={4} />
       <CatalogViewMemory currentView={catalogView} hasViewParam={Boolean(searchParams.view)} />
 
       {/* ── Заголовок ── */}

@@ -137,10 +137,41 @@ function activeAdminTenant(request: NextRequest): string | null {
 // ═══════════════════════════════════════════════════════════════════════════
 const CATEGORY_REDIRECTS = new Map<string, { toSlug: string | null; permanent: boolean }>([
   ["dsp-mdf-osb-csp", { toSlug: "dsp-mdf-osb", permanent: true }],
+  ["dsp-dvp-mdf-tssp-osb", { toSlug: "dsp-mdf-osb", permanent: true }],
+  ["dsp-dvp-mdf-csp-osb", { toSlug: "dsp-mdf-osb", permanent: true }],
+  ["dsp-dvp-mdf-osb-csp", { toSlug: "dsp-mdf-osb", permanent: true }],
+  ["fanera-i-listovye-materialy", { toSlug: "fanera", permanent: true }],
+  ["fanera-listovye-materialy", { toSlug: "fanera", permanent: true }],
+  ["sosna-i-el", { toSlug: "sosna-el", permanent: true }],
+  ["sosna-elka", { toSlug: "sosna-el", permanent: true }],
+  ["listvennica", { toSlug: "listvennitsa", permanent: true }],
+  ["lipa-i-osina", { toSlug: "lipa-osina", permanent: true }],
 ]);
 
 function getRedirects(): Map<string, { toSlug: string | null; permanent: boolean }> {
   return CATEGORY_REDIRECTS;
+}
+
+function normalizeCatalogSlug(value: string | null | undefined): string {
+  if (!value) return "";
+  try {
+    return decodeURIComponent(value)
+      .trim()
+      .toLowerCase()
+      .replace(/\/+$/g, "");
+  } catch {
+    return value.trim().toLowerCase().replace(/\/+$/g, "");
+  }
+}
+
+function catalogRedirectResponse(request: NextRequest, slug: string | null | undefined) {
+  const match = getRedirects().get(normalizeCatalogSlug(slug));
+  if (!match) return null;
+
+  const destination = match.toSlug ? `/catalog?category=${match.toSlug}` : "/catalog";
+  return NextResponse.redirect(new URL(destination, request.url), {
+    status: match.permanent ? 301 : 302,
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -161,18 +192,15 @@ export async function middleware(request: NextRequest) {
   // 1. Redirect для переименованных категорий (существующая логика)
   if (url.pathname === "/catalog") {
     const categorySlug = url.searchParams.get("category");
-    if (categorySlug) {
-      const redirects = getRedirects();
-      const match = redirects.get(categorySlug);
-      if (match) {
-        const destination = match.toSlug
-          ? `/catalog?category=${match.toSlug}`
-          : "/catalog";
-        return NextResponse.redirect(new URL(destination, request.url), {
-          status: match.permanent ? 301 : 302,
-        });
-      }
-    }
+    const redirect = catalogRedirectResponse(request, categorySlug);
+    if (redirect) return redirect;
+  }
+
+  const legacyCategoryRoots = new Set(["catalog", "category", "product-category", "shop"]);
+  const legacyParts = url.pathname.split("/").filter(Boolean);
+  if (legacyParts.length === 2 && legacyCategoryRoots.has(legacyParts[0])) {
+    const redirect = catalogRedirectResponse(request, legacyParts[1]);
+    if (redirect) return redirect;
   }
 
   // 2. Прокидываем tenant в request headers (серверный код может читать)
