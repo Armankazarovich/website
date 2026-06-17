@@ -135,28 +135,12 @@ function activeAdminTenant(request: NextRequest): string | null {
 // ═══════════════════════════════════════════════════════════════════════════
 // REDIRECT CACHE (слияние категорий)
 // ═══════════════════════════════════════════════════════════════════════════
-// Кэш редиректов в памяти Edge Runtime (сбрасывается при деплое)
-let redirectCache: Map<string, { toSlug: string | null; permanent: boolean }> | null = null;
-let cacheTime = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 минут
+const CATEGORY_REDIRECTS = new Map<string, { toSlug: string | null; permanent: boolean }>([
+  ["dsp-mdf-osb-csp", { toSlug: "dsp-mdf-osb", permanent: true }],
+]);
 
-async function getRedirects(): Promise<Map<string, { toSlug: string | null; permanent: boolean }>> {
-  const now = Date.now();
-  if (redirectCache && now - cacheTime < CACHE_TTL_MS) return redirectCache;
-
-  try {
-    const res = await fetch(
-      `${process.env.NEXTAUTH_URL || "https://pilo-rus.ru"}/api/internal/redirects`,
-      { next: { revalidate: 300 } }
-    );
-    if (!res.ok) return new Map();
-    const data: Array<{ fromSlug: string; toSlug: string | null; permanent: boolean }> = await res.json();
-    redirectCache = new Map(data.map((r) => [r.fromSlug, { toSlug: r.toSlug, permanent: r.permanent }]));
-    cacheTime = now;
-    return redirectCache;
-  } catch {
-    return new Map();
-  }
+function getRedirects(): Map<string, { toSlug: string | null; permanent: boolean }> {
+  return CATEGORY_REDIRECTS;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -178,7 +162,7 @@ export async function middleware(request: NextRequest) {
   if (url.pathname === "/catalog") {
     const categorySlug = url.searchParams.get("category");
     if (categorySlug) {
-      const redirects = await getRedirects();
+      const redirects = getRedirects();
       const match = redirects.get(categorySlug);
       if (match) {
         const destination = match.toSlug
