@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-17T10:20:26.338Z",
+  "generatedAt": "2026-06-17T11:32:50.708Z",
   "source": "Pilmos WooCommerce CSV",
   "sourceCsv": "C:\\Users\\StormPC\\Downloads\\wc-product-export-11-6-2026-1781182114661.csv",
   "sourcePricePolicy": "PiloRus price = Pilmos CSV price * 0.99, rounded",
@@ -26,8 +26,8 @@
       "name": "Фанера",
       "sortOrder": 4,
       "image": "/images/products/fanera-fsf-bereza-1220.webp",
-      "seoTitle": "Фанера и листовые материалы — цены и наличие",
-      "seoDescription": "Фанера, OSB, ДСП, ДВП, МДФ и другие листовые материалы для строительства, ремонта и производства."
+      "seoTitle": "Фанера — цены и наличие",
+      "seoDescription": "Фанера ФК, ФСФ и ламинированная фанера для строительства, ремонта и производства."
     },
     {
       "slug": "dsp-mdf-osb",

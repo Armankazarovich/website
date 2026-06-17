@@ -376,7 +376,10 @@ export default async function HomePage() {
                   { label: "Лиственница", href: "/catalog?category=listvennitsa", icon: (
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 3l-5 7h3l-3 6h5v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M12 3l5 7h-3l3 6h-5v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   )},
-                  { label: "Фанера, ДСП, МДФ", href: "/catalog?category=fanera", icon: (
+                  { label: "Фанера", href: "/catalog?category=fanera", icon: (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M3 8h18M3 16h18M8 3v18M16 3v18" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5"/></svg>
+                  )},
+                  { label: "ДСП, МДФ, OSB", href: "/catalog?category=dsp-mdf-osb", icon: (
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M3 8h18M3 16h18M8 3v18M16 3v18" stroke="currentColor" strokeWidth="1" strokeOpacity="0.5"/></svg>
                   )},
                   { label: "Липа и Осина", href: "/catalog?category=lipa-osina", icon: (

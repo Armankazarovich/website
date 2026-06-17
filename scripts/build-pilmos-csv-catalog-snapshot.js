@@ -59,8 +59,8 @@ const CATEGORY_DEFS = {
     name: "Фанера",
     sortOrder: 4,
     image: "/images/products/fanera-fsf-bereza-1220.webp",
-    seoTitle: "Фанера и листовые материалы — цены и наличие",
-    seoDescription: "Фанера, OSB, ДСП, ДВП, МДФ и другие листовые материалы для строительства, ремонта и производства.",
+    seoTitle: "Фанера — цены и наличие",
+    seoDescription: "Фанера ФК, ФСФ и ламинированная фанера для строительства, ремонта и производства.",
   },
   "dsp-mdf-osb": {
     name: "ДСП, ДВП, МДФ, ЦСП, OSB",
