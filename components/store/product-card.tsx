@@ -242,6 +242,7 @@ export function ProductCard({
     : null;
   const canSwitchUnit = !!selectedVariant?.pricePerCube && !!selectedVariant?.pricePerPiece;
   const getUnitLabel = (unitType: UnitType) => (unitType === "PIECE" ? "шт" : "м³");
+  const getUnitTitle = (unitType: UnitType) => (unitType === "PIECE" ? "1 шт" : "1 м³");
   const getUnitPrice = (variant: Variant | null | undefined, unitType: UnitType) => {
     if (!variant) return null;
     const rawPrice = unitType === "CUBE" ? variant.pricePerCube : variant.pricePerPiece;
@@ -724,7 +725,7 @@ export function ProductCard({
 
               <div className="store-card-price-body">
                 <div className="store-card-price-main">
-                  <span className="store-card-price-kicker">Цена за {displayUnitLabel}</span>
+                  <span className="store-card-price-kicker">Цена за {getUnitTitle(displayUnit)}</span>
                   <strong>{formatPrice(displayPrice)}</strong>
                   <small>{getUnitCaption(selectedVariant, effectiveUnit)}</small>
                 </div>
@@ -736,7 +737,7 @@ export function ProductCard({
                         <button
                           key={option.unit}
                           type="button"
-                          title={`Цена за ${option.label}: ${formatPrice(option.price)}`}
+                          title={`Цена за ${getUnitTitle(option.unit)}: ${formatPrice(option.price)}`}
                           aria-pressed={effectiveUnit === option.unit}
                           onClick={(e) => {
                             e.preventDefault();
@@ -774,7 +775,7 @@ export function ProductCard({
                 <div className="store-card-variant-head">
                   <div className="store-card-variant-head-copy">
                     <span>Выберите размер</span>
-                    <small>Цена за {displayUnitLabel}</small>
+                    <small>Цена за {getUnitTitle(displayUnit)}</small>
                   </div>
                   <strong>{variants.length} разм.</strong>
                   <button
@@ -1022,7 +1023,7 @@ export function ProductCard({
                       {selectedSheetPrice && (
                         <div className="store-variant-price-summary">
                           <div className="store-variant-price-row">
-                            <span>Цена за {getUnitLabel(effectiveUnit)}</span>
+                            <span>Цена за {getUnitTitle(effectiveUnit)}</span>
                             <strong>{formatPrice(selectedSheetPrice)}</strong>
                           </div>
                           <div className="store-variant-price-row">

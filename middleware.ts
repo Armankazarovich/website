@@ -148,6 +148,21 @@ const CATEGORY_REDIRECTS = new Map<string, { toSlug: string | null; permanent: b
   ["lipa-i-osina", { toSlug: "lipa-osina", permanent: true }],
 ]);
 
+const PRODUCT_REDIRECTS = new Map<string, { toSlug: string; permanent: boolean }>([
+  ["doska-obreznaya-1sort-sosna", { toSlug: "doska-obreznaya-iz-sosny-i-eli-gost", permanent: true }],
+  ["doska-obreznaya-1-sort-sosna", { toSlug: "doska-obreznaya-iz-sosny-i-eli-gost", permanent: true }],
+  ["doska-obreznaya-2sort-sosna", { toSlug: "doska-obreznaya-iz-sosny-i-eli", permanent: true }],
+  ["doska-obreznaya-2-sort-sosna", { toSlug: "doska-obreznaya-iz-sosny-i-eli", permanent: true }],
+  ["doska-obreznaya-suhaya-sosna", { toSlug: "doska-obreznaya-iz-sosny-i-eli", permanent: true }],
+  ["doska-obreznaya-tu-osina", { toSlug: "doska-obreznaya-iz-osiny", permanent: true }],
+  ["doska-obreznaya-osina", { toSlug: "doska-obreznaya-iz-osiny", permanent: true }],
+  ["doska-obreznaya-1sort-listv", { toSlug: "doska-obreznaya-iz-listvennitsy-gost", permanent: true }],
+  ["doska-obreznaya-1-sort-listv", { toSlug: "doska-obreznaya-iz-listvennitsy-gost", permanent: true }],
+  ["doska-obreznaya-suhaya-listv", { toSlug: "doska-obreznaya-iz-listvennitsy", permanent: true }],
+  ["doska-obreznaya-kedr", { toSlug: "doska-obreznaya-iz-kedra", permanent: true }],
+  ["doska-obreznaya-suhaya-kedr", { toSlug: "doska-obreznaya-iz-kedra", permanent: true }],
+]);
+
 function getRedirects(): Map<string, { toSlug: string | null; permanent: boolean }> {
   return CATEGORY_REDIRECTS;
 }
@@ -170,6 +185,15 @@ function catalogRedirectResponse(request: NextRequest, slug: string | null | und
 
   const destination = match.toSlug ? `/catalog?category=${match.toSlug}` : "/catalog";
   return NextResponse.redirect(new URL(destination, request.url), {
+    status: match.permanent ? 301 : 302,
+  });
+}
+
+function productRedirectResponse(request: NextRequest, slug: string | null | undefined) {
+  const match = PRODUCT_REDIRECTS.get(normalizeCatalogSlug(slug));
+  if (!match) return null;
+
+  return NextResponse.redirect(new URL(`/product/${match.toSlug}`, request.url), {
     status: match.permanent ? 301 : 302,
   });
 }
@@ -200,6 +224,11 @@ export async function middleware(request: NextRequest) {
   const legacyParts = url.pathname.split("/").filter(Boolean);
   if (legacyParts.length === 2 && legacyCategoryRoots.has(legacyParts[0])) {
     const redirect = catalogRedirectResponse(request, legacyParts[1]);
+    if (redirect) return redirect;
+  }
+
+  if (legacyParts.length === 2 && legacyParts[0] === "product") {
+    const redirect = productRedirectResponse(request, legacyParts[1]);
     if (redirect) return redirect;
   }
 

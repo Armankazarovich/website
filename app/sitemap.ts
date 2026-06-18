@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { getPublicProductsFilter } from "@/lib/product-seo";
 import { getManagedProductTypes, getProductTypeSettings } from "@/lib/product-type-settings";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 
 const BASE = "https://pilo-rus.ru";
 const LAUNCH_LAST_MODIFIED = new Date("2026-06-13T00:00:00.000Z");
@@ -25,11 +26,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const [categories, products, posts, services, productTypeSettings] = await Promise.all([
     prisma.category.findMany({
-      where: { showInMenu: true },
+      where: { tenantId: DEFAULT_TENANT_ID, showInMenu: true },
       select: { slug: true, updatedAt: true },
     }),
     prisma.product.findMany({
-      where: { ...getPublicProductsFilter(), category: { showInMenu: true } },
+      where: {
+        tenantId: DEFAULT_TENANT_ID,
+        ...getPublicProductsFilter(),
+        category: { tenantId: DEFAULT_TENANT_ID, showInMenu: true },
+      },
       select: {
         slug: true,
         name: true,
@@ -38,11 +43,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       },
     }),
     prisma.post.findMany({
-      where: { published: true },
+      where: { tenantId: DEFAULT_TENANT_ID, published: true },
       select: { slug: true, updatedAt: true },
     }),
     prisma.service.findMany({
-      where: { active: true },
+      where: { tenantId: DEFAULT_TENANT_ID, active: true },
       select: { slug: true, updatedAt: true },
     }),
     getProductTypeSettings(),
