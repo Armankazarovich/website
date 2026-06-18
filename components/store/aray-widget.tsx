@@ -5181,7 +5181,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                   <div>
                     <p className="text-[14px] font-semibold leading-tight" style={{ color: txt }}>Арай</p>
                     <p className="text-[10.5px] leading-tight mt-0.5" style={{ color: txtSub }}>
-                      {speaking ? "Говорю..." : listening ? "Слушаю..." : voicePreparing ? "Включаю микрофон..." : loading ? "Думаю..." : "Онлайн"}
+                      {speaking ? "Говорю..." : listening ? "Слушаю..." : voicePreparing ? "Включаю микрофон..." : loading ? "Думаю..." : isAdmin ? "Онлайн" : "консультант магазина"}
                     </p>
                   </div>
                 </div>
@@ -5631,7 +5631,7 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
                   <div>
                     <p className="text-[13px] font-semibold" style={{ color: txt }}>Арай</p>
                     <p className="text-[10px]" style={{ color: txtSub }}>
-                      {speaking ? "Говорю..." : listening ? "Слушаю..." : voicePreparing ? "Включаю микрофон..." : loading ? "Думаю..." : "Онлайн"}
+                      {speaking ? "Говорю..." : listening ? "Слушаю..." : voicePreparing ? "Включаю микрофон..." : loading ? "Думаю..." : isAdmin ? "Онлайн" : "консультант магазина"}
                     </p>
                   </div>
                 </div>
