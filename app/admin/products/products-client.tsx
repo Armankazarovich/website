@@ -40,6 +40,12 @@ function adminPreviewSrc(src: string) {
   return `${src}${src.includes("?") ? "&" : "?"}adminPreview=1`;
 }
 
+function mergeProductLists(current: Product[], incoming: Product[]) {
+  const byId = new Map(current.map((product) => [product.id, product]));
+  incoming.forEach((product) => byId.set(product.id, product));
+  return Array.from(byId.values());
+}
+
 function ProductThumb({ p, compact = false }: { p: Product; compact?: boolean }) {
   const [failed, setFailed] = useState(false);
   const src = p.images[0];
@@ -83,6 +89,8 @@ export function ProductsClient({
   const router = useRouter();
   const pathname = usePathname();
   const [products, setProducts] = useState(init);
+  const [hiddenLoaded, setHiddenLoaded] = useState(false);
+  const [loadingHidden, setLoadingHidden] = useState(false);
   const [catFilter, setCatFilter] = useState("ALL");
   const [sortBy, setSortBy] = useState("newest");
   const [page, setPage] = useState(1);
@@ -199,14 +207,44 @@ export function ProductsClient({
     return data;
   };
 
-  const reloadProducts = useCallback(async () => {
-    const res = await fetch("/api/admin/products", { cache: "no-store" });
+  const fetchProductsByScope = useCallback(async (scope: "active" | "hidden" | "all") => {
+    const res = await fetch(`/api/admin/products?scope=${scope}`, { cache: "no-store" });
     const data = await res.json().catch(() => null);
     if (!res.ok || !Array.isArray(data)) {
       throw new Error((data && typeof data.error === "string" && data.error) || "Не удалось обновить каталог после действия");
     }
-    setProducts(data as Product[]);
+    return data as Product[];
   }, []);
+
+  const loadHiddenProducts = useCallback(async () => {
+    if (hiddenLoaded || loadingHidden) return;
+    setLoadingHidden(true);
+    setActionError(null);
+    try {
+      const hiddenProducts = await fetchProductsByScope("hidden");
+      setProducts((prev) => mergeProductLists(prev, hiddenProducts));
+      setHiddenLoaded(true);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Не удалось загрузить скрытые товары");
+    } finally {
+      setLoadingHidden(false);
+    }
+  }, [fetchProductsByScope, hiddenLoaded, loadingHidden]);
+
+  const reloadProducts = useCallback(async () => {
+    const activeProducts = await fetchProductsByScope("active");
+    if (hiddenLoaded || hiddenOnly) {
+      const hiddenProducts = await fetchProductsByScope("hidden");
+      setProducts(mergeProductLists(activeProducts, hiddenProducts));
+      setHiddenLoaded(true);
+      return;
+    }
+    setProducts(activeProducts);
+  }, [fetchProductsByScope, hiddenLoaded, hiddenOnly]);
+
+  useEffect(() => {
+    if (hiddenOnly || noPhotoOnly || urlActive === "0") void loadHiddenProducts();
+  }, [hiddenOnly, loadHiddenProducts, noPhotoOnly, urlActive]);
 
   /* filtered + sorted */
   const filtered = useMemo(() => {
@@ -221,7 +259,7 @@ export function ProductsClient({
       const matchActive = urlActive === null || (urlActive === "1" ? p.active : !p.active);
       const matchNophoto = !noPhotoOnly || p.images.length === 0;
       const matchFeatured = !urlFeatured || p.featured;
-      const matchHidden = !hiddenOnly || !checkProductReadiness(p).ready;
+      const matchHidden = !hiddenOnly || !p.active || !checkProductReadiness(p).ready;
       return matchSearch && matchCat && matchActive && matchNophoto && matchFeatured && matchHidden;
     });
     return list.sort((a, b) => {
@@ -260,7 +298,7 @@ export function ProductsClient({
 
   /* счётчик скрытых от публики товаров (для бейджа) */
   const hiddenFromPublicCount = useMemo(
-    () => products.filter((p) => !checkProductReadiness(p).ready).length,
+    () => products.filter((p) => !p.active || !checkProductReadiness(p).ready).length,
     [products]
   );
 
@@ -646,8 +684,10 @@ export function ProductsClient({
           title="Товары, которые не показываются клиентам (нет фото, цены или всё не в наличии)"
           className={`flex w-full items-center justify-center gap-1.5 px-3 py-2 text-sm rounded-xl border transition-colors sm:w-auto ${hiddenOnly ? "border-primary/45 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-primary/[0.05]"}`}
         >
-          <AlertTriangle className="w-4 h-4" />
-          Скрытые от клиентов {hiddenFromPublicCount > 0 && `(${hiddenFromPublicCount})`}
+          {loadingHidden ? <Loader2 className="h-4 w-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+          {loadingHidden
+            ? "Загружаю скрытые"
+            : `Скрытые от клиентов${hiddenFromPublicCount > 0 ? ` (${hiddenFromPublicCount})` : ""}`}
         </button>
         <div className="relative w-full sm:w-auto">
           <select

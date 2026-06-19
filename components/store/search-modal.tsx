@@ -21,6 +21,24 @@ interface SearchModalProps {
   onClose: () => void;
 }
 
+function minPriceInfo(result: SearchResult) {
+  const preferredUnit = result.saleUnit === "PIECE" ? "PIECE" : "CUBE";
+  const fallbackUnit = preferredUnit === "CUBE" ? "PIECE" : "CUBE";
+  const findMin = (unit: "CUBE" | "PIECE") =>
+    result.variants.reduce((min, variant) => {
+      const price = unit === "CUBE" ? variant.pricePerCube : variant.pricePerPiece;
+      return price !== null && price < min ? price : min;
+    }, Infinity);
+
+  const preferredPrice = findMin(preferredUnit);
+  if (preferredPrice !== Infinity) {
+    return { price: preferredPrice, unit: preferredUnit === "CUBE" ? "м³" : "шт" };
+  }
+
+  const fallbackPrice = findMin(fallbackUnit);
+  return fallbackPrice !== Infinity ? { price: fallbackPrice, unit: fallbackUnit === "CUBE" ? "м³" : "шт" } : null;
+}
+
 export function SearchModal({ onClose }: SearchModalProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -135,10 +153,7 @@ export function SearchModal({ onClose }: SearchModalProps) {
           )}
 
           {results.map((r) => {
-            const minPrice = r.variants.reduce((min, v) => {
-              const p = v.pricePerCube ?? v.pricePerPiece;
-              return p !== null && p < min ? p : min;
-            }, Infinity);
+            const minPrice = minPriceInfo(r);
 
             return (
               <Link
@@ -166,9 +181,9 @@ export function SearchModal({ onClose }: SearchModalProps) {
                   <p className="font-medium text-sm line-clamp-1">{r.name}</p>
                   <p className="text-xs text-muted-foreground">{r.category.name}</p>
                 </div>
-                {minPrice !== Infinity && (
+                {minPrice && (
                   <p className="text-sm font-semibold text-primary shrink-0">
-                    {formatPrice(minPrice)}
+                    {formatPrice(minPrice.price)} / {minPrice.unit}
                   </p>
                 )}
               </Link>

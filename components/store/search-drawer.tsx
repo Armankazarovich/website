@@ -27,15 +27,24 @@ interface SearchData {
   featuredProducts: Product[];
 }
 
-function minPrice(variants: Variant[]) {
-  return variants.reduce((min, v) => {
-    const p = v.pricePerCube ?? v.pricePerPiece;
-    return p !== null && p < min ? p : min;
-  }, Infinity);
+function minPriceInfo(variants: Variant[], saleUnit: string) {
+  const preferredUnit = saleUnit === "PIECE" ? "PIECE" : "CUBE";
+  const fallbackUnit = preferredUnit === "CUBE" ? "PIECE" : "CUBE";
+  const findMin = (unit: "CUBE" | "PIECE") =>
+    variants.reduce((min, v) => {
+      const p = unit === "CUBE" ? v.pricePerCube : v.pricePerPiece;
+      return p !== null && p < min ? p : min;
+    }, Infinity);
+  const preferredPrice = findMin(preferredUnit);
+  if (preferredPrice !== Infinity) {
+    return { price: preferredPrice, unit: preferredUnit === "CUBE" ? "м³" : "шт" };
+  }
+  const fallbackPrice = findMin(fallbackUnit);
+  return fallbackPrice !== Infinity ? { price: fallbackPrice, unit: fallbackUnit === "CUBE" ? "м³" : "шт" } : null;
 }
 
 function ProductRow({ p, onClose }: { p: Product; onClose: () => void }) {
-  const price = minPrice(p.variants);
+  const price = minPriceInfo(p.variants, p.saleUnit);
   return (
     <Link
       href={`/product/${p.slug}`}
@@ -56,8 +65,8 @@ function ProductRow({ p, onClose }: { p: Product; onClose: () => void }) {
         <p className="text-[11px] text-muted-foreground">{p.category.name}</p>
       </div>
       <div className="text-right shrink-0">
-        {price !== Infinity && (
-          <p className="text-sm font-bold text-primary">от {formatPrice(price)}</p>
+        {price && (
+          <p className="text-sm font-bold text-primary">от {formatPrice(price.price)} / {price.unit}</p>
         )}
         {p.inStock !== undefined && (
           <p className={`text-[10px] ${p.inStock ? "text-emerald-500" : "text-muted-foreground"}`}>

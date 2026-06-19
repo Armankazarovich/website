@@ -497,7 +497,7 @@ export default function EmailPage() {
   // Load products for inserting into email
   const loadProducts = async () => {
     if (productList.length > 0) return;
-    const res = await fetch("/api/admin/products").catch(() => null);
+    const res = await fetch("/api/admin/products?scope=active").catch(() => null);
     if (res?.ok) {
       const d = await res.json();
       setProductList(Array.isArray(d) ? d : []);

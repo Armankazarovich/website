@@ -11,19 +11,20 @@ import { useCompareStore, type CompareItem } from "@/store/compare";
 import { formatPrice } from "@/lib/utils";
 
 function getBestPrice(item: CompareItem) {
-  const piecePrices = item.variants
-    .map((variant) => variant.pricePerPiece)
-    .filter((price): price is number => typeof price === "number" && price > 0);
   const cubePrices = item.variants
     .map((variant) => variant.pricePerCube)
     .filter((price): price is number => typeof price === "number" && price > 0);
+  const piecePrices = item.variants
+    .map((variant) => variant.pricePerPiece)
+    .filter((price): price is number => typeof price === "number" && price > 0);
 
+  if (item.saleUnit !== "PIECE" && cubePrices.length > 0) {
+    return { value: Math.min(...cubePrices), unit: "м³" };
+  }
   if (piecePrices.length > 0) {
     return { value: Math.min(...piecePrices), unit: "шт" };
   }
-  if (cubePrices.length > 0) {
-    return { value: Math.min(...cubePrices), unit: "м³" };
-  }
+  if (cubePrices.length > 0) return { value: Math.min(...cubePrices), unit: "м³" };
   return null;
 }
 

@@ -1,6 +1,7 @@
 "use client";
 
 export type ProductReadinessIssue =
+  | "inactive"
   | "no-images"
   | "no-variants"
   | "no-price"
@@ -41,6 +42,10 @@ export function checkProductReadiness(product: ProductForReadiness): ProductRead
   const blockers: ProductReadinessIssue[] = [];
   const warnings: ProductReadinessIssue[] = [];
 
+  if (product.active === false) {
+    blockers.push("inactive");
+  }
+
   if (!product.images || product.images.length === 0) {
     blockers.push("no-images");
   }
@@ -72,6 +77,8 @@ export function checkProductReadiness(product: ProductForReadiness): ProductRead
 
 export function readinessIssueLabel(issue: ProductReadinessIssue): string {
   switch (issue) {
+    case "inactive":
+      return "Скрыт вручную";
     case "no-images":
       return "Нет фото";
     case "no-variants":

@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getSiteSettings } from "@/lib/site-settings";
-import { generateProductDescription } from "@/lib/product-seo";
+import { generateProductDescription, getPublicVariantsFilter } from "@/lib/product-seo";
 import { makeShortProductDescription, normalizeProductText } from "@/lib/product-descriptions";
 import { normalizeProductCardTags } from "@/lib/product-insights";
 import { slugify } from "@/lib/slug";
@@ -53,11 +53,37 @@ async function checkProductsAccess() {
   return session && role && PRODUCTS_ROLES.includes(role);
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   if (!(await checkProductsAccess())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const tenantId = getCurrentTenantId();
+  const { searchParams } = new URL(req.url);
+
+  if (searchParams.get("ids") === "1") {
+    const productIds = await prisma.product.findMany({
+      where: { tenantId },
+      select: { id: true },
+      orderBy: { createdAt: "desc" },
+    });
+    return NextResponse.json(productIds);
+  }
+
+  const scope = searchParams.get("scope");
+  const where =
+    scope === "active"
+      ? { tenantId, active: true }
+      : scope === "hidden"
+      ? {
+          tenantId,
+          OR: [
+            { active: false },
+            { images: { isEmpty: true } },
+            { variants: { none: getPublicVariantsFilter() } },
+          ],
+        }
+      : { tenantId };
+
   const products = await prisma.product.findMany({
-    where: { tenantId },
+    where,
     include: { category: true, variants: true },
     orderBy: { createdAt: "desc" },
   });

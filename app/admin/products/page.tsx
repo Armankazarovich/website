@@ -59,7 +59,7 @@ export default function AdminProductsPage() {
     setError(null);
     try {
       const [productsRes, categoriesRes] = await Promise.all([
-        fetch("/api/admin/products", { cache: "no-store" }),
+        fetch("/api/admin/products?scope=active", { cache: "no-store" }),
         fetch("/api/admin/categories", { cache: "no-store" }),
       ]);
 

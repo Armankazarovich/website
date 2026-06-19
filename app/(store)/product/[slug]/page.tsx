@@ -68,20 +68,38 @@ const getProductBySlug = cache(async (slug: string) =>
   })
 );
 
+function toPrice(value: unknown) {
+  const price = Number(value);
+  return Number.isFinite(price) && price > 0 ? price : null;
+}
+
+function getPreferredPriceInfo(
+  product: { saleUnit: string; variants: Array<{ pricePerCube: unknown; pricePerPiece: unknown }> },
+) {
+  const cubePrices = product.variants.map((variant) => toPrice(variant.pricePerCube)).filter((price): price is number => price !== null);
+  const piecePrices = product.variants.map((variant) => toPrice(variant.pricePerPiece)).filter((price): price is number => price !== null);
+
+  if (product.saleUnit !== "PIECE" && cubePrices.length > 0) {
+    return { prices: cubePrices, unit: "м³" };
+  }
+  if (piecePrices.length > 0) {
+    return { prices: piecePrices, unit: "шт" };
+  }
+  if (cubePrices.length > 0) {
+    return { prices: cubePrices, unit: "м³" };
+  }
+  return null;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getProductBySlug(params.slug);
 
   if (!product) return { title: "Товар не найден" };
 
-  // Выбираем ценник в той же единице что и JSON-LD ниже
-  // (если есть pricePerPiece — показываем ₽/шт, иначе ₽/м³)
-  const pcs = product.variants.filter(v => v.pricePerPiece).map(v => Number(v.pricePerPiece));
-  const cbs = product.variants.filter(v => v.pricePerCube).map(v => Number(v.pricePerCube));
-  const minPrice = pcs.length > 0
-    ? `от ${Math.min(...pcs).toLocaleString('ru-RU')} ₽/шт`
-    : cbs.length > 0
-      ? `от ${Math.min(...cbs).toLocaleString('ru-RU')} ₽/м³`
-      : '';
+  const priceInfo = getPreferredPriceInfo(product);
+  const minPrice = priceInfo
+    ? `от ${Math.min(...priceInfo.prices).toLocaleString("ru-RU")} ₽/${priceInfo.unit}`
+    : "";
   const intro = productIntro(product.shortDescription || product.description);
   const seoDescription = compactMetaDescription(
     intro || `${product.name} от производителя в Химках.`,
@@ -181,21 +199,11 @@ export default async function ProductPage({ params }: Props) {
   const productUrl = `/product/${product.slug}`;
   const sku = productSku(product.slug, product.id);
 
-  // Build schema.org structured data
-  // CRITICAL: JSON-LD lowPrice/highPrice должны быть в ОДНОЙ единице измерения.
-  // Яндекс.Маркет / Google Shopping читают их как "цена товара" (за штуку).
-  // Если смешать ₽/м³ и ₽/шт, highPrice = 135000 ₽ → пользователь увидит "от 3000 до 135000"
-  // → кликнет на рекламу → увидит 3000 ₽ за штуку → сочтёт обманом.
-  // Логика: если есть ХОТЯ БЫ ОДИН вариант с pricePerPiece — используем ТОЛЬКО piece-цены.
-  // Иначе — используем cube-цены.
+  // Build schema.org structured data. Keep low/high prices in one unit:
+  // cube prices for m3 catalog items, piece prices for piece-only items.
   const productAvailability = getProductAvailability(product.variants);
-  const pricesPiece = product.variants
-    .filter(v => v.pricePerPiece)
-    .map(v => Number(v.pricePerPiece));
-  const pricesCube = product.variants
-    .filter(v => v.pricePerCube)
-    .map(v => Number(v.pricePerCube));
-  const priceSource = pricesPiece.length > 0 ? pricesPiece : pricesCube;
+  const preferredPrices = getPreferredPriceInfo(product);
+  const priceSource = preferredPrices?.prices ?? [];
   const lowPrice = priceSource.length > 0 ? Math.min(...priceSource) : undefined;
   const highPrice = priceSource.length > 0 ? Math.max(...priceSource) : undefined;
 

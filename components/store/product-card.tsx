@@ -159,6 +159,34 @@ function getInsightHint(tag: string) {
   return tag;
 }
 
+function hasConflictingPiecePrice(variant: Variant) {
+  const cube = Number(variant.pricePerCube);
+  const piece = Number(variant.pricePerPiece);
+  const piecesPerCube = Number(variant.piecesPerCube);
+  if (!Number.isFinite(cube) || cube <= 0 || !Number.isFinite(piece) || piece <= 0) return false;
+  if (!Number.isFinite(piecesPerCube) || piecesPerCube <= 0) return false;
+  const expectedPiece = cube / piecesPerCube;
+  const diff = Math.abs(piece - expectedPiece) / Math.max(1, expectedPiece);
+  return diff > 0.25;
+}
+
+function getVariantPriceForUnit(variant: Variant, unitType: UnitType) {
+  if (unitType === "PIECE" && hasConflictingPiecePrice(variant)) return null;
+  const price = unitType === "CUBE" ? variant.pricePerCube : variant.pricePerPiece;
+  return Number(price) || null;
+}
+
+function pickDefaultCardVariant(variants: Variant[], saleUnit: ProductCardProps["saleUnit"]) {
+  const preferredUnit: UnitType = saleUnit === "PIECE" ? "PIECE" : "CUBE";
+  const fallbackUnit: UnitType = preferredUnit === "CUBE" ? "PIECE" : "CUBE";
+  const byUnit = (unitType: UnitType) =>
+    variants
+      .filter((variant) => getVariantPriceForUnit(variant, unitType))
+      .sort((a, b) => Number(getVariantPriceForUnit(a, unitType)) - Number(getVariantPriceForUnit(b, unitType)));
+
+  return byUnit(preferredUnit)[0] ?? byUnit(fallbackUnit)[0] ?? variants[0];
+}
+
 export function ProductCard({
   id, slug, name, category, shortDescription, description, images, saleUnit, variants, cardTags, viewMode = "grid", featured,
 }: ProductCardProps) {
@@ -173,7 +201,7 @@ export function ProductCard({
   const teaser = shortCardDescription(shortDescription, { name, category, backup: description });
   const insightTags = buildProductInsightTags({ name, category, shortDescription, description, saleUnit, variants, cardTags });
 
-  const defaultVariant = activeVariants[0] || variants[0];
+  const defaultVariant = pickDefaultCardVariant(activeVariants, saleUnit) || variants[0];
 
   // ID-based selection — avoids server/client hydration mismatch
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -245,6 +273,7 @@ export function ProductCard({
   const getUnitTitle = (unitType: UnitType) => (unitType === "PIECE" ? "1 шт" : "1 м³");
   const getUnitPrice = (variant: Variant | null | undefined, unitType: UnitType) => {
     if (!variant) return null;
+    if (unitType === "PIECE" && hasConflictingPiecePrice(variant)) return null;
     const rawPrice = unitType === "CUBE" ? variant.pricePerCube : variant.pricePerPiece;
     return Number(rawPrice) || null;
   };

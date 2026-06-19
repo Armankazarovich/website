@@ -28,11 +28,21 @@ function itemHref(item: SelectionItem) {
 }
 
 function itemPrice(item: SelectionItem) {
-  const variant = item.variants.find(isProductVariantPurchasable) ?? item.variants[0];
+  const purchasableVariants = item.variants.filter(isProductVariantPurchasable);
+  const preferredUnit = item.saleUnit === "PIECE" ? "PIECE" : "CUBE";
+  const variant =
+    purchasableVariants.find((candidate) =>
+      preferredUnit === "CUBE" ? candidate.pricePerCube : candidate.pricePerPiece,
+    ) ??
+    purchasableVariants[0] ??
+    item.variants[0];
   if (!variant) return null;
-  const price = variant.pricePerPiece ?? variant.pricePerCube;
+  const price =
+    preferredUnit === "CUBE"
+      ? variant.pricePerCube ?? variant.pricePerPiece
+      : variant.pricePerPiece ?? variant.pricePerCube;
   if (!price) return null;
-  const unit = variant.pricePerPiece ? "шт" : "м³";
+  const unit = preferredUnit === "CUBE" && variant.pricePerCube ? "м³" : "шт";
   return `${formatPrice(price)} / ${unit}`;
 }
 

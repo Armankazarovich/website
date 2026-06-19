@@ -37,8 +37,20 @@ interface VariantSelectorProps {
   phoneLink?: string;
 }
 
+function hasConflictingPiecePrice(variant: Variant) {
+  const cube = Number(variant.pricePerCube);
+  const piece = Number(variant.pricePerPiece);
+  const piecesPerCube = Number(variant.piecesPerCube);
+  if (!Number.isFinite(cube) || cube <= 0 || !Number.isFinite(piece) || piece <= 0) return false;
+  if (!Number.isFinite(piecesPerCube) || piecesPerCube <= 0) return false;
+  const expectedPiece = cube / piecesPerCube;
+  const diff = Math.abs(piece - expectedPiece) / Math.max(1, expectedPiece);
+  return diff > 0.25;
+}
+
 function getVariantUnitPrice(variant: Variant | null | undefined, unitType: UnitType) {
   if (!variant) return null;
+  if (unitType === "PIECE" && hasConflictingPiecePrice(variant)) return null;
   const price = Number(unitType === "CUBE" ? variant.pricePerCube : variant.pricePerPiece);
   return Number.isFinite(price) && price > 0 ? price : null;
 }
@@ -57,6 +69,18 @@ function getPreferredUnit(
   if (hasCube) return "CUBE";
   if (hasPiece) return "PIECE";
   return null;
+}
+
+function pickInitialVariant(variants: Variant[], saleUnit: "CUBE" | "PIECE" | "BOTH") {
+  const purchasable = variants.filter(isProductVariantPurchasable);
+  const candidates = purchasable.length > 0 ? purchasable : variants;
+  const preferredUnit: UnitType = saleUnit === "PIECE" ? "PIECE" : "CUBE";
+  return (
+    candidates.find((variant) => getVariantUnitPrice(variant, preferredUnit)) ||
+    candidates.find((variant) => getPreferredUnit(variant, saleUnit)) ||
+    variants[0] ||
+    null
+  );
 }
 
 function quantityStep(unitType: UnitType) {
@@ -82,10 +106,7 @@ export function VariantSelector({
 }: VariantSelectorProps) {
   const effectivePhone = phoneLink || PHONE_LINK;
   const { addItem } = useCartStore();
-  const initialVariant =
-    variants.find((variant) => isProductVariantPurchasable(variant) && getPreferredUnit(variant, saleUnit)) ||
-    variants[0] ||
-    null;
+  const initialVariant = pickInitialVariant(variants, saleUnit);
 
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
     initialVariant

@@ -6459,7 +6459,7 @@ export default function PromotionPage() {
     async function loadStats() {
       try {
         const [productsRes, emailRes] = await Promise.allSettled([
-          fetch("/api/admin/products"),
+          fetch("/api/admin/products?scope=active"),
           fetch("/api/admin/email"),
         ]);
 

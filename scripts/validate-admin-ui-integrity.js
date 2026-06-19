@@ -247,7 +247,8 @@ function assertBulkProductActionsTruthful() {
 
   assert(
     productsClientSource.includes("const reloadProducts = useCallback") &&
-      productsClientSource.includes('fetch("/api/admin/products", { cache: "no-store" })') &&
+      productsClientSource.includes("fetchProductsByScope(\"active\")") &&
+      productsClientSource.includes("fetchProductsByScope(\"hidden\")") &&
       productsClientSource.includes("await reloadProducts();") &&
       productsClientSource.includes("router.refresh();"),
     "bulk product actions must reload products from the database after success; visible prices/statuses must not stay stale",
