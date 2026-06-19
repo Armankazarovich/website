@@ -222,6 +222,16 @@ const primaryRouteClassifications = Object.fromEntries(
 
 export const ADMIN_ROUTE_CLASSIFICATIONS: Record<string, AdminRouteClassification> = {
   ...primaryRouteClassifications,
+  "/admin/marketing": {
+    href: "/admin/marketing",
+    label: "Маркетинг",
+    kind: "utility",
+    group: "marketing",
+    roles: [SA, "ADMIN", "MANAGER"],
+    parentHref: "/admin/promotion",
+    reason: "legacy manager-friendly marketing alias that redirects to the promotion workspace",
+    surfaces: ["direct", "searchPanel", "aray"],
+  },
   "/admin/messenger": {
     href: "/admin/messenger",
     label: "Мессенджер",
