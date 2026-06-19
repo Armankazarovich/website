@@ -585,6 +585,26 @@ function shouldForceHighTimberCube(product, variant, displaySize) {
   return robustPiecesPerCube(displaySize);
 }
 
+function hasConflictingPiecePrice(variant) {
+  const pricePerCube = Number(variant.pricePerCube || 0);
+  const pricePerPiece = Number(variant.pricePerPiece || 0);
+  const piecesPerCubeValue = Number(variant.piecesPerCube || 0);
+  if (!pricePerCube || !pricePerPiece || !piecesPerCubeValue) return false;
+  const expectedPiece = pricePerCube / piecesPerCubeValue;
+  const diff = Math.abs(pricePerPiece - expectedPiece) / Math.max(1, expectedPiece);
+  return diff > 0.25;
+}
+
+function normalizeMergedVariantPrice(variant) {
+  if (!hasConflictingPiecePrice(variant)) return variant;
+  return {
+    ...variant,
+    price: variant.pricePerCube,
+    pricePerPiece: null,
+    unit: "CUBE",
+  };
+}
+
 function mergeVariantPrices(variants) {
   const byKey = new Map();
   for (const variant of variants) {
@@ -617,6 +637,7 @@ function mergeVariantPrices(variants) {
 
   return [...byKey.values()]
     .sort((a, b) => normalizeKeyText(a.size).localeCompare(normalizeKeyText(b.size), "ru", { numeric: true }))
+    .map(normalizeMergedVariantPrice)
     .map((variant, index) => ({ ...variant, sortOrder: index }));
 }
 

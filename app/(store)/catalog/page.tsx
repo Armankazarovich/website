@@ -33,7 +33,6 @@ import {
 } from "lucide-react";
 import { getSiteSettingsForTenant, getPhones, getSetting } from "@/lib/site-settings";
 import { PhoneLinks } from "@/components/shared/phone-links";
-import { RoutePrefetcher } from "@/components/shared/route-prefetcher";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { getProductAvailability } from "@/lib/product-availability";
 import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
@@ -547,16 +546,6 @@ export default async function CatalogPage({
       href: "/delivery",
     },
   ];
-  const prefetchHrefs = [
-    ...categories
-      .filter((cat) => cat.slug !== searchParams.category)
-      .map((cat) => `/catalog?category=${cat.slug}`),
-    ...dynamicTypes
-      .filter((type) => type.keyword !== currentType)
-      .slice(0, 6)
-      .map((type) => buildFilterUrl({ type: type.keyword })),
-    page < totalPages ? buildPageUrl(page + 1) : null,
-  ];
   const breadcrumbSchema = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -638,7 +627,6 @@ export default async function CatalogPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(catalogItemListSchema) }}
       />
-      <RoutePrefetcher hrefs={prefetchHrefs} delayMs={1800} limit={4} />
       <CatalogViewMemory currentView={catalogView} hasViewParam={Boolean(searchParams.view)} />
 
       {/* ── Заголовок ── */}
@@ -731,7 +719,7 @@ export default async function CatalogPage({
               <ul className="space-y-1">
                 <li>
                   <Link
-                    prefetch
+                    prefetch={false}
                     href="/catalog"
                     className={`block px-3 py-2 rounded-xl text-sm transition-colors ${
                       !searchParams.category
@@ -745,7 +733,7 @@ export default async function CatalogPage({
                 {categories.map((cat) => (
                   <li key={cat.id}>
                     <Link
-                      prefetch
+                      prefetch={false}
                       href={`/catalog?category=${cat.slug}`}
                       className={`flex items-center justify-between px-3 py-2 rounded-xl text-sm transition-colors ${
                         searchParams.category === cat.slug
@@ -972,11 +960,11 @@ export default async function CatalogPage({
           {totalPages > 1 && (
             <div className="flex justify-center gap-2 mt-10">
               {page > 1 && (
-                <Link prefetch href={buildPageUrl(page - 1)} className="px-4 h-11 rounded-xl flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">←</Link>
+                <Link prefetch={false} href={buildPageUrl(page - 1)} className="px-4 h-11 rounded-xl flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">←</Link>
               )}
               {Array.from({ length: Math.min(totalPages, 7) }).map((_, i) => (
                 <Link
-                  prefetch
+                  prefetch={false}
                   key={i + 1}
                   href={buildPageUrl(i + 1)}
                   className={`w-11 h-11 rounded-xl flex items-center justify-center text-sm font-medium transition-colors ${
@@ -987,7 +975,7 @@ export default async function CatalogPage({
                 </Link>
               ))}
               {page < totalPages && (
-                <Link prefetch href={buildPageUrl(page + 1)} className="px-4 h-11 rounded-xl flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">→</Link>
+                <Link prefetch={false} href={buildPageUrl(page + 1)} className="px-4 h-11 rounded-xl flex items-center justify-center text-sm font-medium border border-border hover:bg-accent transition-colors">→</Link>
               )}
             </div>
           )}
@@ -1008,7 +996,7 @@ export default async function CatalogPage({
             <div className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
               {catalogStats.map(({ label, sub, Icon, href }) => (
                 <Link
-                  prefetch
+                  prefetch={false}
                   key={label}
                   href={href}
                   className="group flex min-h-[82px] items-center gap-3 rounded-xl border border-border bg-card/70 px-3.5 py-3 transition hover:border-primary/45 hover:bg-card"

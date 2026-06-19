@@ -119,16 +119,37 @@ function piecesPerCubeFromSize(value: string) {
   return Math.max(1, Math.floor(1 / volume));
 }
 
+function hasConflictingPiecePrice(pricePerCube: number, pricePerPiece: number, piecesPerCube: number) {
+  if (!pricePerCube || !pricePerPiece || !piecesPerCube) return false;
+  const expectedPiece = pricePerCube / piecesPerCube;
+  const diff = Math.abs(pricePerPiece - expectedPiece) / Math.max(1, expectedPiece);
+  return diff > 0.25;
+}
+
 function normalizePilmosSnapshotVariant(
   categorySlug: string,
   variant: PilmosSnapshotVariant,
 ): PilmosSnapshotVariant {
   const pricePerPiece = Number(variant.pricePerPiece || 0);
   const pricePerCube = Number(variant.pricePerCube || 0);
+  const piecesPerCube = variant.piecesPerCube ?? piecesPerCubeFromSize(variant.size);
+
+  if (
+    TIMBER_PRICE_CATEGORY_SLUGS.has(categorySlug) &&
+    pricePerCube > 0 &&
+    pricePerPiece > 0 &&
+    piecesPerCube &&
+    hasConflictingPiecePrice(pricePerCube, pricePerPiece, piecesPerCube)
+  ) {
+    return {
+      ...variant,
+      pricePerPiece: null,
+      piecesPerCube,
+    };
+  }
 
   if (!pricePerPiece || pricePerCube) return variant;
 
-  const piecesPerCube = piecesPerCubeFromSize(variant.size);
   const shouldPromoteToCube =
     hasCubeUnitHint(variant.size) ||
     (TIMBER_PRICE_CATEGORY_SLUGS.has(categorySlug) && pricePerPiece >= 10000 && Boolean(piecesPerCube));

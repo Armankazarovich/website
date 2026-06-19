@@ -209,9 +209,11 @@ export async function middleware(request: NextRequest) {
   const fromHost = detectTenant(host);
   const adminWorkspace =
     url.pathname.startsWith("/admin") || url.pathname.startsWith("/api/admin");
+  const apiRoute = url.pathname.startsWith("/api");
+  const previewTenant = previewTenantFromQuery(request, hostname);
   const tenantId = adminWorkspace
     ? activeAdminTenant(request) || fromHost
-    : previewTenantFromQuery(request, hostname) || fromHost;
+    : previewTenant || fromHost;
 
   // 1. Redirect для переименованных категорий (существующая логика)
   if (url.pathname === "/catalog") {
@@ -232,20 +234,31 @@ export async function middleware(request: NextRequest) {
     if (redirect) return redirect;
   }
 
-  // 2. Прокидываем tenant в request headers (серверный код может читать)
-  //    Пока только информационно — в Этапе 3 будет использоваться для фильтрации данных.
-  const response = NextResponse.next({
-    request: {
-      headers: (() => {
-        const h = new Headers(request.headers);
-        h.set("x-tenant-id", tenantId);
-        return h;
-      })(),
-    },
-  });
+  // 2. Keep request header overrides only for tenant-aware paths. Public default
+  // storefront pages use DEFAULT_TENANT_ID directly, which preserves ISR caching.
+  const needsTenantRequestHeader =
+    adminWorkspace || apiRoute || Boolean(previewTenant) || tenantId !== DEFAULT_TENANT;
+  const cacheablePublicStorefront =
+    !needsTenantRequestHeader &&
+    ((url.pathname === "/catalog" && !url.searchParams.has("search")) ||
+      url.pathname.startsWith("/product/"));
+  const response = needsTenantRequestHeader
+    ? NextResponse.next({
+        request: {
+          headers: (() => {
+            const h = new Headers(request.headers);
+            h.set("x-tenant-id", tenantId);
+            return h;
+          })(),
+        },
+      })
+    : NextResponse.next();
 
   // Response header для дебага и аналитики
   response.headers.set("x-tenant-id", tenantId);
+  if (cacheablePublicStorefront) {
+    response.headers.set("Cache-Control", "public, s-maxage=60, stale-while-revalidate=300");
+  }
 
   return response;
 }

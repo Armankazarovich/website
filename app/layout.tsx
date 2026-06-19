@@ -6,7 +6,8 @@ import { PaletteProvider } from "@/components/palette-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { PushSubscription } from "@/components/push-subscription";
 import { SwRegister } from "@/components/sw-register";
-import { getSiteSettings, DEFAULT_SETTINGS, getSetting } from "@/lib/site-settings";
+import { getSiteSettingsForTenant, DEFAULT_SETTINGS, getSetting } from "@/lib/site-settings";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 import { Analytics } from "@/components/analytics";
 import { HapticInit } from "@/components/haptic-init";
 import { UtmTracker } from "@/components/utm-tracker";
@@ -222,7 +223,7 @@ const localDevCacheResetScript =
     : null;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const settings = await getSiteSettings();
+  const settings = await getSiteSettingsForTenant(DEFAULT_TENANT_ID);
   const yandexMetrikaId = getSetting(settings, "yandex_metrika_id");
   const googleAnalyticsId = getSetting(settings, "google_analytics_id");
   const yandexVerification = getSetting(settings, "yandex_verification");

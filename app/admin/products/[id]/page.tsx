@@ -179,7 +179,6 @@ function calcReadiness(p: {
     { ok: (p.variants?.length ?? 0) > 0 && p.variants.every(v => v.size && (v.pricePerCube || v.pricePerPiece)), label: "Размеры и цены" },
     { ok: (p.shortDescription?.trim().length ?? 0) >= 55 && (p.shortDescription?.trim().length ?? 0) <= 155, label: "Короткое описание (55–155 символов)" },
     { ok: (p.description?.trim().length ?? 0) >= 180, label: "SEO-описание (от 180 символов)" },
-    { ok: p.variants.some(v => !!v.pricePerPiece), label: "Цена за штуку (нужно для Директа)" },
   ];
   const done = checks.filter(c => c.ok).length;
   return {
