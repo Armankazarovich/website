@@ -61,7 +61,7 @@ const SECTION_ROLES: Record<Section, Role[]> = {
   orders: ["MANAGER", "SELLER", "COURIER", "WAREHOUSE"],
   delivery: ["MANAGER", "COURIER", "WAREHOUSE"],
   products: ["MANAGER", "WAREHOUSE", "SELLER"],
-  categories: [], // ADMIN only
+  categories: ["MANAGER"],
   suppliers: ["MANAGER", "WAREHOUSE", "SELLER"],
   inventory: ["MANAGER", "WAREHOUSE"],
   import: ["MANAGER", "WAREHOUSE"],
