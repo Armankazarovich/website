@@ -74,6 +74,52 @@ function toPrice(value: unknown) {
   return Number.isFinite(price) && price > 0 ? price : null;
 }
 
+function parseTimberSize(size?: string | null) {
+  const match = (size || "").match(/(\d+(?:[.,]\d+)?)\s*[×xXхХ]\s*(\d+(?:[.,]\d+)?)\s*[×xXхХ]\s*(\d+(?:[.,]\d+)?)/);
+  if (!match) return null;
+  const [, thickness, width, length] = match;
+  return {
+    thickness: Number(thickness.replace(",", ".")),
+    width: Number(width.replace(",", ".")),
+    length: Number(length.replace(",", ".")),
+  };
+}
+
+function formatMeterLength(mm: number) {
+  const meters = mm / 1000;
+  return `${meters.toLocaleString("ru-RU", { maximumFractionDigits: 2 })} м`;
+}
+
+function getDimensionFacts(variants: Array<{ size?: string | null }>) {
+  const parsed = variants
+    .map((variant) => parseTimberSize(variant.size))
+    .filter((size): size is { thickness: number; width: number; length: number } =>
+      Boolean(size && Number.isFinite(size.thickness) && Number.isFinite(size.width) && Number.isFinite(size.length))
+    );
+
+  if (parsed.length === 0) return [];
+
+  const lengths = Array.from(new Set(parsed.map((size) => size.length))).sort((a, b) => a - b);
+  const sections = Array.from(new Set(parsed.map((size) => `${size.thickness}×${size.width}`)));
+  const facts: string[] = [];
+
+  if (lengths.length === 1) {
+    facts.push(`Длина ${formatMeterLength(lengths[0])}`);
+  } else if (lengths.length > 1) {
+    facts.push(`Длины ${formatMeterLength(lengths[0])}–${formatMeterLength(lengths[lengths.length - 1])}`);
+  }
+
+  if (sections.length > 0) {
+    facts.push(`${sections.length.toLocaleString("ru-RU")} сечений`);
+  }
+
+  if (variants.length > 0) {
+    facts.push(`${variants.length.toLocaleString("ru-RU")} размеров`);
+  }
+
+  return facts.slice(0, 3);
+}
+
 function getPreferredPriceInfo(
   product: { saleUnit: string; variants: Array<{ pricePerCube: unknown; pricePerPiece: unknown; pricePerSquareMeter?: unknown }> },
 ) {
@@ -207,6 +253,7 @@ export default async function ProductPage({ params }: Props) {
   };
   const productUrl = `/product/${product.slug}`;
   const sku = productSku(product.slug, product.id);
+  const dimensionFacts = getDimensionFacts(product.variants);
 
   // Build schema.org structured data. Keep low/high prices in one unit:
   // cube prices for m3 catalog items, piece prices for piece-only items.
@@ -362,6 +409,16 @@ export default async function ProductPage({ params }: Props) {
               </div>
             ))}
           </div>
+
+          {dimensionFacts.length > 0 && (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {dimensionFacts.map((fact) => (
+                <div key={fact} className="rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-center">
+                  <p className="text-sm font-semibold leading-tight">{fact}</p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Variant selector */}
           <VariantSelector
