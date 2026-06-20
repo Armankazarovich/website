@@ -1,5 +1,6 @@
 import { recordNotificationCenterEvent } from "@/lib/notification-center";
 import { resolveTelegramCredentials } from "@/lib/telegram-config";
+import { getUnitLabel, type ProductUnitType } from "@/lib/product-units";
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {
   NEW: "Новый",
@@ -27,6 +28,12 @@ export const STATUS_EMOJI: Record<string, string> = {
 
 // Финальные статусы — сообщение в Telegram удаляется автоматически
 export const FINAL_STATUSES = ["CANCELLED", "DELIVERED", "COMPLETED"];
+
+function orderUnitLabel(unitType: string) {
+  return unitType === "CUBE" || unitType === "PIECE" || unitType === "SQUARE"
+    ? getUnitLabel(unitType as ProductUnitType)
+    : unitType;
+}
 
 type TelegramApiResult = {
   ok: boolean;
@@ -200,7 +207,7 @@ export function buildOrderText(
 
   const itemsList = order.items
     .map((i) => {
-      const unit = i.unitType === "CUBE" ? "м³" : "шт";
+      const unit = orderUnitLabel(i.unitType);
       return `• ${i.productName} ${i.variantSize} × ${Number(i.quantity)} ${unit} = ${(Number(i.price) * Number(i.quantity)).toLocaleString("ru-RU")} ₽`;
     })
     .join("\n");

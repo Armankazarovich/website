@@ -131,7 +131,7 @@ async function getData() {
       where: { ...publicProductFilter, featured: true, category: { tenantId, showInMenu: true } },
       include: {
         category: true,
-        variants: { where: publicVariantFilter, orderBy: { pricePerCube: "asc" } },
+        variants: { where: publicVariantFilter, orderBy: [{ pricePerCube: "asc" }, { pricePerSquareMeter: "asc" }, { pricePerPiece: "asc" }] },
       },
       take: 8,
     }),
@@ -600,6 +600,7 @@ export default async function HomePage() {
                       id: v.id,
                       size: v.size,
                       pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
+                      pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
                       pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
                       piecesPerCube: v.piecesPerCube,
                       inStock: v.inStock,

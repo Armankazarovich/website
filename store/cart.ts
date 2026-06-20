@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type UnitType = "CUBE" | "PIECE";
+export type UnitType = "CUBE" | "PIECE" | "SQUARE";
 
 export interface CartItem {
   id: string;
@@ -54,7 +54,8 @@ function normalizeCartItems(value: unknown): CartItem[] {
   return value.flatMap((rawItem) => {
     if (!rawItem || typeof rawItem !== "object") return [];
     const item = rawItem as Partial<CartItem>;
-    const unitType: UnitType = item.unitType === "PIECE" ? "PIECE" : "CUBE";
+    const unitType: UnitType =
+      item.unitType === "PIECE" || item.unitType === "SQUARE" ? item.unitType : "CUBE";
     const maxQuantity = normalizeMaxQuantity(item.maxQuantity);
     const quantity = normalizeQuantity(item.quantity, maxQuantity);
     const price = Number(item.price);

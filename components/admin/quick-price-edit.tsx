@@ -4,7 +4,7 @@ import { Check, X, Loader2 } from "lucide-react";
 
 interface QuickPriceEditProps {
   variantId: string;
-  field: "pricePerCube" | "pricePerPiece";
+  field: "pricePerCube" | "pricePerPiece" | "pricePerSquareMeter";
   initialValue: number | null;
   unit: string; // "м³" or "шт"
   onSaved?: (newValue: number) => void;

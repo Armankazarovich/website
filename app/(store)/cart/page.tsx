@@ -41,6 +41,11 @@ import { Button } from "@/components/ui/button";
 import { BackButton } from "@/components/ui/back-button";
 import { PHONE_LINK, PHONE_DISPLAY } from "@/lib/phone-constants";
 import { trackArayMetrikaGoal } from "@/lib/aray-metrika-goals";
+import { getUnitLabel, quantityStepForUnit, type ProductUnitType } from "@/lib/product-units";
+
+function formatCartQuantity(quantity: number, unitType: ProductUnitType) {
+  return unitType === "PIECE" ? String(quantity) : quantity.toFixed(1);
+}
 
 // ─── Share Banner (detects ?share= param) ─────────────────────────────────────
 function ShareBanner() {
@@ -53,7 +58,7 @@ function ShareBanner() {
     productName: string;
     variantSize: string;
     quantity: number;
-    unitType: "CUBE" | "PIECE";
+    unitType: ProductUnitType;
     price: number;
   }[]>([]);
   const [dismissed, setDismissed] = useState(false);
@@ -63,7 +68,7 @@ function ShareBanner() {
     setState("loading");
 
     try {
-      const decoded = JSON.parse(atob(shareParam)) as Array<{ v: string; q: number; u: "CUBE" | "PIECE" }>;
+      const decoded = JSON.parse(atob(shareParam)) as Array<{ v: string; q: number; u: ProductUnitType }>;
 
       fetch("/api/cart/load", {
         method: "POST",
@@ -89,7 +94,7 @@ function ShareBanner() {
   const handleLoad = useCallback(() => {
     if (!shareParam) return;
     try {
-      const decoded = JSON.parse(atob(shareParam)) as Array<{ v: string; q: number; u: "CUBE" | "PIECE" }>;
+      const decoded = JSON.parse(atob(shareParam)) as Array<{ v: string; q: number; u: ProductUnitType }>;
       fetch("/api/cart/load", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -186,7 +191,7 @@ function ShareBanner() {
         {previewItems.map((item, i) => (
           <div key={i} className="flex justify-between text-sm">
             <span className="text-muted-foreground truncate mr-2">
-              {item.productName} {item.variantSize} × {item.unitType === "CUBE" ? item.quantity.toFixed(1) + " м³" : item.quantity + " шт"}
+              {item.productName} {item.variantSize} × {formatCartQuantity(item.quantity, item.unitType)} {getUnitLabel(item.unitType)}
             </span>
             <span className="shrink-0 font-medium">{formatPrice(item.price * item.quantity)}</span>
           </div>
@@ -442,7 +447,7 @@ export default function CartPage() {
                 </Link>
                 <p className="text-sm text-muted-foreground">{item.variantSize}</p>
                 <p className="text-sm font-medium text-primary">
-                  {formatPrice(item.price)} / {item.unitType === "CUBE" ? "м³" : "шт"}
+                  {formatPrice(item.price)} / {getUnitLabel(item.unitType)}
                 </p>
 
                 <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2 mt-3">
@@ -453,7 +458,7 @@ export default function CartPage() {
                       onClick={() =>
                         updateQuantity(
                           item.id,
-                          parseFloat((item.quantity - (item.unitType === "CUBE" ? 0.1 : 1)).toFixed(1))
+                          parseFloat((item.quantity - quantityStepForUnit(item.unitType)).toFixed(1))
                           )
                       }
                       data-cart-qty-minus
@@ -462,17 +467,14 @@ export default function CartPage() {
                       <Minus className="w-3 h-3" />
                     </button>
                     <span data-cart-qty-value className="store-quantity-value">
-                      {item.unitType === "CUBE"
-                        ? item.quantity.toFixed(1)
-                        : item.quantity}{" "}
-                      {item.unitType === "CUBE" ? "м³" : "шт"}
+                      {formatCartQuantity(item.quantity, item.unitType)} {getUnitLabel(item.unitType)}
                     </span>
                     <button
                       aria-label="Увеличить количество"
                       onClick={() =>
                         updateQuantity(
                           item.id,
-                          parseFloat((item.quantity + (item.unitType === "CUBE" ? 0.1 : 1)).toFixed(1))
+                          parseFloat((item.quantity + quantityStepForUnit(item.unitType)).toFixed(1))
                           )
                       }
                       data-cart-qty-plus
@@ -521,7 +523,7 @@ export default function CartPage() {
               {visibleItems.map((item) => (
                 <div key={item.id} className="flex justify-between text-muted-foreground">
                   <span className="line-clamp-1 mr-2">
-                    {item.productName} × {item.unitType === "CUBE" ? item.quantity.toFixed(1) : item.quantity} {item.unitType === "CUBE" ? "м³" : "шт"}
+                    {item.productName} × {formatCartQuantity(item.quantity, item.unitType)} {getUnitLabel(item.unitType)}
                   </span>
                   <span className="shrink-0">{formatPrice(item.price * item.quantity)}</span>
                 </div>

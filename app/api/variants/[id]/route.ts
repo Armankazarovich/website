@@ -28,6 +28,7 @@ export async function GET(
     size: variant.size,
     pricePerCube: variant.pricePerCube ? Number(variant.pricePerCube) : null,
     pricePerPiece: variant.pricePerPiece ? Number(variant.pricePerPiece) : null,
+    pricePerSquareMeter: variant.pricePerSquareMeter ? Number(variant.pricePerSquareMeter) : null,
     inStock: variant.inStock,
     image: variant.product.images?.[0] || null,
   });

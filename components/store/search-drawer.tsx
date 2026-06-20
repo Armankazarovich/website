@@ -9,8 +9,9 @@ import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { formatPrice } from "@/lib/utils";
 import { useSearchDrawer } from "@/store/search-drawer";
 import { PopupPortal } from "@/components/ui/popup-portal";
+import { getSaleUnitPreferredOrder, getUnitLabel, getVariantUnitPrice, type ProductUnitType } from "@/lib/product-units";
 
-interface Variant { pricePerCube: number | null; pricePerPiece: number | null; size?: string; inStock?: boolean; stockQty?: number | null; lowStockThreshold?: number | null; }
+interface Variant { pricePerCube: number | null; pricePerPiece: number | null; pricePerSquareMeter?: number | null; size?: string; inStock?: boolean; stockQty?: number | null; lowStockThreshold?: number | null; }
 interface Product {
   id: string; slug: string; name: string; images: string[];
   saleUnit: string; category: { name: string; slug: string };
@@ -28,19 +29,18 @@ interface SearchData {
 }
 
 function minPriceInfo(variants: Variant[], saleUnit: string) {
-  const preferredUnit = saleUnit === "PIECE" ? "PIECE" : "CUBE";
-  const fallbackUnit = preferredUnit === "CUBE" ? "PIECE" : "CUBE";
-  const findMin = (unit: "CUBE" | "PIECE") =>
+  const findMin = (unit: ProductUnitType) =>
     variants.reduce((min, v) => {
-      const p = unit === "CUBE" ? v.pricePerCube : v.pricePerPiece;
+      const p = getVariantUnitPrice(v, unit);
       return p !== null && p < min ? p : min;
     }, Infinity);
-  const preferredPrice = findMin(preferredUnit);
-  if (preferredPrice !== Infinity) {
-    return { price: preferredPrice, unit: preferredUnit === "CUBE" ? "м³" : "шт" };
+
+  for (const unit of getSaleUnitPreferredOrder(saleUnit)) {
+    const price = findMin(unit);
+    if (price !== Infinity) return { price, unit: getUnitLabel(unit) };
   }
-  const fallbackPrice = findMin(fallbackUnit);
-  return fallbackPrice !== Infinity ? { price: fallbackPrice, unit: fallbackUnit === "CUBE" ? "м³" : "шт" } : null;
+
+  return null;
 }
 
 function ProductRow({ p, onClose }: { p: Product; onClose: () => void }) {

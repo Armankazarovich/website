@@ -140,7 +140,7 @@ export async function GET(req: NextRequest) {
           category: { select: { name: true, slug: true } },
           variants: {
             where: publicVariantFilter,
-            select: { pricePerCube: true, pricePerPiece: true },
+            select: { pricePerCube: true, pricePerPiece: true, pricePerSquareMeter: true },
             take: 1,
             orderBy: { pricePerCube: "asc" },
           },
@@ -164,6 +164,7 @@ export async function GET(req: NextRequest) {
         variants: p.variants.map((v) => ({
           pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
           pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
+          pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
         })),
       })),
     });
@@ -180,6 +181,7 @@ export async function GET(req: NextRequest) {
               OR: [
                 { pricePerCube: { gte: minPrice, lte: maxPrice } },
                 { pricePerPiece: { gte: minPrice, lte: maxPrice } },
+                { pricePerSquareMeter: { gte: minPrice, lte: maxPrice } },
               ],
             },
           ],
@@ -208,7 +210,7 @@ export async function GET(req: NextRequest) {
         category: { select: { id: true, name: true, slug: true } },
         variants: {
           where: publicVariantFilter,
-          select: { pricePerCube: true, pricePerPiece: true, size: true, inStock: true, stockQty: true, lowStockThreshold: true },
+          select: { pricePerCube: true, pricePerPiece: true, pricePerSquareMeter: true, size: true, inStock: true, stockQty: true, lowStockThreshold: true },
           orderBy: { pricePerCube: "asc" },
         },
       },
@@ -263,6 +265,7 @@ export async function GET(req: NextRequest) {
     variants: p.variants.map((v) => ({
       pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
       pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
+      pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
       size: v.size,
     })),
   });

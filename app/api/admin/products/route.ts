@@ -12,6 +12,7 @@ import { getCurrentTenantId } from "@/lib/tenant-context";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
+const PRODUCT_SALE_UNITS = ["CUBE", "PIECE", "SQUARE", "BOTH"] as const;
 
 function revalidateProductsPublicPaths(slug?: string | null) {
   revalidateTag("store-shell-data");
@@ -32,6 +33,7 @@ function serializeProduct<T extends { variants?: Array<Record<string, unknown>> 
       ...variant,
       pricePerCube: serializeMoney(variant.pricePerCube),
       pricePerPiece: serializeMoney(variant.pricePerPiece),
+      pricePerSquareMeter: serializeMoney(variant.pricePerSquareMeter),
     })) ?? [],
   };
 }
@@ -129,7 +131,7 @@ export async function POST(req: Request) {
   if (!categoryId || typeof categoryId !== "string") {
     return NextResponse.json({ error: "Выберите категорию" }, { status: 400 });
   }
-  if (saleUnit !== undefined && !["CUBE", "PIECE", "BOTH"].includes(saleUnit)) {
+  if (saleUnit !== undefined && !PRODUCT_SALE_UNITS.includes(saleUnit as (typeof PRODUCT_SALE_UNITS)[number])) {
     return NextResponse.json(
       { error: "Единица продажи выбрана некорректно" },
       { status: 400 }
@@ -146,6 +148,7 @@ export async function POST(req: Request) {
     size?: unknown;
     pricePerCube?: unknown;
     pricePerPiece?: unknown;
+    pricePerSquareMeter?: unknown;
     piecesPerCube?: unknown;
     inStock?: unknown;
   };
@@ -154,6 +157,7 @@ export async function POST(req: Request) {
     size: string;
     pricePerCube: number | null;
     pricePerPiece: number | null;
+    pricePerSquareMeter: number | null;
     piecesPerCube: number | null;
     inStock: boolean;
   }> = [];
@@ -172,13 +176,17 @@ export async function POST(req: Request) {
             v.pricePerPiece !== undefined && v.pricePerPiece !== null && v.pricePerPiece !== ""
               ? Number(v.pricePerPiece)
               : null;
+          const pricePerSquareMeter =
+            v.pricePerSquareMeter !== undefined && v.pricePerSquareMeter !== null && v.pricePerSquareMeter !== ""
+              ? Number(v.pricePerSquareMeter)
+              : null;
           const piecesPerCube =
             v.piecesPerCube !== undefined && v.piecesPerCube !== null && v.piecesPerCube !== ""
               ? Number(v.piecesPerCube)
               : null;
 
           if (!size) throw new Error(`Вариант #${i + 1}: укажите размер`);
-          if (pricePerCube === null && pricePerPiece === null) {
+          if (pricePerCube === null && pricePerPiece === null && pricePerSquareMeter === null) {
             throw new Error(`Вариант ${size}: укажите хотя бы одну цену (за м³ или за шт)`);
           }
           if (pricePerCube !== null && (Number.isNaN(pricePerCube) || pricePerCube < 0)) {
@@ -186,6 +194,9 @@ export async function POST(req: Request) {
           }
           if (pricePerPiece !== null && (Number.isNaN(pricePerPiece) || pricePerPiece < 0)) {
             throw new Error(`Вариант ${size}: цена за шт должна быть числом ≥ 0`);
+          }
+          if (pricePerSquareMeter !== null && (Number.isNaN(pricePerSquareMeter) || pricePerSquareMeter < 0)) {
+            throw new Error(`Variant ${size}: price per square meter must be a number >= 0`);
           }
           if (piecesPerCube !== null && (Number.isNaN(piecesPerCube) || piecesPerCube < 0)) {
             throw new Error(`Вариант ${size}: количество в м³ должно быть числом ≥ 0`);
@@ -195,6 +206,7 @@ export async function POST(req: Request) {
             size,
             pricePerCube,
             pricePerPiece,
+            pricePerSquareMeter,
             piecesPerCube,
             inStock: v.inStock === false ? false : true,
           };
@@ -269,6 +281,7 @@ export async function POST(req: Request) {
                 size: v.size,
                 pricePerCube: v.pricePerCube,
                 pricePerPiece: v.pricePerPiece,
+                pricePerSquareMeter: v.pricePerSquareMeter,
                 piecesPerCube: v.piecesPerCube,
                 inStock: v.inStock,
                 sortOrder: index,

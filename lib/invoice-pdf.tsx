@@ -1,6 +1,7 @@
 import React from "react";
 import path from "path";
 import { DEFAULT_SETTINGS } from "@/lib/site-settings";
+import { getUnitLabel, type ProductUnitType } from "@/lib/product-units";
 import {
   Document,
   Page,
@@ -23,6 +24,12 @@ Font.register({
 });
 
 const LOGO = path.join(process.cwd(), "public", "logo.png");
+
+function orderUnitLabel(unitType: string) {
+  return unitType === "CUBE" || unitType === "PIECE" || unitType === "SQUARE"
+    ? getUnitLabel(unitType as ProductUnitType)
+    : unitType;
+}
 
 const styles = StyleSheet.create({
   page: { fontFamily: "Roboto", fontSize: 10, padding: 40, color: "#1a1a1a" },
@@ -175,7 +182,7 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
             {order.items.map((item, i) => {
               const qty = Number(item.quantity);
               const price = Number(item.price);
-              const unit = item.unitType === "CUBE" ? "м³" : "шт";
+              const unit = orderUnitLabel(item.unitType);
               return (
                 <View key={i} style={[styles.tableRow, i % 2 === 1 ? styles.tableRowAlt : {}]}>
                   <Text style={styles.colName}>{item.productName}</Text>

@@ -24,6 +24,7 @@ export async function GET() {
             size: true,
             pricePerCube: true,
             pricePerPiece: true,
+            pricePerSquareMeter: true,
             piecesPerCube: true,
           },
           orderBy: { size: "asc" },
@@ -41,6 +42,7 @@ export async function GET() {
           ...v,
           pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
           pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
+          pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
         })),
       }))
     );

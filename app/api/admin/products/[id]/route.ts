@@ -12,6 +12,7 @@ import { getCurrentTenantId } from "@/lib/tenant-context";
 import { revalidatePath, revalidateTag } from "next/cache";
 
 const PRODUCTS_ROLES = ["SUPER_ADMIN", "ADMIN", "MANAGER", "WAREHOUSE", "SELLER"];
+const PRODUCT_SALE_UNITS = ["CUBE", "PIECE", "SQUARE", "BOTH"] as const;
 
 function revalidateProductPublicPaths(slug?: string | null) {
   revalidateTag("store-shell-data");
@@ -80,7 +81,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     };
 
   // Validate SaleUnit enum
-  if (saleUnit !== undefined && !["CUBE", "PIECE", "BOTH"].includes(saleUnit)) {
+  if (saleUnit !== undefined && !PRODUCT_SALE_UNITS.includes(saleUnit as (typeof PRODUCT_SALE_UNITS)[number])) {
     return NextResponse.json(
       { error: "saleUnit должен быть CUBE, PIECE или BOTH" },
       { status: 400 }
@@ -117,6 +118,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
                 size: true,
                 pricePerCube: true,
                 pricePerPiece: true,
+                pricePerSquareMeter: true,
                 inStock: true,
               },
             },
@@ -136,12 +138,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
               size: v.size,
               pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
               pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
+              pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
               inStock: v.inStock ?? true,
             }))
           : current.variants.map((v) => ({
               size: v.size,
               pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
               pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
+              pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
               inStock: v.inStock,
             }));
         finalDescription = generateProductDescription(
@@ -208,6 +212,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       size?: unknown;
       pricePerCube?: unknown;
       pricePerPiece?: unknown;
+      pricePerSquareMeter?: unknown;
       piecesPerCube?: unknown;
       inStock?: unknown;
     };
@@ -223,12 +228,16 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         v.pricePerPiece !== undefined && v.pricePerPiece !== null && v.pricePerPiece !== ""
           ? Number(v.pricePerPiece)
           : null;
+      const pricePerSquareMeter =
+        v.pricePerSquareMeter !== undefined && v.pricePerSquareMeter !== null && v.pricePerSquareMeter !== ""
+          ? Number(v.pricePerSquareMeter)
+          : null;
       const piecesPerCube =
         v.piecesPerCube !== undefined && v.piecesPerCube !== null && v.piecesPerCube !== ""
           ? Number(v.piecesPerCube)
           : null;
       if (!size) throw new Error(`Вариант #${i + 1}: укажите размер`);
-      if (pricePerCube === null && pricePerPiece === null) {
+      if (pricePerCube === null && pricePerPiece === null && pricePerSquareMeter === null) {
         throw new Error(`Вариант ${size}: укажите хотя бы одну цену (за м³ или за шт)`);
       }
       if (pricePerCube !== null && (isNaN(pricePerCube) || pricePerCube < 0)) {
@@ -236,6 +245,9 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       }
       if (pricePerPiece !== null && (isNaN(pricePerPiece) || pricePerPiece < 0)) {
         throw new Error(`Вариант ${size}: цена за шт должна быть числом ≥ 0`);
+      }
+      if (pricePerSquareMeter !== null && (isNaN(pricePerSquareMeter) || pricePerSquareMeter < 0)) {
+        throw new Error(`Variant ${size}: price per square meter must be a number >= 0`);
       }
       if (piecesPerCube !== null && (isNaN(piecesPerCube) || piecesPerCube < 0)) {
         throw new Error(`Вариант ${size}: количество в м³ должно быть числом ≥ 0`);
@@ -245,6 +257,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         size,
         pricePerCube,
         pricePerPiece,
+        pricePerSquareMeter,
         piecesPerCube,
         inStock: v.inStock === false ? false : true,
       };
@@ -282,6 +295,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
                 size: v.size,
                 pricePerCube: v.pricePerCube,
                 pricePerPiece: v.pricePerPiece,
+                pricePerSquareMeter: v.pricePerSquareMeter,
                 piecesPerCube: v.piecesPerCube,
                 inStock: v.inStock,
               },
@@ -292,6 +306,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
                 size: v.size,
                 pricePerCube: v.pricePerCube,
                 pricePerPiece: v.pricePerPiece,
+                pricePerSquareMeter: v.pricePerSquareMeter,
                 piecesPerCube: v.piecesPerCube,
                 inStock: v.inStock,
               },

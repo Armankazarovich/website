@@ -37,6 +37,7 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
           size: true,
           pricePerCube: true,
           pricePerPiece: true,
+          pricePerSquareMeter: true,
           inStock: true,
         },
       },
@@ -58,6 +59,7 @@ export async function POST(_: Request, { params }: { params: { id: string } }) {
       size: v.size,
       pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
       pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
+      pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
       inStock: v.inStock,
     })),
   };

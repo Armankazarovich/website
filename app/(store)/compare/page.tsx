@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 import Image from "next/image";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ProductCard } from "@/components/store/product-card";
 import { useCompareStore, type CompareItem } from "@/store/compare";
 import { formatPrice } from "@/lib/utils";
+import { getUnitLabel as getProductUnitLabel, saleUnitAllows } from "@/lib/product-units";
 
 function getBestPrice(item: CompareItem) {
   const cubePrices = item.variants
@@ -17,14 +18,21 @@ function getBestPrice(item: CompareItem) {
   const piecePrices = item.variants
     .map((variant) => variant.pricePerPiece)
     .filter((price): price is number => typeof price === "number" && price > 0);
+  const squarePrices = item.variants
+    .map((variant) => variant.pricePerSquareMeter)
+    .filter((price): price is number => typeof price === "number" && price > 0);
 
-  if (item.saleUnit !== "PIECE" && cubePrices.length > 0) {
-    return { value: Math.min(...cubePrices), unit: "м³" };
+  if (saleUnitAllows(item.saleUnit, "CUBE") && cubePrices.length > 0) {
+    return { value: Math.min(...cubePrices), unit: getProductUnitLabel("CUBE") };
+  }
+  if (saleUnitAllows(item.saleUnit, "SQUARE") && squarePrices.length > 0) {
+    return { value: Math.min(...squarePrices), unit: getProductUnitLabel("SQUARE") };
   }
   if (piecePrices.length > 0) {
-    return { value: Math.min(...piecePrices), unit: "шт" };
+    return { value: Math.min(...piecePrices), unit: getProductUnitLabel("PIECE") };
   }
-  if (cubePrices.length > 0) return { value: Math.min(...cubePrices), unit: "м³" };
+  if (squarePrices.length > 0) return { value: Math.min(...squarePrices), unit: getProductUnitLabel("SQUARE") };
+  if (cubePrices.length > 0) return { value: Math.min(...cubePrices), unit: getProductUnitLabel("CUBE") };
   return null;
 }
 
@@ -36,9 +44,8 @@ function getSizes(item: CompareItem, limit = 6) {
 }
 
 function getUnitLabel(item: CompareItem) {
-  if (item.saleUnit === "BOTH") return "м³ и шт";
-  if (item.saleUnit === "CUBE") return "м³";
-  return "шт";
+  if (item.saleUnit === "BOTH") return `${getProductUnitLabel("CUBE")} / ${getProductUnitLabel("SQUARE")} / ${getProductUnitLabel("PIECE")}`;
+  return getProductUnitLabel(item.saleUnit);
 }
 
 function productCountLabel(count: number) {

@@ -61,13 +61,14 @@ type PilmosCatalogSnapshot = {
     images: string[];
     shortDescription?: string | null;
     description?: string | null;
-    saleUnit: "CUBE" | "PIECE" | "BOTH";
+    saleUnit: "CUBE" | "PIECE" | "SQUARE" | "BOTH";
     active: boolean;
     featured: boolean;
     variants: Array<{
       size: string;
       pricePerCube?: number | null;
       pricePerPiece?: number | null;
+      pricePerSquareMeter?: number | null;
       piecesPerCube?: number | null;
       inStock: boolean;
       stockQty?: number | null;
@@ -92,6 +93,39 @@ type PilmosSnapshotProduct = PilmosCatalogSnapshot["products"][number];
 type PilmosSnapshotVariant = PilmosSnapshotProduct["variants"][number];
 
 const TIMBER_PRICE_CATEGORY_SLUGS = new Set(["sosna-el", "listvennitsa", "kedr", "lipa-osina"]);
+const SQUARE_METER_PRICE_PRODUCT_SLUGS = new Set([
+  "blok-haus-iz-sosny-i-eli",
+  "blok-haus-iz-listvennitsy",
+  "doska-pola-iz-listvennitsy",
+  "imitatsiya-brusa-iz-sosny-i-eli",
+  "imitatsiya-brusa-iz-listvennitsy",
+  "imitatsiya-brusa-iz-kedra",
+  "planken-iz-listvennitsy",
+  "planken-iz-kedra",
+  "terrasnaya-doska-iz-listvennitsy",
+]);
+
+function isKnownSquareMeterVariant(productSlug: string, variant: PilmosSnapshotVariant) {
+  if (!SQUARE_METER_PRICE_PRODUCT_SLUGS.has(productSlug)) return false;
+  const size = normalizeDimensionText(variant.size).toLowerCase();
+
+  if (
+    productSlug === "imitatsiya-brusa-iz-listvennitsy" &&
+    (size.includes("2500") || size.includes("2800") || size.includes("3000"))
+  ) {
+    return false;
+  }
+
+  if (
+    productSlug === "imitatsiya-brusa-iz-sosny-i-eli" &&
+    size.includes("3000") &&
+    /sort\s*c|\u0441\u043e\u0440\u0442\s*c/i.test(size)
+  ) {
+    return false;
+  }
+
+  return true;
+}
 
 function normalizeDimensionText(value: string) {
   return String(value || "")
@@ -127,12 +161,29 @@ function hasConflictingPiecePrice(pricePerCube: number, pricePerPiece: number, p
 }
 
 function normalizePilmosSnapshotVariant(
+  productSlug: string,
   categorySlug: string,
   variant: PilmosSnapshotVariant,
 ): PilmosSnapshotVariant {
   const pricePerPiece = Number(variant.pricePerPiece || 0);
   const pricePerCube = Number(variant.pricePerCube || 0);
+  const pricePerSquareMeter = Number(variant.pricePerSquareMeter || 0);
   const piecesPerCube = variant.piecesPerCube ?? piecesPerCubeFromSize(variant.size);
+
+  if (isKnownSquareMeterVariant(productSlug, variant)) {
+    const squarePrice =
+      pricePerSquareMeter ||
+      pricePerPiece ||
+      (pricePerCube >= 10000 ? pricePerCube / 10 : pricePerCube);
+
+    return {
+      ...variant,
+      pricePerCube: null,
+      pricePerPiece: null,
+      pricePerSquareMeter: squarePrice > 0 ? Math.round(squarePrice) : null,
+      piecesPerCube: null,
+    };
+  }
 
   if (
     TIMBER_PRICE_CATEGORY_SLUGS.has(categorySlug) &&
@@ -164,12 +215,16 @@ function normalizePilmosSnapshotVariant(
   };
 }
 
-function saleUnitFromSnapshotVariants(variants: PilmosSnapshotVariant[]): "CUBE" | "PIECE" | "BOTH" {
+function saleUnitFromSnapshotVariants(variants: PilmosSnapshotVariant[]): "CUBE" | "PIECE" | "SQUARE" | "BOTH" {
   const hasCube = variants.some((variant) => Number(variant.pricePerCube || 0) > 0);
   const hasPiece = variants.some((variant) => Number(variant.pricePerPiece || 0) > 0);
+  const hasSquare = variants.some((variant) => Number(variant.pricePerSquareMeter || 0) > 0);
 
-  if (hasCube && hasPiece) return "BOTH";
-  return hasCube ? "CUBE" : "PIECE";
+  const count = [hasCube, hasPiece, hasSquare].filter(Boolean).length;
+  if (count > 1) return "BOTH";
+  if (hasCube) return "CUBE";
+  if (hasSquare) return "SQUARE";
+  return "PIECE";
 }
 
 async function applyPilmosCatalogSnapshot() {
@@ -215,7 +270,7 @@ async function applyPilmosCatalogSnapshot() {
   for (const product of snapshot.products) {
     const category = categoryBySlug.get(product.categorySlug);
     const normalizedVariants = product.variants.map((variant) =>
-      normalizePilmosSnapshotVariant(product.categorySlug, variant),
+      normalizePilmosSnapshotVariant(product.slug, product.categorySlug, variant),
     );
     if (!category || !product.images.length || !normalizedVariants.length) continue;
 
@@ -254,6 +309,7 @@ async function applyPilmosCatalogSnapshot() {
         size: variant.size,
         pricePerCube: decimalOrNull(variant.pricePerCube),
         pricePerPiece: decimalOrNull(variant.pricePerPiece),
+        pricePerSquareMeter: decimalOrNull(variant.pricePerSquareMeter),
         piecesPerCube: variant.piecesPerCube ?? null,
         inStock: variant.inStock,
         stockQty: variant.stockQty ?? null,
@@ -1299,12 +1355,14 @@ async function main() {
         OR: [
           { pricePerCube: { not: null, gt: 0 } },
           { pricePerPiece: { not: null, gt: 0 } },
+          { pricePerSquareMeter: { not: null, gt: 0 } },
         ],
       },
       select: {
         id: true,
         pricePerCube: true,
         pricePerPiece: true,
+        pricePerSquareMeter: true,
         stockQty: true,
       },
     });
@@ -1332,6 +1390,7 @@ async function main() {
             variantId: variant.id,
             pricePerCube: normalizePrice(variant.pricePerCube, 1),
             pricePerPiece: normalizePrice(variant.pricePerPiece, 1),
+            pricePerSquareMeter: normalizePrice(variant.pricePerSquareMeter, 1),
             stockQty: variant.stockQty,
             leadTimeDays: 1,
             city: pilorusSeller.city,
@@ -1344,6 +1403,7 @@ async function main() {
           update: {
             pricePerCube: normalizePrice(variant.pricePerCube, 1),
             pricePerPiece: normalizePrice(variant.pricePerPiece, 1),
+            pricePerSquareMeter: normalizePrice(variant.pricePerSquareMeter, 1),
             stockQty: variant.stockQty,
             leadTimeDays: 1,
             city: pilorusSeller.city,
@@ -1368,6 +1428,7 @@ async function main() {
           variantId: variant.id,
           pricePerCube: normalizePrice(variant.pricePerCube, policy.factor),
           pricePerPiece: normalizePrice(variant.pricePerPiece, policy.factor),
+          pricePerSquareMeter: normalizePrice(variant.pricePerSquareMeter, policy.factor),
           stockQty: variant.stockQty,
           leadTimeDays: policy.leadTimeDays,
           city: seller.city,

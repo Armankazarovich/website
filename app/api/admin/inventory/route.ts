@@ -33,11 +33,12 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Некорректный JSON" }, { status: 400 });
   }
 
-  const { variantId, stockQty, pricePerCube, pricePerPiece, inStock, lowStockThreshold } = body as {
+  const { variantId, stockQty, pricePerCube, pricePerPiece, pricePerSquareMeter, inStock, lowStockThreshold } = body as {
     variantId?: string;
     stockQty?: number | null;
     pricePerCube?: number | string | null;
     pricePerPiece?: number | string | null;
+    pricePerSquareMeter?: number | string | null;
     inStock?: boolean;
     lowStockThreshold?: number;
   };
@@ -46,7 +47,7 @@ export async function PATCH(req: Request) {
 
   // WAREHOUSE can only change stock, not prices (business rule)
   const canEditPrices = access.role === "SUPER_ADMIN" || access.role === "ADMIN" || access.role === "MANAGER";
-  if (!canEditPrices && (pricePerCube !== undefined || pricePerPiece !== undefined)) {
+  if (!canEditPrices && (pricePerCube !== undefined || pricePerPiece !== undefined || pricePerSquareMeter !== undefined)) {
     return NextResponse.json(
       { error: "Изменение цен доступно только администраторам и менеджерам" },
       { status: 403 }
@@ -91,6 +92,17 @@ export async function PATCH(req: Request) {
         return NextResponse.json({ error: "pricePerPiece должен быть ≥ 0" }, { status: 400 });
       }
       updateData.pricePerPiece = n;
+    }
+  }
+  if (pricePerSquareMeter !== undefined) {
+    if (pricePerSquareMeter === "" || pricePerSquareMeter === null) {
+      updateData.pricePerSquareMeter = null;
+    } else {
+      const n = Number(pricePerSquareMeter);
+      if (isNaN(n) || n < 0) {
+        return NextResponse.json({ error: "pricePerSquareMeter должен быть ≥ 0" }, { status: 400 });
+      }
+      updateData.pricePerSquareMeter = n;
     }
   }
 
@@ -155,6 +167,7 @@ export async function PATCH(req: Request) {
       stockQty: variant.stockQty,
       pricePerCube: variant.pricePerCube,
       pricePerPiece: variant.pricePerPiece,
+      pricePerSquareMeter: variant.pricePerSquareMeter,
       lowStockThreshold: variant.lowStockThreshold,
       lowStockAlerts: alertSync,
     });

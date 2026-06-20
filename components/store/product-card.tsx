@@ -42,6 +42,13 @@ import {
   getPurchasableQuantityLimit,
   isProductVariantPurchasable,
 } from "@/lib/product-availability";
+import {
+  getUnitLabel as getProductUnitLabel,
+  getUnitTitle as getProductUnitTitle,
+  getVariantUnitPrice as readVariantUnitPrice,
+  pickVariantUnit,
+  quantityStepForUnit,
+} from "@/lib/product-units";
 
 const PUSH_TOAST_KEY = "push_cart_toast_shown";
 
@@ -69,6 +76,7 @@ interface Variant {
   size: string;
   pricePerCube: number | null;
   pricePerPiece: number | null;
+  pricePerSquareMeter: number | null;
   piecesPerCube: number | null;
   inStock: boolean;
   stockQty?: number | null;
@@ -83,7 +91,7 @@ interface ProductCardProps {
   shortDescription?: string | null;
   description?: string | null;
   images: string[];
-  saleUnit: "CUBE" | "PIECE" | "BOTH";
+  saleUnit: "CUBE" | "PIECE" | "SQUARE" | "BOTH";
   variants: Variant[];
   cardTags?: string[] | null;
   viewMode?: "grid" | "list";
@@ -172,19 +180,26 @@ function hasConflictingPiecePrice(variant: Variant) {
 
 function getVariantPriceForUnit(variant: Variant, unitType: UnitType) {
   if (unitType === "PIECE" && hasConflictingPiecePrice(variant)) return null;
-  const price = unitType === "CUBE" ? variant.pricePerCube : variant.pricePerPiece;
-  return Number(price) || null;
+  return readVariantUnitPrice(variant, unitType);
 }
 
 function pickDefaultCardVariant(variants: Variant[], saleUnit: ProductCardProps["saleUnit"]) {
-  const preferredUnit: UnitType = saleUnit === "PIECE" ? "PIECE" : "CUBE";
-  const fallbackUnit: UnitType = preferredUnit === "CUBE" ? "PIECE" : "CUBE";
+  const preferredUnits: UnitType[] =
+    saleUnit === "PIECE"
+      ? ["PIECE", "SQUARE", "CUBE"]
+      : saleUnit === "SQUARE"
+        ? ["SQUARE", "PIECE", "CUBE"]
+        : ["CUBE", "SQUARE", "PIECE"];
   const byUnit = (unitType: UnitType) =>
     variants
       .filter((variant) => getVariantPriceForUnit(variant, unitType))
       .sort((a, b) => Number(getVariantPriceForUnit(a, unitType)) - Number(getVariantPriceForUnit(b, unitType)));
 
-  return byUnit(preferredUnit)[0] ?? byUnit(fallbackUnit)[0] ?? variants[0];
+  for (const unit of preferredUnits) {
+    const variant = byUnit(unit)[0];
+    if (variant) return variant;
+  }
+  return variants[0];
 }
 
 export function ProductCard({
@@ -212,7 +227,8 @@ export function ProductCard({
   // Expand all sizes on "+N" click
   // Unit type: catalog cards must add to cart in one tap.
   const defaultUnit: UnitType =
-    saleUnit === "PIECE" ? "PIECE" : selectedVariant?.pricePerCube ? "CUBE" : "PIECE";
+    pickVariantUnit(selectedVariant, saleUnit) ??
+    (saleUnit === "SQUARE" ? "SQUARE" : saleUnit === "PIECE" ? "PIECE" : "CUBE");
   const [selectedUnit, setSelectedUnit] = useState<UnitType>(defaultUnit);
   const [cardVariantPickerOpen, setCardVariantPickerOpen] = useState(false);
   const [variantPickerOpen, setVariantPickerOpen] = useState(false);
@@ -246,45 +262,35 @@ export function ProductCard({
   const pickVariant = (variant: Variant, closePicker = false) => {
     if (!isProductVariantPurchasable(variant)) return;
     setSelectedId(variant.id);
-    setSelectedUnit((current) => {
-      if (current === "PIECE" && variant.pricePerPiece) return "PIECE";
-      if (current === "CUBE" && variant.pricePerCube) return "CUBE";
-      return variant.pricePerCube ? "CUBE" : "PIECE";
-    });
+    setSelectedUnit((current) => pickVariantUnit(variant, saleUnit, current) ?? current);
     setCardVariantPickerOpen(false);
     if (closePicker) setVariantPickerOpen(false);
   };
 
-  const effectiveUnit: UnitType =
-    selectedUnit === "CUBE" && !selectedVariant?.pricePerCube && selectedVariant?.pricePerPiece
-      ? "PIECE"
-      : selectedUnit === "PIECE" && !selectedVariant?.pricePerPiece && selectedVariant?.pricePerCube
-      ? "CUBE"
-      : selectedUnit;
-  const unit = effectiveUnit === "PIECE" ? "шт" : "м³";
+  const effectiveUnit: UnitType = pickVariantUnit(selectedVariant, saleUnit, selectedUnit) ?? selectedUnit;
+  const unit = getProductUnitLabel(effectiveUnit);
 
   const displayUnit: UnitType = effectiveUnit;
-  const displayUnitLabel = displayUnit === "PIECE" ? "шт" : "м³";
-  const displayPrice = selectedVariant
-    ? Number(displayUnit === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece) || null
-    : null;
-  const canSwitchUnit = !!selectedVariant?.pricePerCube && !!selectedVariant?.pricePerPiece;
-  const getUnitLabel = (unitType: UnitType) => (unitType === "PIECE" ? "шт" : "м³");
-  const getUnitTitle = (unitType: UnitType) => (unitType === "PIECE" ? "1 шт" : "1 м³");
+  const displayUnitLabel = getProductUnitLabel(displayUnit);
+  const displayPrice = selectedVariant ? getVariantPriceForUnit(selectedVariant, displayUnit) : null;
+  const getUnitLabel = getProductUnitLabel;
+  const getUnitTitle = getProductUnitTitle;
   const getUnitPrice = (variant: Variant | null | undefined, unitType: UnitType) => {
     if (!variant) return null;
     if (unitType === "PIECE" && hasConflictingPiecePrice(variant)) return null;
-    const rawPrice = unitType === "CUBE" ? variant.pricePerCube : variant.pricePerPiece;
-    return Number(rawPrice) || null;
+    return readVariantUnitPrice(variant, unitType);
   };
   const getVariantUnitOptions = (variant: Variant) => {
     const options: Array<{ unit: UnitType; label: string; price: number }> = [];
     const cubePrice = getUnitPrice(variant, "CUBE");
+    const squarePrice = getUnitPrice(variant, "SQUARE");
     const piecePrice = getUnitPrice(variant, "PIECE");
     if (cubePrice) options.push({ unit: "CUBE", label: getUnitLabel("CUBE"), price: cubePrice });
+    if (squarePrice) options.push({ unit: "SQUARE", label: getUnitLabel("SQUARE"), price: squarePrice });
     if (piecePrice) options.push({ unit: "PIECE", label: getUnitLabel("PIECE"), price: piecePrice });
     return options;
   };
+  const canSwitchUnit = selectedVariant ? getVariantUnitOptions(selectedVariant).length > 1 : false;
   const formatPiecesPerCube = (value: number | null | undefined) => {
     const number = Number(value);
     if (!Number.isFinite(number) || number <= 0) return null;
@@ -295,9 +301,10 @@ export function ProductCard({
   const getUnitCaption = (variant: Variant | null | undefined, unitType: UnitType) => {
     if (unitType === "CUBE") {
       const pieces = formatPiecesPerCube(variant?.piecesPerCube);
-      return pieces ? `≈ ${pieces} шт` : "за м³";
+      return pieces ? `\u2248 ${pieces} ${getProductUnitLabel("PIECE")}` : "\u0437\u0430 \u043c\u00b3";
     }
-    return "за штуку";
+    if (unitType === "SQUARE") return "\u0437\u0430 \u043c\u00b2";
+    return "\u0437\u0430 \u0448\u0442\u0443\u043a\u0443";
   };
   const selectedSheetPrice = getUnitPrice(selectedVariant, effectiveUnit);
 
@@ -313,7 +320,7 @@ export function ProductCard({
   };
   const selectedStockLimit = getStockLimitForUnit(effectiveUnit);
   const remainingSheetQuantity = getRemainingQuantity(effectiveUnit);
-  const sheetQuantityStep = effectiveUnit === "CUBE" ? 0.1 : 1;
+  const sheetQuantityStep = quantityStepForUnit(effectiveUnit);
   const selectedSheetQuantity =
     remainingSheetQuantity === null ? sheetQuantity : Math.min(sheetQuantity, remainingSheetQuantity);
   const sheetTotal = selectedSheetPrice ? selectedSheetPrice * selectedSheetQuantity : null;
@@ -322,7 +329,7 @@ export function ProductCard({
   // Core add logic — reused by direct add and unit picker
   const doAddToCart = (unit: UnitType, srcEl: HTMLElement) => {
     if (!selectedVariant || !isProductVariantPurchasable(selectedVariant)) return;
-    const price = unit === "CUBE" ? selectedVariant.pricePerCube : selectedVariant.pricePerPiece;
+    const price = getUnitPrice(selectedVariant, unit);
     if (!price) return;
     const maxQuantity = getStockLimitForUnit(unit);
     const currentCartQty = getCartQtyForUnit(unit);
@@ -823,13 +830,11 @@ export function ProductCard({
                 <div className="store-card-variant-grid">
                   {variants.map((variant) => {
                     const selected = selectedVariant?.id === variant.id;
-                    const fallbackUnit: UnitType = effectiveUnit === "CUBE" ? "PIECE" : "CUBE";
-                    const primaryPrice = getUnitPrice(variant, effectiveUnit);
-                    const fallbackPrice = getUnitPrice(variant, fallbackUnit);
-                    const priceInfo = primaryPrice
-                      ? { price: primaryPrice, label: getUnitLabel(effectiveUnit), unit: effectiveUnit }
-                      : fallbackPrice
-                      ? { price: fallbackPrice, label: getUnitLabel(fallbackUnit), unit: fallbackUnit }
+                    const fallbackUnit = pickVariantUnit(variant, saleUnit);
+                    const priceUnit = getUnitPrice(variant, effectiveUnit) ? effectiveUnit : fallbackUnit;
+                    const price = priceUnit ? getUnitPrice(variant, priceUnit) : null;
+                    const priceInfo = priceUnit && price
+                      ? { price, label: getUnitLabel(priceUnit), unit: priceUnit }
                       : null;
 
                     return (
@@ -974,13 +979,11 @@ export function ProductCard({
                     <div className="store-variant-sheet-grid mt-2 grid grid-cols-2 gap-2 overflow-y-auto pr-1">
                       {variants.map((variant) => {
                         const selected = selectedVariant?.id === variant.id;
-                        const fallbackUnit: UnitType = effectiveUnit === "CUBE" ? "PIECE" : "CUBE";
-                        const primaryPrice = getUnitPrice(variant, effectiveUnit);
-                        const fallbackPrice = getUnitPrice(variant, fallbackUnit);
-                        const priceInfo = primaryPrice
-                          ? { price: primaryPrice, label: getUnitLabel(effectiveUnit) }
-                          : fallbackPrice
-                          ? { price: fallbackPrice, label: getUnitLabel(fallbackUnit) }
+                        const fallbackUnit = pickVariantUnit(variant, saleUnit);
+                        const priceUnit = getUnitPrice(variant, effectiveUnit) ? effectiveUnit : fallbackUnit;
+                        const price = priceUnit ? getUnitPrice(variant, priceUnit) : null;
+                        const priceInfo = priceUnit && price
+                          ? { price, label: getUnitLabel(priceUnit) }
                           : null;
 
                         return (

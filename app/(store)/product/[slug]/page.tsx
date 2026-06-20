@@ -1,4 +1,4 @@
-export const revalidate = 60;
+﻿export const revalidate = 60;
 import React, { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -21,6 +21,7 @@ import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-
 import { getProductEditTarget, getPublicEditTarget } from "@/lib/public-edit-targets";
 import { getProductAvailability } from "@/lib/product-availability";
 import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
+import { getUnitLabel, saleUnitAllows } from "@/lib/product-units";
 // ReviewForm is now rendered inside DescriptionAccordion
 
 interface Props {
@@ -63,7 +64,7 @@ const getProductBySlug = cache(async (slug: string) =>
     where: { tenantId: DEFAULT_TENANT_ID, slug, ...getPublicProductsFilter() },
     include: {
       category: true,
-      variants: { where: getPublicVariantsFilter(), orderBy: { size: "asc" } },
+      variants: { where: getPublicVariantsFilter(), orderBy: [{ size: "asc" }, { pricePerSquareMeter: "asc" }] },
     },
   })
 );
@@ -74,19 +75,26 @@ function toPrice(value: unknown) {
 }
 
 function getPreferredPriceInfo(
-  product: { saleUnit: string; variants: Array<{ pricePerCube: unknown; pricePerPiece: unknown }> },
+  product: { saleUnit: string; variants: Array<{ pricePerCube: unknown; pricePerPiece: unknown; pricePerSquareMeter?: unknown }> },
 ) {
   const cubePrices = product.variants.map((variant) => toPrice(variant.pricePerCube)).filter((price): price is number => price !== null);
   const piecePrices = product.variants.map((variant) => toPrice(variant.pricePerPiece)).filter((price): price is number => price !== null);
+  const squarePrices = product.variants.map((variant) => toPrice(variant.pricePerSquareMeter)).filter((price): price is number => price !== null);
 
-  if (product.saleUnit !== "PIECE" && cubePrices.length > 0) {
-    return { prices: cubePrices, unit: "м³" };
+  if (saleUnitAllows(product.saleUnit, "CUBE") && cubePrices.length > 0) {
+    return { prices: cubePrices, unit: getUnitLabel("CUBE") };
+  }
+  if (saleUnitAllows(product.saleUnit, "SQUARE") && squarePrices.length > 0) {
+    return { prices: squarePrices, unit: getUnitLabel("SQUARE") };
   }
   if (piecePrices.length > 0) {
-    return { prices: piecePrices, unit: "шт" };
+    return { prices: piecePrices, unit: getUnitLabel("PIECE") };
   }
   if (cubePrices.length > 0) {
-    return { prices: cubePrices, unit: "м³" };
+    return { prices: cubePrices, unit: getUnitLabel("CUBE") };
+  }
+  if (squarePrices.length > 0) {
+    return { prices: squarePrices, unit: getUnitLabel("SQUARE") };
   }
   return null;
 }
@@ -143,7 +151,7 @@ export default async function ProductPage({ params }: Props) {
     },
     include: {
       category: true,
-      variants: { where: getPublicVariantsFilter(), orderBy: { pricePerCube: "asc" } },
+      variants: { where: getPublicVariantsFilter(), orderBy: [{ pricePerCube: "asc" }, { pricePerSquareMeter: "asc" }, { pricePerPiece: "asc" }] },
     },
     take: 4,
   });
@@ -189,6 +197,7 @@ export default async function ProductPage({ params }: Props) {
       id: variant.id,
       size: variant.size,
       pricePerCube: variant.pricePerCube ? Number(variant.pricePerCube) : null,
+      pricePerSquareMeter: variant.pricePerSquareMeter ? Number(variant.pricePerSquareMeter) : null,
       pricePerPiece: variant.pricePerPiece ? Number(variant.pricePerPiece) : null,
       piecesPerCube: variant.piecesPerCube,
       inStock: variant.inStock,
@@ -365,6 +374,7 @@ export default async function ProductPage({ params }: Props) {
               id: v.id,
               size: v.size,
               pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
+              pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
               pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
               piecesPerCube: v.piecesPerCube,
               inStock: v.inStock,
@@ -437,6 +447,7 @@ export default async function ProductPage({ params }: Props) {
               id: v.id,
               size: v.size,
               pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
+              pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
               pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
               piecesPerCube: v.piecesPerCube,
               inStock: v.inStock,
@@ -528,6 +539,7 @@ export default async function ProductPage({ params }: Props) {
                   id: v.id,
                   size: v.size,
                   pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
+                  pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
                   pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
                   piecesPerCube: v.piecesPerCube,
                   inStock: v.inStock,

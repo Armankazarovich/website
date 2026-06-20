@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     variantId: string;
     productName: string;
     variantSize: string;
-    unitType: "CUBE" | "PIECE";
+    unitType: "CUBE" | "PIECE" | "SQUARE";
     quantity: number;
     price: number;
     count: number;

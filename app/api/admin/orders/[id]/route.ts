@@ -37,7 +37,7 @@ const ORDER_STATUSES = new Set([
   "CANCELLED",
 ]);
 
-const UNIT_TYPES = new Set(["CUBE", "PIECE"]);
+const UNIT_TYPES = new Set(["CUBE", "PIECE", "SQUARE"]);
 const HIDDEN_CATEGORY_SORT_ORDER = 999;
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
@@ -172,7 +172,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         variantId: String(item.variantId),
         productName: String(item.productName),
         variantSize: String(item.variantSize),
-        unitType: String(item.unitType) as "CUBE" | "PIECE",
+        unitType: String(item.unitType) as "CUBE" | "PIECE" | "SQUARE",
         quantity: Number(item.quantity),
         price: Number(item.price),
       })),

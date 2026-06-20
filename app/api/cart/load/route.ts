@@ -4,13 +4,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getPurchasableQuantityLimit } from "@/lib/product-availability";
 import { getPublicVariantsFilter } from "@/lib/product-seo";
+import { getVariantUnitPrice } from "@/lib/product-units";
 
 // Принимает компактный список вариантов и возвращает полные данные из БД
 // Формат items: [{ v: variantId, q: quantity, u: "CUBE"|"PIECE" }]
 export async function POST(req: Request) {
   try {
     const { items } = await req.json() as {
-      items: Array<{ v: string; q: number; u: "CUBE" | "PIECE" }>;
+      items: Array<{ v: string; q: number; u: "CUBE" | "PIECE" | "SQUARE" }>;
     };
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -50,10 +51,7 @@ export async function POST(req: Request) {
         if (!variant) return null;
         if (variant.product.saleUnit !== "BOTH" && variant.product.saleUnit !== u) return null;
 
-        const price =
-          u === "CUBE"
-            ? Number(variant.pricePerCube ?? 0)
-            : Number(variant.pricePerPiece ?? 0);
+        const price = Number(getVariantUnitPrice(variant, u) ?? 0);
 
         if (price === 0) return null;
         const maxQuantity = getPurchasableQuantityLimit(variant, u);

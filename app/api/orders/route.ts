@@ -21,10 +21,7 @@ import { normalizePhone } from "@/lib/phone";
 import nodemailer from "nodemailer";
 import { getCurrentTenantId } from "@/lib/tenant-context";
 import { applyOrderInventory, isOrderInventoryError } from "@/lib/order-inventory";
-
-function saleUnitAllows(saleUnit: "CUBE" | "PIECE" | "BOTH", unitType: "CUBE" | "PIECE") {
-  return saleUnit === "BOTH" || saleUnit === unitType;
-}
+import { getVariantUnitPrice, saleUnitAllows } from "@/lib/product-units";
 
 const attributionSchema = z.object({
   utmSource: z.string().max(200).nullable().optional(),
@@ -57,7 +54,7 @@ const orderSchema = z.object({
       variantId: z.string(),
       productName: z.string(),
       variantSize: z.string(),
-      unitType: z.enum(["CUBE", "PIECE"]),
+      unitType: z.enum(["CUBE", "PIECE", "SQUARE"]),
       quantity: z.number().positive(),
       price: z.number().positive(),
     })
@@ -115,7 +112,7 @@ export async function POST(req: NextRequest) {
       const variant = variantMap.get(item.variantId);
       if (!variant || !saleUnitAllows(variant.product.saleUnit, item.unitType)) return null;
 
-      const price = Number(item.unitType === "CUBE" ? variant.pricePerCube : variant.pricePerPiece);
+      const price = Number(getVariantUnitPrice(variant, item.unitType));
       const quantity = Number(item.quantity);
       const maxQuantity = getPurchasableQuantityLimit(variant, item.unitType);
 

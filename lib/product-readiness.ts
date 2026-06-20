@@ -17,6 +17,7 @@ export type ProductReadiness = {
 type VariantForReadiness = {
   pricePerCube?: number | string | null | { toNumber?: () => number };
   pricePerPiece?: number | string | null | { toNumber?: () => number };
+  pricePerSquareMeter?: number | string | null | { toNumber?: () => number };
   inStock?: boolean;
 };
 
@@ -57,7 +58,8 @@ export function checkProductReadiness(product: ProductForReadiness): ProductRead
     const hasAnyPrice = variants.some((v) => {
       const cube = toNumber(v.pricePerCube);
       const piece = toNumber(v.pricePerPiece);
-      return (cube != null && cube > 0) || (piece != null && piece > 0);
+      const square = toNumber(v.pricePerSquareMeter);
+      return (cube != null && cube > 0) || (piece != null && piece > 0) || (square != null && square > 0);
     });
     if (!hasAnyPrice) blockers.push("no-price");
 

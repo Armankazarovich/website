@@ -30,7 +30,7 @@ type Deduction = {
   variantId: string;
   productName: string;
   variantSize: string;
-  unitType: "CUBE" | "PIECE";
+  unitType: "CUBE" | "PIECE" | "SQUARE";
   quantity: number;
   stockUnits: number;
   before: number;
@@ -83,8 +83,8 @@ function toQuantity(value: unknown) {
   return Number.isFinite(quantity) && quantity > 0 ? quantity : 0;
 }
 
-function toUnitType(value: unknown): "CUBE" | "PIECE" | null {
-  return value === "CUBE" || value === "PIECE" ? value : null;
+function toUnitType(value: unknown): "CUBE" | "PIECE" | "SQUARE" | null {
+  return value === "CUBE" || value === "PIECE" || value === "SQUARE" ? value : null;
 }
 
 function stockUnitsForItem(item: OrderInventoryItem, piecesPerCube: number | null) {

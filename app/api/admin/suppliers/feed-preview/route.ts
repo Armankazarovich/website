@@ -38,6 +38,7 @@ type LocalVariant = {
   sizeKey: string;
   pricePerCube: number | null;
   pricePerPiece: number | null;
+  pricePerSquareMeter: number | null;
   tokens: string[];
   features: Set<string>;
 };
@@ -246,9 +247,10 @@ function priceDiff(feedPrice: number, localPrice: number | null) {
   return Math.round(((feedPrice - localPrice) / localPrice) * 1000) / 10;
 }
 
-function bestPriceComparison(feedPrice: number, pricePerCube: number | null, pricePerPiece: number | null) {
+function bestPriceComparison(feedPrice: number, pricePerCube: number | null, pricePerPiece: number | null, pricePerSquareMeter: number | null) {
   const candidates = [
     { unit: "m3", price: pricePerCube, diffPct: priceDiff(feedPrice, pricePerCube) },
+    { unit: "m2", price: pricePerSquareMeter, diffPct: priceDiff(feedPrice, pricePerSquareMeter) },
     { unit: "piece", price: pricePerPiece, diffPct: priceDiff(feedPrice, pricePerPiece) },
   ].filter((item): item is { unit: string; price: number; diffPct: number } => item.diffPct !== null && item.price !== null);
   candidates.sort((a, b) => Math.abs(a.diffPct) - Math.abs(b.diffPct));
@@ -356,6 +358,7 @@ export async function POST(req: Request) {
         sizeKey: normalizeSize(variant.size),
         pricePerCube: variant.pricePerCube === null ? null : Number(variant.pricePerCube),
         pricePerPiece: variant.pricePerPiece === null ? null : Number(variant.pricePerPiece),
+        pricePerSquareMeter: variant.pricePerSquareMeter === null ? null : Number(variant.pricePerSquareMeter),
         tokens: tokens(haystack),
         features: detectFeatures(haystack),
       });
@@ -386,7 +389,7 @@ export async function POST(req: Request) {
       .slice(0, 3);
     const best = candidates[0];
     const confidence = confidenceFromScore(best?.score || 0);
-    const price = best && confidence !== "unmatched" ? bestPriceComparison(offer.price, best.variant.pricePerCube, best.variant.pricePerPiece) : { unit: "", price: null, diffPct: null };
+    const price = best && confidence !== "unmatched" ? bestPriceComparison(offer.price, best.variant.pricePerCube, best.variant.pricePerPiece, best.variant.pricePerSquareMeter) : { unit: "", price: null, diffPct: null };
 
     return {
       feedId: offer.id,
@@ -412,6 +415,7 @@ export async function POST(req: Request) {
         size: candidate.variant.size,
         pricePerCube: candidate.variant.pricePerCube,
         pricePerPiece: candidate.variant.pricePerPiece,
+        pricePerSquareMeter: candidate.variant.pricePerSquareMeter,
       })),
     };
   });
@@ -444,7 +448,7 @@ export async function POST(req: Request) {
         selected.has(row.feedId) &&
         row.confidence === "high" &&
         row.matchedVariantId &&
-        (row.compareUnit === "m3" || row.compareUnit === "piece") &&
+        (row.compareUnit === "m3" || row.compareUnit === "m2" || row.compareUnit === "piece") &&
         Number.isFinite(row.price) &&
         row.price > 0,
     );
@@ -463,7 +467,12 @@ export async function POST(req: Request) {
     let updated = 0;
     const applied: Array<{ feedId: string; variantId: string; product: string; size: string; unit: string; price: number }> = [];
     for (const row of applicableRows) {
-      const priceData = row.compareUnit === "m3" ? { pricePerCube: row.price } : { pricePerPiece: row.price };
+      const priceData =
+        row.compareUnit === "m3"
+          ? { pricePerCube: row.price }
+          : row.compareUnit === "m2"
+            ? { pricePerSquareMeter: row.price }
+            : { pricePerPiece: row.price };
       const notes = `Feed preview ${supplier.name}: ${row.name} | feedId=${row.feedId} | score=${row.score} | source=${feedUrl}`;
       await prisma.supplierOffer.upsert({
         where: {

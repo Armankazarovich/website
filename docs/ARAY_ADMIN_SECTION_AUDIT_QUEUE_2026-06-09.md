@@ -43,6 +43,14 @@ Production domain: `pilo-rus.ru`
 - Browser stories responsive passed on local server: `npm run browser:stories:check:prod`.
 - Design system guard was fixed and now passes: `npm run design:check`.
 
+## Price Unit Audit On 2026-06-20
+
+- Checked Pilmos live feed snapshot `https://pilmos.ru/wp-content/uploads/feed001.xml` and local conversion report in `tmp/pilorus-m2-unit-audit-2026-06-20.json`.
+- Added explicit `SQUARE` / `pricePerSquareMeter` support across catalog cards, product pages, cart, checkout order APIs, admin product forms, order edit/new order forms, supplier offers, feed preview, SEO/readiness, notifications, PDF, import/export, and data migration.
+- Applied local schema update and catalog data migration: 69 active products / 745 active variants refreshed from the Pilmos snapshot.
+- Final DB audit saved to `tmp/pilorus-price-unit-final-audit-2026-06-20.md` and `.json`: 164 variants have m2 prices, 7 products are strictly `SQUARE`, 2 imitatciya-brusa products remain `BOTH` only for documented piece exceptions, suspicious rows: 0.
+- Requested CSV `C:\Users\StormPC\Downloads\wc-product-export-19-6-2026-1781860375144.csv` was not found locally during this pass; no CSV rows were applied.
+
 ## Fixed In This Pass
 
 - Old forbidden radii were moved to approved `rounded-xl` / `rounded-2xl` patterns.

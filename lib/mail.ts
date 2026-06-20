@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { DEFAULT_SETTINGS } from "@/lib/site-settings";
+import { getUnitLabel, type ProductUnitType } from "@/lib/product-units";
 
 const SMTP_PORT = Number(process.env.SMTP_PORT) || 465;
 
@@ -16,6 +17,12 @@ const transporter = nodemailer.createTransport({
     rejectUnauthorized: false,
   },
 });
+
+function orderUnitLabel(unitType: string) {
+  return unitType === "CUBE" || unitType === "PIECE" || unitType === "SQUARE"
+    ? getUnitLabel(unitType as ProductUnitType)
+    : unitType;
+}
 
 export async function sendOrderNotification(order: {
   orderNumber: number;
@@ -38,11 +45,11 @@ export async function sendOrderNotification(order: {
     .map(
       (item) => `
       <tr>
-        <td style="padding:8px;border:1px solid #ddd">${item.productName}</td>
-        <td style="padding:8px;border:1px solid #ddd">${item.variantSize}</td>
-        <td style="padding:8px;border:1px solid #ddd">${item.unitType === "CUBE" ? "м³" : "шт"}</td>
-        <td style="padding:8px;border:1px solid #ddd">${item.quantity}</td>
-        <td style="padding:8px;border:1px solid #ddd">${Number(item.price).toLocaleString("ru-RU")} ₽</td>
+        <td style="padding:8px;border:1px solid hsl(var(--border))">${item.productName}</td>
+        <td style="padding:8px;border:1px solid hsl(var(--border))">${item.variantSize}</td>
+        <td style="padding:8px;border:1px solid hsl(var(--border))">${orderUnitLabel(item.unitType)}</td>
+        <td style="padding:8px;border:1px solid hsl(var(--border))">${item.quantity}</td>
+        <td style="padding:8px;border:1px solid hsl(var(--border))">${Number(item.price).toLocaleString("ru-RU")} ₽</td>
       </tr>
     `
     )
@@ -60,11 +67,11 @@ export async function sendOrderNotification(order: {
     <table style="width:100%;border-collapse:collapse">
       <thead>
         <tr style="background:#f5f5f5">
-          <th style="padding:8px;border:1px solid #ddd;text-align:left">Товар</th>
-          <th style="padding:8px;border:1px solid #ddd">Размер</th>
-          <th style="padding:8px;border:1px solid #ddd">Ед.</th>
-          <th style="padding:8px;border:1px solid #ddd">Кол-во</th>
-          <th style="padding:8px;border:1px solid #ddd">Цена</th>
+          <th style="padding:8px;border:1px solid hsl(var(--border));text-align:left">Товар</th>
+          <th style="padding:8px;border:1px solid hsl(var(--border))">Размер</th>
+          <th style="padding:8px;border:1px solid hsl(var(--border))">Ед.</th>
+          <th style="padding:8px;border:1px solid hsl(var(--border))">Кол-во</th>
+          <th style="padding:8px;border:1px solid hsl(var(--border))">Цена</th>
         </tr>
       </thead>
       <tbody>${itemsHtml}</tbody>
@@ -103,7 +110,7 @@ export async function sendCustomerOrderConfirmation(
 ) {
   const itemsHtml = order.items
     .map((item) => {
-      const unit = item.unitType === "CUBE" ? "м³" : "шт";
+      const unit = orderUnitLabel(item.unitType);
       const total = (item.price * item.quantity).toLocaleString("ru-RU");
       return `<tr>
         <td style="padding:12px 16px;border-bottom:1px solid #f0ede8;">

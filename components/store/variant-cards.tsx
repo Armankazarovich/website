@@ -6,12 +6,14 @@ import { useCartStore } from "@/store/cart";
 import { formatPrice } from "@/lib/utils";
 import { flyToCart } from "@/lib/cart-fly";
 import { getPurchasableQuantityLimit, isProductVariantPurchasable } from "@/lib/product-availability";
+import { getUnitLabel, getVariantUnitPrice, pickVariantUnit, type ProductUnitType } from "@/lib/product-units";
 
 interface Variant {
   id: string;
   size: string;
   pricePerCube: number | null;
   pricePerPiece: number | null;
+  pricePerSquareMeter: number | null;
   piecesPerCube: number | null;
   inStock: boolean;
   stockQty?: number | null;
@@ -27,39 +29,21 @@ interface VariantCardsProps {
   variants: Variant[];
 }
 
-type PurchaseUnit = "CUBE" | "PIECE";
+type PurchaseUnit = ProductUnitType;
 
 function getVariantPurchaseOption(variant: Variant, saleUnit: string) {
-  const cubePrice = Number(variant.pricePerCube) || 0;
-  const piecePrice = Number(variant.pricePerPiece) || 0;
-  const preferredUnit: PurchaseUnit | null =
-    saleUnit === "PIECE"
-      ? "PIECE"
-      : saleUnit === "CUBE"
-        ? "CUBE"
-        : cubePrice > 0
-          ? "CUBE"
-          : piecePrice > 0
-            ? "PIECE"
-            : null;
+  const preferredUnit: PurchaseUnit | null = pickVariantUnit(variant, saleUnit);
+  if (!preferredUnit) return null;
 
-  if (preferredUnit === "CUBE" && cubePrice > 0) {
-    return {
-      unitType: "CUBE" as const,
-      price: cubePrice,
-      unitLabel: "м³",
-      maxQuantity: getPurchasableQuantityLimit(variant, "CUBE"),
-    };
-  }
-  if (preferredUnit === "PIECE" && piecePrice > 0) {
-    return {
-      unitType: "PIECE" as const,
-      price: piecePrice,
-      unitLabel: "шт",
-      maxQuantity: getPurchasableQuantityLimit(variant, "PIECE"),
-    };
-  }
-  return null;
+  const price = getVariantUnitPrice(variant, preferredUnit);
+  if (!price) return null;
+
+  return {
+    unitType: preferredUnit,
+    price,
+    unitLabel: getUnitLabel(preferredUnit),
+    maxQuantity: getPurchasableQuantityLimit(variant, preferredUnit),
+  };
 }
 
 export function VariantCards({
@@ -80,6 +64,7 @@ export function VariantCards({
         variant.size,
         variant.pricePerCube?.toString() || "",
         variant.pricePerPiece?.toString() || "",
+        variant.pricePerSquareMeter?.toString() || "",
       ].some((value) => value.toLowerCase().includes(normalized)),
     );
   }, [query, variants]);

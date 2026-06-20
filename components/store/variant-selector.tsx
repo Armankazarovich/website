@@ -15,12 +15,19 @@ import {
   getPurchasableQuantityLimit,
   isProductVariantPurchasable,
 } from "@/lib/product-availability";
+import {
+  getUnitLabel,
+  getUnitTitle,
+  getVariantUnitPrice as readVariantUnitPrice,
+  quantityStepForUnit,
+} from "@/lib/product-units";
 
 interface Variant {
   id: string;
   size: string;
   pricePerCube: number | null;
   pricePerPiece: number | null;
+  pricePerSquareMeter: number | null;
   piecesPerCube: number | null;
   inStock: boolean;
   stockQty?: number | null;
@@ -32,7 +39,7 @@ interface VariantSelectorProps {
   productName: string;
   productSlug: string;
   productImage?: string;
-  saleUnit: "CUBE" | "PIECE" | "BOTH";
+  saleUnit: "CUBE" | "PIECE" | "SQUARE" | "BOTH";
   variants: Variant[];
   phoneLink?: string;
 }
@@ -51,30 +58,34 @@ function hasConflictingPiecePrice(variant: Variant) {
 function getVariantUnitPrice(variant: Variant | null | undefined, unitType: UnitType) {
   if (!variant) return null;
   if (unitType === "PIECE" && hasConflictingPiecePrice(variant)) return null;
-  const price = Number(unitType === "CUBE" ? variant.pricePerCube : variant.pricePerPiece);
-  return Number.isFinite(price) && price > 0 ? price : null;
+  return readVariantUnitPrice(variant, unitType);
 }
 
 function getPreferredUnit(
   variant: Variant | null | undefined,
-  saleUnit: "CUBE" | "PIECE" | "BOTH",
+  saleUnit: "CUBE" | "PIECE" | "SQUARE" | "BOTH",
   currentUnit?: UnitType,
 ): UnitType | null {
   const hasCube = Boolean(getVariantUnitPrice(variant, "CUBE"));
   const hasPiece = Boolean(getVariantUnitPrice(variant, "PIECE"));
+  const hasSquare = Boolean(getVariantUnitPrice(variant, "SQUARE"));
   if (currentUnit === "CUBE" && hasCube) return "CUBE";
   if (currentUnit === "PIECE" && hasPiece) return "PIECE";
+  if (currentUnit === "SQUARE" && hasSquare) return "SQUARE";
   if (saleUnit === "CUBE") return hasCube ? "CUBE" : null;
   if (saleUnit === "PIECE") return hasPiece ? "PIECE" : null;
+  if (saleUnit === "SQUARE") return hasSquare ? "SQUARE" : null;
   if (hasCube) return "CUBE";
+  if (hasSquare) return "SQUARE";
   if (hasPiece) return "PIECE";
   return null;
 }
 
-function pickInitialVariant(variants: Variant[], saleUnit: "CUBE" | "PIECE" | "BOTH") {
+function pickInitialVariant(variants: Variant[], saleUnit: "CUBE" | "PIECE" | "SQUARE" | "BOTH") {
   const purchasable = variants.filter(isProductVariantPurchasable);
   const candidates = purchasable.length > 0 ? purchasable : variants;
-  const preferredUnit: UnitType = saleUnit === "PIECE" ? "PIECE" : "CUBE";
+  const preferredUnit: UnitType =
+    saleUnit === "PIECE" ? "PIECE" : saleUnit === "SQUARE" ? "SQUARE" : "CUBE";
   return (
     candidates.find((variant) => getVariantUnitPrice(variant, preferredUnit)) ||
     candidates.find((variant) => getPreferredUnit(variant, saleUnit)) ||
@@ -84,7 +95,7 @@ function pickInitialVariant(variants: Variant[], saleUnit: "CUBE" | "PIECE" | "B
 }
 
 function quantityStep(unitType: UnitType) {
-  return unitType === "CUBE" ? 0.1 : 1;
+  return quantityStepForUnit(unitType);
 }
 
 function normalizeQuantityForUnit(
@@ -94,7 +105,7 @@ function normalizeQuantityForUnit(
 ) {
   const step = quantityStep(unitType);
   const safe = Number.isFinite(value) ? value : step;
-  const rounded = unitType === "CUBE" ? Number(safe.toFixed(1)) : Math.round(safe);
+  const rounded = unitType === "PIECE" ? Math.round(safe) : Number(safe.toFixed(1));
   const clamped = clampProductQuantity(rounded, variant, unitType);
   const limit = getPurchasableQuantityLimit(variant, unitType);
   if (limit !== null && limit < step) return limit;
@@ -112,7 +123,8 @@ export function VariantSelector({
     initialVariant
   );
   const [unitType, setUnitType] = useState<UnitType>(
-    getPreferredUnit(initialVariant, saleUnit) || (saleUnit === "PIECE" ? "PIECE" : "CUBE")
+    getPreferredUnit(initialVariant, saleUnit) ||
+      (saleUnit === "PIECE" ? "PIECE" : saleUnit === "SQUARE" ? "SQUARE" : "CUBE")
   );
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
@@ -136,6 +148,7 @@ export function VariantSelector({
   const maxQuantity = getPurchasableQuantityLimit(selectedVariant, unitType);
   const canUseCube = Boolean(getVariantUnitPrice(selectedVariant, "CUBE"));
   const canUsePiece = Boolean(getVariantUnitPrice(selectedVariant, "PIECE"));
+  const canUseSquare = Boolean(getVariantUnitPrice(selectedVariant, "SQUARE"));
 
   const totalPrice = currentPrice ? currentPrice * quantity : 0;
   const visibleVariants = useMemo(() => {
@@ -146,6 +159,7 @@ export function VariantSelector({
         variant.size,
         variant.pricePerCube?.toString() || "",
         variant.pricePerPiece?.toString() || "",
+        variant.pricePerSquareMeter?.toString() || "",
       ].some((value) => value.toLowerCase().includes(query)),
     );
   }, [variantQuery, variants]);
@@ -153,6 +167,7 @@ export function VariantSelector({
   // Calculate equivalent in other unit
   const equivalentInfo = () => {
     if (!selectedVariant || !selectedVariant.piecesPerCube) return null;
+    if (unitType === "SQUARE") return null;
     if (unitType === "CUBE") {
       const pieces = Math.round(quantity * selectedVariant.piecesPerCube);
       return `≈ ${pieces} шт`;
@@ -278,34 +293,31 @@ export function VariantSelector({
       {/* Unit type toggle (only if BOTH) */}
       {saleUnit === "BOTH" && (
         <div>
-          <h3 className="font-medium mb-3">Единица измерения</h3>
+          <h3 className="font-medium mb-3">{"\u0415\u0434\u0438\u043d\u0438\u0446\u0430 \u0438\u0437\u043c\u0435\u0440\u0435\u043d\u0438\u044f"}</h3>
           <div className="inline-flex rounded-xl border border-border p-1 bg-muted">
-            <button
-              onClick={() => { setUnitType("CUBE"); setQuantity(normalizeQuantityForUnit(1, "CUBE", selectedVariant)); }}
-              disabled={!canUseCube}
-              className={cn(
-                "px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-all",
-                unitType === "CUBE"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-                !canUseCube && "pointer-events-none opacity-40"
-              )}
-            >
-              м³ (куб)
-            </button>
-            <button
-              onClick={() => { setUnitType("PIECE"); setQuantity(normalizeQuantityForUnit(1, "PIECE", selectedVariant)); }}
-              disabled={!canUsePiece}
-              className={cn(
-                "px-4 py-2.5 sm:py-2 rounded-lg text-sm font-medium transition-all",
-                unitType === "PIECE"
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-                !canUsePiece && "pointer-events-none opacity-40"
-              )}
-            >
-              шт (штука)
-            </button>
+            {[
+              { unit: "CUBE" as const, enabled: canUseCube },
+              { unit: "SQUARE" as const, enabled: canUseSquare },
+              { unit: "PIECE" as const, enabled: canUsePiece },
+            ].map(({ unit, enabled }) => (
+              <button
+                key={unit}
+                onClick={() => {
+                  setUnitType(unit);
+                  setQuantity(normalizeQuantityForUnit(1, unit, selectedVariant));
+                }}
+                disabled={!enabled}
+                className={cn(
+                  "px-4 py-2.5 sm:py-2 rounded-xl border text-sm font-medium transition-colors",
+                  unitType === unit
+                    ? "border-primary/35 bg-primary/10 text-primary"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                  !enabled && "pointer-events-none opacity-40"
+                )}
+              >
+                {getUnitLabel(unit)}
+              </button>
+            ))}
           </div>
         </div>
       )}
@@ -316,7 +328,7 @@ export function VariantSelector({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-muted-foreground">
-                Цена за {unitType === "CUBE" ? "1 м³" : "1 шт"}
+                {"\u0426\u0435\u043d\u0430 \u0437\u0430"} {getUnitTitle(unitType)}
               </p>
               <p className="text-2xl sm:text-3xl font-display font-bold text-primary">
                 {formatPrice(Number(currentPrice))}
@@ -324,7 +336,7 @@ export function VariantSelector({
             </div>
             {totalPrice > 0 && quantity !== 1 && (
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Итого за {quantity} {unitType === "CUBE" ? "м³" : "шт"}</p>
+                <p className="text-sm text-muted-foreground">{"\u0418\u0442\u043e\u0433\u043e \u0437\u0430"} {quantity} {getUnitLabel(unitType)}</p>
                 <p className="text-2xl font-display font-bold">{formatPrice(totalPrice)}</p>
               </div>
             )}
@@ -338,7 +350,7 @@ export function VariantSelector({
       {/* Quantity */}
       <div>
         <h3 className="font-medium mb-3">
-          Количество ({unitType === "CUBE" ? "м³" : "шт"})
+          {"\u041a\u043e\u043b\u0438\u0447\u0435\u0441\u0442\u0432\u043e"} ({getUnitLabel(unitType)})
         </h3>
         <div className="flex items-center gap-3">
           <div className="flex items-center border border-border rounded-xl overflow-hidden">
@@ -356,8 +368,8 @@ export function VariantSelector({
                 if (!isNaN(v) && v > 0) setQuantity(normalizeQuantityForUnit(v, unitType, selectedVariant));
               }}
               className="w-20 text-center text-base py-3 bg-background border-x border-border font-medium focus:outline-none"
-              step={unitType === "CUBE" ? "0.1" : "1"}
-              min={unitType === "CUBE" ? "0.1" : "1"}
+              step={quantityStep(unitType)}
+              min={quantityStep(unitType)}
             />
             <button
               onClick={() => adjustQty(1)}
@@ -393,7 +405,7 @@ export function VariantSelector({
             <span className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-1 duration-200">
               <Check className="w-5 h-5 shrink-0" />
               <span className="truncate">
-                {quantity} {unitType === "CUBE" ? "м³" : "шт"} · {formatPrice(addedTotal)}
+                {quantity} {getUnitLabel(unitType)} {"\u00b7"} {formatPrice(addedTotal)}
               </span>
             </span>
           ) : !selectedVariant || !isProductVariantPurchasable(selectedVariant) ? (

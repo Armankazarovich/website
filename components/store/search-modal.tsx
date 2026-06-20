@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Search, X, Package, Loader2 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { PopupPortal } from "@/components/ui/popup-portal";
+import { getSaleUnitPreferredOrder, getUnitLabel, getVariantUnitPrice, type ProductUnitType } from "@/lib/product-units";
 
 interface SearchResult {
   id: string;
@@ -14,7 +15,7 @@ interface SearchResult {
   category: { name: string };
   images: string[];
   saleUnit: string;
-  variants: { pricePerCube: number | null; pricePerPiece: number | null }[];
+  variants: { pricePerCube: number | null; pricePerPiece: number | null; pricePerSquareMeter?: number | null }[];
 }
 
 interface SearchModalProps {
@@ -22,21 +23,18 @@ interface SearchModalProps {
 }
 
 function minPriceInfo(result: SearchResult) {
-  const preferredUnit = result.saleUnit === "PIECE" ? "PIECE" : "CUBE";
-  const fallbackUnit = preferredUnit === "CUBE" ? "PIECE" : "CUBE";
-  const findMin = (unit: "CUBE" | "PIECE") =>
+  const findMin = (unit: ProductUnitType) =>
     result.variants.reduce((min, variant) => {
-      const price = unit === "CUBE" ? variant.pricePerCube : variant.pricePerPiece;
+      const price = getVariantUnitPrice(variant, unit);
       return price !== null && price < min ? price : min;
     }, Infinity);
 
-  const preferredPrice = findMin(preferredUnit);
-  if (preferredPrice !== Infinity) {
-    return { price: preferredPrice, unit: preferredUnit === "CUBE" ? "м³" : "шт" };
+  for (const unit of getSaleUnitPreferredOrder(result.saleUnit)) {
+    const price = findMin(unit);
+    if (price !== Infinity) return { price, unit: getUnitLabel(unit) };
   }
 
-  const fallbackPrice = findMin(fallbackUnit);
-  return fallbackPrice !== Infinity ? { price: fallbackPrice, unit: fallbackUnit === "CUBE" ? "м³" : "шт" } : null;
+  return null;
 }
 
 export function SearchModal({ onClose }: SearchModalProps) {

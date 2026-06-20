@@ -25,19 +25,30 @@ import { PopupPortal } from "@/components/ui/popup-portal";
 import { useAdminPageHeader } from "@/components/admin/admin-page-actions";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { buildMarketPriceIntelligence, type MarketPricePoint } from "@/lib/market-price-intelligence";
+import {
+  getSaleUnitPreferredOrder,
+  getUnitLabel,
+  getVariantUnitPrice,
+  pickVariantUnit,
+  quantityStepForUnit,
+  saleUnitAllows,
+  type ProductSaleUnit,
+  type ProductUnitType,
+} from "@/lib/product-units";
 
 type Variant = {
   id: string;
   size: string;
   pricePerCube: number | null;
   pricePerPiece: number | null;
+  pricePerSquareMeter: number | null;
   inStock: boolean;
 };
 
 type Product = {
   id: string;
   name: string;
-  saleUnit: "CUBE" | "PIECE" | "BOTH";
+  saleUnit: ProductSaleUnit;
   category?: { name: string; slug: string };
   variants: Variant[];
 };
@@ -46,7 +57,7 @@ type CartItem = {
   variantId: string;
   productName: string;
   variantSize: string;
-  unitType: "CUBE" | "PIECE";
+  unitType: ProductUnitType;
   quantity: number;
   price: number;
 };
@@ -84,7 +95,7 @@ type CustomerLookup = {
 
 type TerminalMode = "REGISTER" | "ORDER" | "MARKET";
 type OrderPanelView = "cart" | "checkout";
-type MarketFilter = "all" | "inStock" | "withPrice" | "cube" | "piece" | "inCart";
+type MarketFilter = "all" | "inStock" | "withPrice" | "cube" | "square" | "piece" | "inCart";
 
 type DemandProviderState = {
   key: string;
@@ -137,6 +148,7 @@ const MARKET_FILTERS: Array<{ key: MarketFilter; label: string; hint: string }> 
   { key: "inStock", label: "В наличии", hint: "Можно добавить в заказ сейчас" },
   { key: "withPrice", label: "С ценой", hint: "Позиции без ручного уточнения цены" },
   { key: "cube", label: "м³", hint: "Продается кубами" },
+  { key: "square", label: "м²", hint: "Продается квадратными метрами" },
   { key: "piece", label: "шт", hint: "Продается поштучно" },
   { key: "inCart", label: "В заказе", hint: "Уже добавлено в корзину" },
 ];
@@ -147,7 +159,11 @@ function toPositivePrice(value: number | null | undefined) {
 }
 
 function collectVariantPrices(variant: Variant) {
-  return [toPositivePrice(variant.pricePerCube), toPositivePrice(variant.pricePerPiece)].filter((price): price is number => price !== null);
+  return [
+    toPositivePrice(variant.pricePerCube),
+    toPositivePrice(variant.pricePerSquareMeter),
+    toPositivePrice(variant.pricePerPiece),
+  ].filter((price): price is number => price !== null);
 }
 
 function collectProductPrices(product: Product) {
@@ -162,8 +178,9 @@ function collectMarketPricePoints(
   return product.variants.flatMap((variant) => {
     const points: MarketPricePoint[] = [];
     const cubePrice = toPositivePrice(variant.pricePerCube);
+    const squarePrice = toPositivePrice(variant.pricePerSquareMeter);
     const piecePrice = toPositivePrice(variant.pricePerPiece);
-    if (cubePrice && product.saleUnit !== "PIECE") {
+    if (cubePrice && saleUnitAllows(product.saleUnit, "CUBE")) {
       points.push({
         unit: "m3",
         price: cubePrice,
@@ -173,7 +190,17 @@ function collectMarketPricePoints(
         inCartQuantity,
       });
     }
-    if (piecePrice && product.saleUnit !== "CUBE") {
+    if (squarePrice && saleUnitAllows(product.saleUnit, "SQUARE")) {
+      points.push({
+        unit: "m2",
+        price: squarePrice,
+        productName: product.name,
+        category,
+        inStock: variant.inStock,
+        inCartQuantity,
+      });
+    }
+    if (piecePrice && saleUnitAllows(product.saleUnit, "PIECE")) {
       points.push({
         unit: "piece",
         price: piecePrice,
@@ -185,6 +212,15 @@ function collectMarketPricePoints(
     }
     return points;
   });
+}
+
+function getSaleUnitLabel(saleUnit: ProductSaleUnit) {
+  if (saleUnit === "BOTH") return `${getUnitLabel("CUBE")}/${getUnitLabel("SQUARE")}/${getUnitLabel("PIECE")}`;
+  return getUnitLabel(saleUnit);
+}
+
+function getQuantityDelta(unitType: ProductUnitType) {
+  return unitType === "PIECE" ? 1 : 0.5;
 }
 
 type TerminalWorkstation = {
@@ -587,7 +623,7 @@ export default function NewPhoneOrderPage() {
   const [productSearch, setProductSearch] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
   const [selectedVariantId, setSelectedVariantId] = useState("");
-  const [unitType, setUnitType] = useState<"CUBE" | "PIECE">("CUBE");
+  const [unitType, setUnitType] = useState<ProductUnitType>("CUBE");
   const [quantity, setQuantity] = useState(1);
   const [activeCategory, setActiveCategory] = useState<string>("all");
   const [marketCategory, setMarketCategory] = useState<string>("all");
@@ -697,7 +733,7 @@ export default function NewPhoneOrderPage() {
               typeof item.variantId === "string" &&
               typeof item.productName === "string" &&
               typeof item.variantSize === "string" &&
-              (item.unitType === "CUBE" || item.unitType === "PIECE") &&
+              (item.unitType === "CUBE" || item.unitType === "PIECE" || item.unitType === "SQUARE") &&
               Number.isFinite(Number(item.quantity)) &&
               Number.isFinite(Number(item.price))
             )
@@ -1009,10 +1045,13 @@ export default function NewPhoneOrderPage() {
       return collectProductPrices(product).length > 0;
     }
     if (filter === "cube") {
-      return product.saleUnit !== "PIECE" && product.variants.some((variant) => toPositivePrice(variant.pricePerCube) !== null);
+      return saleUnitAllows(product.saleUnit, "CUBE") && product.variants.some((variant) => toPositivePrice(variant.pricePerCube) !== null);
+    }
+    if (filter === "square") {
+      return saleUnitAllows(product.saleUnit, "SQUARE") && product.variants.some((variant) => toPositivePrice(variant.pricePerSquareMeter) !== null);
     }
     if (filter === "piece") {
-      return product.saleUnit !== "CUBE" && product.variants.some((variant) => toPositivePrice(variant.pricePerPiece) !== null);
+      return saleUnitAllows(product.saleUnit, "PIECE") && product.variants.some((variant) => toPositivePrice(variant.pricePerPiece) !== null);
     }
     if (filter === "inCart") return isProductInCart(product);
     return true;
@@ -1258,25 +1297,22 @@ export default function NewPhoneOrderPage() {
     );
   }, [terminalMode]);
 
-  const availableUnits = useMemo((): Array<"CUBE" | "PIECE"> => {
-    if (!selectedProduct) return ["CUBE", "PIECE"];
-    const { saleUnit } = selectedProduct;
-    const hasCube = saleUnit !== "PIECE" && (selectedVariant ? selectedVariant.pricePerCube != null : true);
-    const hasPiece = saleUnit !== "CUBE" && (selectedVariant ? selectedVariant.pricePerPiece != null : true);
-    const units: Array<"CUBE" | "PIECE"> = [];
-    if (hasCube) units.push("CUBE");
-    if (hasPiece) units.push("PIECE");
-    return units.length > 0 ? units : ["CUBE"];
+  const availableUnits = useMemo((): ProductUnitType[] => {
+    if (!selectedProduct) return ["CUBE", "PIECE", "SQUARE"];
+    const allowedUnits = getSaleUnitPreferredOrder(selectedProduct.saleUnit)
+      .filter((unit) => saleUnitAllows(selectedProduct.saleUnit, unit));
+    const pricedUnits = allowedUnits.filter((unit) => !selectedVariant || getVariantUnitPrice(selectedVariant, unit) !== null);
+    return pricedUnits.length > 0 ? pricedUnits : allowedUnits.length > 0 ? allowedUnits : ["CUBE"];
   }, [selectedProduct, selectedVariant]);
 
   const handleSelectProduct = useCallback((product: Product) => {
     setSelectedProductId(product.id);
     setSelectedVariantId("");
     setProductSearch("");
-    if (product.saleUnit === "CUBE") setUnitType("CUBE");
-    else if (product.saleUnit === "PIECE") setUnitType("PIECE");
     // auto-select first in-stock variant
     const firstVariant = product.variants.find((v) => v.inStock) || product.variants[0];
+    const nextUnit = pickVariantUnit(firstVariant, product.saleUnit) ?? getSaleUnitPreferredOrder(product.saleUnit)[0] ?? "CUBE";
+    setUnitType(nextUnit);
     if (firstVariant) setSelectedVariantId(firstVariant.id);
   }, []);
 
@@ -1284,16 +1320,13 @@ export default function NewPhoneOrderPage() {
     if (!selectedProduct) return;
     const variant = selectedProduct.variants.find((v) => v.id === selectedVariantId);
     if (!variant) return;
-    const hasCube = selectedProduct.saleUnit !== "PIECE" && variant.pricePerCube != null;
-    const hasPiece = selectedProduct.saleUnit !== "CUBE" && variant.pricePerPiece != null;
-    if (unitType === "CUBE" && !hasCube && hasPiece) setUnitType("PIECE");
-    if (unitType === "PIECE" && !hasPiece && hasCube) setUnitType("CUBE");
+    const nextUnit = pickVariantUnit(variant, selectedProduct.saleUnit, unitType);
+    if (nextUnit && nextUnit !== unitType) setUnitType(nextUnit);
   }, [selectedProduct, selectedVariantId, unitType]);
 
   const itemPrice = useMemo(() => {
     if (!selectedVariant) return 0;
-    if (unitType === "CUBE") return Number(selectedVariant.pricePerCube ?? 0);
-    return Number(selectedVariant.pricePerPiece ?? 0);
+    return getVariantUnitPrice(selectedVariant, unitType) ?? 0;
   }, [selectedVariant, unitType]);
 
   const addItem = useCallback(() => {
@@ -2411,7 +2444,7 @@ export default function NewPhoneOrderPage() {
                 }`}>
                   {visibleCatalogProducts.map((p) => {
                     const minP = p.variants.reduce((mn, v) => {
-                      const price = v.pricePerCube ?? v.pricePerPiece ?? Infinity;
+                      const price = Math.min(...collectVariantPrices(v), Infinity);
                       return price < mn ? price : mn;
                     }, Infinity);
                     const isSelected = selectedProductId === p.id;
@@ -2439,7 +2472,7 @@ export default function NewPhoneOrderPage() {
                           </p>
                         )}
                         <p className={`mt-0.5 text-xs ${isSelected ? "text-primary" : "text-muted-foreground"}`}>
-                          {p.saleUnit === "CUBE" ? "м³" : p.saleUnit === "PIECE" ? "шт" : "м³/шт"} · {p.variants.length} разм.
+                          {getSaleUnitLabel(p.saleUnit)} · {p.variants.length} разм.
                         </p>
                       </button>
                     );
@@ -2470,7 +2503,7 @@ export default function NewPhoneOrderPage() {
                         <div className="min-w-0">
                           <p className="font-mono text-sm font-semibold text-primary">{selectedVariant.size}</p>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {fmt(itemPrice)} / {unitType === "CUBE" ? "м³" : "шт"}
+                            {fmt(itemPrice)} / {getUnitLabel(unitType)}
                           </p>
                         </div>
                         <p className="shrink-0 text-lg font-bold text-primary">{fmt(itemPrice * quantity)}</p>
@@ -2495,7 +2528,7 @@ export default function NewPhoneOrderPage() {
                     </p>
                     <div className="grid grid-cols-2 gap-2">
                       {selectedProduct.variants.map((v) => {
-                        const price = unitType === "CUBE" ? v.pricePerCube : v.pricePerPiece;
+                        const price = getVariantUnitPrice(v, unitType);
                         const isSelected = selectedVariantId === v.id;
                         const canUseVariant = v.inStock && price != null && Number(price) > 0;
                         return (
@@ -2541,7 +2574,7 @@ export default function NewPhoneOrderPage() {
                             onClick={() => setUnitType(u)}
                             className={`h-11 rounded-xl border text-sm font-semibold transition-colors ${unitType === u ? SOFT_SELECTED_CLASS : "border-border hover:border-primary/30"}`}
                           >
-                            {u === "CUBE" ? "м³" : "шт"}
+                            {getUnitLabel(u)}
                           </button>
                         ))}
                       </div>
@@ -2552,17 +2585,17 @@ export default function NewPhoneOrderPage() {
                   <div>
                     <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Количество</p>
                     <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => setQuantity((q) => Math.max(0.1, +(q - (unitType === "CUBE" ? 0.5 : 1)).toFixed(2)))}
+                      <button type="button" onClick={() => setQuantity((q) => Math.max(0.1, +(q - getQuantityDelta(unitType)).toFixed(2)))}
                         className="flex h-11 w-11 items-center justify-center rounded-xl border border-border transition-colors hover:bg-primary/[0.08]"><Minus className="h-4 w-4" /></button>
                       <input
                         type="number"
                         min={0.01}
-                        step={unitType === "CUBE" ? 0.1 : 1}
+                        step={quantityStepForUnit(unitType)}
                         value={quantity}
                         onChange={(e) => setQuantity(Number(e.target.value))}
                         className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-background text-center text-base font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20"
                       />
-                      <button type="button" onClick={() => setQuantity((q) => +(q + (unitType === "CUBE" ? 0.5 : 1)).toFixed(2))}
+                      <button type="button" onClick={() => setQuantity((q) => +(q + getQuantityDelta(unitType)).toFixed(2))}
                         className="flex h-11 w-11 items-center justify-center rounded-xl border border-border transition-colors hover:bg-primary/[0.08]"><Plus className="h-4 w-4" /></button>
                     </div>
                     {selectedVariant && itemPrice > 0 && (
@@ -2571,7 +2604,7 @@ export default function NewPhoneOrderPage() {
                           <span className="text-sm text-muted-foreground">Сумма</span>
                           <span className="text-base font-bold text-primary">{fmt(itemPrice * quantity)}</span>
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">{fmt(itemPrice)} / {unitType === "CUBE" ? "м³" : "шт"}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{fmt(itemPrice)} / {getUnitLabel(unitType)}</p>
                       </div>
                     )}
                   </div>
@@ -3091,15 +3124,15 @@ export default function NewPhoneOrderPage() {
                       <div className="flex items-center gap-1.5">
                         <button
                           type="button"
-                          onClick={() => updateQty(i, Math.max(0.1, +(item.quantity - (item.unitType === "CUBE" ? 0.5 : 1)).toFixed(2)))}
+                          onClick={() => updateQty(i, Math.max(0.1, +(item.quantity - getQuantityDelta(item.unitType)).toFixed(2)))}
                           className="flex h-10 w-10 items-center justify-center rounded-xl border border-border transition-colors hover:bg-primary/[0.08]"
                         ><Minus className="h-4 w-4" /></button>
                         <span className="text-sm font-mono w-14 text-center font-semibold">
-                          {item.quantity} {item.unitType === "CUBE" ? "м³" : "шт"}
+                          {item.quantity} {getUnitLabel(item.unitType)}
                         </span>
                         <button
                           type="button"
-                          onClick={() => updateQty(i, +(item.quantity + (item.unitType === "CUBE" ? 0.5 : 1)).toFixed(2))}
+                          onClick={() => updateQty(i, +(item.quantity + getQuantityDelta(item.unitType)).toFixed(2))}
                           className="flex h-10 w-10 items-center justify-center rounded-xl border border-border transition-colors hover:bg-primary/[0.08]"
                         ><Plus className="h-4 w-4" /></button>
                       </div>
@@ -4087,7 +4120,7 @@ export default function NewPhoneOrderPage() {
                 </p>
                 <div className="grid grid-cols-3 gap-2">
                   {selectedProduct.variants.map((v) => {
-                    const price = unitType === "CUBE" ? v.pricePerCube : v.pricePerPiece;
+                    const price = getVariantUnitPrice(v, unitType);
                     const isSel = selectedVariantId === v.id;
                     const canUseVariant = v.inStock && price != null && Number(price) > 0;
                     return (
@@ -4114,7 +4147,7 @@ export default function NewPhoneOrderPage() {
                     {availableUnits.map((u) => (
                       <button key={u} type="button" onClick={() => setUnitType(u)}
                         className={`flex-1 py-3 rounded-xl text-sm font-medium border transition-colors ${unitType === u ? SOFT_SELECTED_CLASS : "border-border hover:border-primary/30"}`}>
-                        {u === "CUBE" ? "м³" : "шт"}
+                        {getUnitLabel(u)}
                       </button>
                     ))}
                   </div>
@@ -4126,13 +4159,13 @@ export default function NewPhoneOrderPage() {
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase mb-2">Количество</p>
                 <div className="flex items-center gap-2">
                   <button type="button"
-                    onClick={() => setQuantity((q) => Math.max(0.1, +(q - (unitType === "CUBE" ? 0.5 : 1)).toFixed(2)))}
+                    onClick={() => setQuantity((q) => Math.max(0.1, +(q - getQuantityDelta(unitType)).toFixed(2)))}
                     className="w-12 h-12 rounded-xl border border-border flex items-center justify-center text-xl font-bold hover:bg-primary/[0.08] active:scale-95">−</button>
-                  <input type="number" min={0.01} step={unitType === "CUBE" ? 0.1 : 1} value={quantity}
+                  <input type="number" min={0.01} step={quantityStepForUnit(unitType)} value={quantity}
                     onChange={(e) => setQuantity(Number(e.target.value))}
                     className="flex-1 text-center py-3 text-base bg-background border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20" />
                   <button type="button"
-                    onClick={() => setQuantity((q) => +(q + (unitType === "CUBE" ? 0.5 : 1)).toFixed(2))}
+                    onClick={() => setQuantity((q) => +(q + getQuantityDelta(unitType)).toFixed(2))}
                     className="w-12 h-12 rounded-xl border border-border flex items-center justify-center text-xl font-bold hover:bg-primary/[0.08] active:scale-95">+</button>
                 </div>
                 {selectedVariant && itemPrice > 0 && (
@@ -4140,7 +4173,7 @@ export default function NewPhoneOrderPage() {
                     <span className="text-sm text-muted-foreground">Сумма</span>
                     <div className="text-right">
                       <p className="text-lg font-bold text-primary">{fmt(itemPrice * quantity)}</p>
-                      <p className="text-xs text-muted-foreground">{fmt(itemPrice)} / {unitType === "CUBE" ? "м³" : "шт"}</p>
+                      <p className="text-xs text-muted-foreground">{fmt(itemPrice)} / {getUnitLabel(unitType)}</p>
                     </div>
                   </div>
                 )}

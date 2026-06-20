@@ -125,10 +125,14 @@ export async function POST(req: NextRequest) {
       const productName = row["Товар"]?.trim() || row["name"]?.trim();
       const pricePerCube = row["Цена м³"]?.trim() || row["pricePerCube"]?.trim();
       const pricePerPiece = row["Цена шт"]?.trim() || row["pricePerPiece"]?.trim();
+      const pricePerSquareMeter =
+        row["\u0426\u0435\u043d\u0430 \u043c\u00b2"]?.trim() ||
+        row["\u0426\u0435\u043d\u0430 \u043c2"]?.trim() ||
+        row["pricePerSquareMeter"]?.trim();
       const piecesPerCube = row["Шт/м³"]?.trim() || row["piecesPerCube"]?.trim();
       const inStockRaw = row["В наличии"]?.trim() ?? row["inStock"]?.trim() ?? "1";
       const saleUnitRaw = (row["Ед.изм."]?.trim() || row["saleUnit"]?.trim() || "BOTH").toUpperCase();
-      const saleUnit = ["CUBE", "PIECE", "BOTH"].includes(saleUnitRaw) ? saleUnitRaw as "CUBE" | "PIECE" | "BOTH" : "BOTH";
+      const saleUnit = ["CUBE", "PIECE", "SQUARE", "BOTH"].includes(saleUnitRaw) ? saleUnitRaw as "CUBE" | "PIECE" | "SQUARE" | "BOTH" : "BOTH";
       const inStock = inStockRaw === "1" || inStockRaw.toLowerCase() === "true" || inStockRaw.toLowerCase() === "да";
 
       if (!size && !slug) { errors.push(`Строка без размера и slug — пропущена`); continue; }
@@ -136,6 +140,7 @@ export async function POST(req: NextRequest) {
       // Validate numeric fields
       const parsedPricePerCube = parseNumberField(pricePerCube);
       const parsedPricePerPiece = parseNumberField(pricePerPiece);
+      const parsedPricePerSquareMeter = parseNumberField(pricePerSquareMeter);
       const parsedPiecesPerCube = parseNumberField(piecesPerCube, true);
 
       if (parsedPricePerCube !== null && (isNaN(parsedPricePerCube) || parsedPricePerCube < 0)) {
@@ -143,6 +148,9 @@ export async function POST(req: NextRequest) {
       }
       if (parsedPricePerPiece !== null && (isNaN(parsedPricePerPiece) || parsedPricePerPiece < 0)) {
         errors.push(`Некорректная цена шт "${pricePerPiece}" для ${slug || size}`); continue;
+      }
+      if (parsedPricePerSquareMeter !== null && (isNaN(parsedPricePerSquareMeter) || parsedPricePerSquareMeter < 0)) {
+        errors.push(`Invalid square meter price "${pricePerSquareMeter}" for ${slug || size}`); continue;
       }
       if (parsedPiecesPerCube !== null && (isNaN(parsedPiecesPerCube) || parsedPiecesPerCube < 0)) {
         errors.push(`Некорректное кол-во шт/м³ "${piecesPerCube}" для ${slug || size}`); continue;
@@ -152,6 +160,7 @@ export async function POST(req: NextRequest) {
         size: size || "—",
         pricePerCube: parsedPricePerCube,
         pricePerPiece: parsedPricePerPiece,
+        pricePerSquareMeter: parsedPricePerSquareMeter,
         piecesPerCube: parsedPiecesPerCube,
         inStock,
       };

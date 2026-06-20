@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, X, Check, Loader2, FileDown, Trash2, Plus } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/use-toast";
+import { getUnitLabel, getVariantUnitPrice, type ProductUnitType } from "@/lib/product-units";
 
 type OrderItem = {
   id: string;
@@ -29,17 +30,23 @@ type OrderEditable = {
   items: OrderItem[];
 };
 
-type Variant = { id: string; size: string; pricePerCube: number | null; pricePerPiece: number | null; inStock?: boolean };
-type Product = { id: string; name: string; saleUnit: "CUBE" | "PIECE" | "BOTH"; variants: Variant[] };
+type Variant = { id: string; size: string; pricePerCube: number | null; pricePerPiece: number | null; pricePerSquareMeter?: number | null; inStock?: boolean };
+type Product = { id: string; name: string; saleUnit: "CUBE" | "PIECE" | "SQUARE" | "BOTH"; variants: Variant[] };
 
 type NewItem = {
   variantId: string;
   productName: string;
   variantSize: string;
-  unitType: "CUBE" | "PIECE";
+  unitType: ProductUnitType;
   quantity: number;
   price: number;
 };
+
+function orderUnitLabel(unitType: string) {
+  return unitType === "CUBE" || unitType === "PIECE" || unitType === "SQUARE"
+    ? getUnitLabel(unitType)
+    : unitType;
+}
 
 export function OrderEditPanel({ order }: { order: OrderEditable }) {
   const router = useRouter();
@@ -69,7 +76,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
   const [products, setProducts] = useState<Product[]>([]);
   const [selProductId, setSelProductId] = useState("");
   const [selVariantId, setSelVariantId] = useState("");
-  const [selUnit, setSelUnit] = useState<"CUBE" | "PIECE">("CUBE");
+  const [selUnit, setSelUnit] = useState<ProductUnitType>("CUBE");
   const [selQty, setSelQty] = useState(1);
 
   useEffect(() => {
@@ -88,20 +95,20 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
 
   const selProduct = products.find((p) => p.id === selProductId);
   const selVariant = selProduct?.variants.find((v) => v.id === selVariantId);
-  const selPrice = selVariant
-    ? Number(selUnit === "CUBE" ? selVariant.pricePerCube : selVariant.pricePerPiece) || 0
-    : 0;
+  const selPrice = selVariant ? getVariantUnitPrice(selVariant, selUnit) || 0 : 0;
 
   // Доступные единицы на основе saleUnit и наличия цен
-  const availableUnits = useMemo<("CUBE" | "PIECE")[]>(() => {
-    if (!selProduct) return ["CUBE", "PIECE"];
+  const availableUnits = useMemo<ProductUnitType[]>(() => {
+    if (!selProduct) return ["CUBE", "PIECE", "SQUARE"];
     const { saleUnit } = selProduct;
     if (saleUnit === "CUBE") return ["CUBE"];
     if (saleUnit === "PIECE") return ["PIECE"];
-    const units: ("CUBE" | "PIECE")[] = [];
+    if (saleUnit === "SQUARE") return ["SQUARE"];
+    const units: ProductUnitType[] = [];
     if (selVariant?.pricePerCube != null) units.push("CUBE");
+    if (selVariant?.pricePerSquareMeter != null) units.push("SQUARE");
     if (selVariant?.pricePerPiece != null) units.push("PIECE");
-    return units.length > 0 ? units : ["CUBE", "PIECE"];
+    return units.length > 0 ? units : ["CUBE", "PIECE", "SQUARE"];
   }, [selProduct, selVariant]);
 
   const totalAmount = useMemo(() => {
@@ -350,7 +357,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                         <p className="text-xs text-muted-foreground">{item.variantSize}</p>
                       </td>
                       <td className="px-4 py-2.5 text-muted-foreground text-sm">
-                        {item.quantity} {item.unitType === "CUBE" ? "м³" : "шт"}
+                        {item.quantity} {orderUnitLabel(item.unitType)}
                       </td>
                       <td className="px-4 py-2.5 font-medium text-right">
                         {(item.quantity * item.price).toLocaleString("ru-RU")} ₽
@@ -378,7 +385,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                       <p className="text-xs text-muted-foreground">{item.variantSize}</p>
                     </td>
                     <td className="px-4 py-2.5 text-muted-foreground text-sm">
-                      {item.quantity} {item.unitType === "CUBE" ? "м³" : "шт"}
+                      {item.quantity} {orderUnitLabel(item.unitType)}
                     </td>
                     <td className="px-4 py-2.5 font-medium text-right">
                       {(item.quantity * item.price).toLocaleString("ru-RU")} ₽
@@ -427,7 +434,7 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                     const p = products.find((pr) => pr.id === value);
                     setSelProductId(value);
                     setSelVariantId("");
-                    if (p) setSelUnit(p.saleUnit === "PIECE" ? "PIECE" : "CUBE");
+                    if (p) setSelUnit(p.saleUnit === "PIECE" ? "PIECE" : p.saleUnit === "SQUARE" ? "SQUARE" : "CUBE");
                   }}
                 >
                   <SelectTrigger className="h-[46px] text-base sm:text-sm">
@@ -451,15 +458,16 @@ export function OrderEditPanel({ order }: { order: OrderEditable }) {
                 </Select>
                 <Select
                   value={selUnit}
-                  onValueChange={(value) => setSelUnit(value as "CUBE" | "PIECE")}
+                  onValueChange={(value) => setSelUnit(value as ProductUnitType)}
                   disabled={availableUnits.length <= 1}
                 >
                   <SelectTrigger className="h-[46px] text-base sm:text-sm">
                     <SelectValue placeholder="Единица" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableUnits.includes("CUBE") && <SelectItem value="CUBE">м³ (кубометры)</SelectItem>}
-                    {availableUnits.includes("PIECE") && <SelectItem value="PIECE">шт (штуки)</SelectItem>}
+                    {availableUnits.includes("CUBE") && <SelectItem value="CUBE">{"\u043c\u00b3 (\u043a\u0443\u0431\u043e\u043c\u0435\u0442\u0440\u044b)"}</SelectItem>}
+                    {availableUnits.includes("SQUARE") && <SelectItem value="SQUARE">{"\u043c\u00b2 (\u043a\u0432\u0430\u0434\u0440\u0430\u0442\u043d\u044b\u0435 \u043c\u0435\u0442\u0440\u044b)"}</SelectItem>}
+                    {availableUnits.includes("PIECE") && <SelectItem value="PIECE">{"\u0448\u0442 (\u0448\u0442\u0443\u043a\u0438)"}</SelectItem>}
                   </SelectContent>
                 </Select>
                 <input

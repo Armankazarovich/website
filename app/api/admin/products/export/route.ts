@@ -40,6 +40,7 @@ export async function GET(req: NextRequest) {
         v.size,
         v.pricePerCube != null ? String(v.pricePerCube) : "",
         v.pricePerPiece != null ? String(v.pricePerPiece) : "",
+        v.pricePerSquareMeter != null ? String(v.pricePerSquareMeter) : "",
         v.piecesPerCube != null ? String(v.piecesPerCube) : "",
         v.inStock ? "1" : "0",
         product.saleUnit,
@@ -48,7 +49,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const headers = ["id", "slug", "Категория", "Товар", "Размер", "Цена м³", "Цена шт", "Шт/м³", "В наличии", "Ед.изм.", "Активен"];
+  const headers = ["id", "slug", "Категория", "Товар", "Размер", "Цена м³", "Цена шт", "Цена м²", "Шт/м³", "В наличии", "Ед.изм.", "Активен"];
 
   if (format === "csv") {
     const csvRows = [headers, ...rows].map((row) =>

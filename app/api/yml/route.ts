@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
 import { getCurrentTenantId } from "@/lib/tenant-context";
+import { getVariantUnitPrice, pickVariantUnit } from "@/lib/product-units";
 
 export async function GET() {
   const tenantId = getCurrentTenantId();
@@ -36,7 +37,8 @@ export async function GET() {
     if (!categoryYmlId || !product.variants.length) continue;
 
     for (const variant of product.variants) {
-      const price = variant.pricePerCube ?? variant.pricePerPiece;
+      const unit = pickVariantUnit(variant, product.saleUnit);
+      const price = unit ? getVariantUnitPrice(variant, unit) : null;
       if (!price) continue;
 
       const productUrl = `${shopUrl}/product/${product.slug}`;
@@ -57,6 +59,7 @@ export async function GET() {
       <vendor>${escapeXml(shopName)}</vendor>
       <param name="Размер">${escapeXml(variant.size)}</param>
       ${variant.pricePerCube ? `<param name="Цена за м3">${Number(variant.pricePerCube).toFixed(0)} ₽</param>` : ""}
+      ${variant.pricePerSquareMeter ? `<param name="\u0426\u0435\u043d\u0430 \u0437\u0430 \u043c2">${Number(variant.pricePerSquareMeter).toFixed(0)} \u20bd</param>` : ""}
       ${variant.pricePerPiece ? `<param name="Цена за шт">${Number(variant.pricePerPiece).toFixed(0)} ₽</param>` : ""}
       ${variant.piecesPerCube ? `<param name="Шт в м3">${variant.piecesPerCube}</param>` : ""}
     </offer>`;

@@ -100,6 +100,7 @@ model ProductVariant {
   size               String
   pricePerCube       Decimal?    @db.Decimal(10, 2)
   pricePerPiece      Decimal?    @db.Decimal(10, 2)
+  pricePerSquareMeter Decimal?   @db.Decimal(10, 2)
   piecesPerCube      Int?
   inStock            Boolean     @default(true)
   stockQty           Int?
@@ -161,6 +162,7 @@ model SupplierOffer {
   variantId     String
   pricePerCube  Decimal?       @db.Decimal(10, 2)
   pricePerPiece Decimal?       @db.Decimal(10, 2)
+  pricePerSquareMeter Decimal? @db.Decimal(10, 2)
   stockQty      Int?
   minOrderQty   Decimal?       @db.Decimal(10, 3)
   leadTimeDays  Int?
@@ -1103,12 +1105,14 @@ enum SupplierTrustLevel {
 enum SaleUnit {
   CUBE
   PIECE
+  SQUARE
   BOTH
 }
 
 enum UnitType {
   CUBE
   PIECE
+  SQUARE
 }
 
 enum OrderStatus {

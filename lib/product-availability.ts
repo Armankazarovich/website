@@ -11,7 +11,7 @@ export type ProductAvailabilityVariant = {
   piecesPerCube?: number | null;
 };
 
-export type ProductUnitType = "CUBE" | "PIECE";
+export type ProductUnitType = "CUBE" | "PIECE" | "SQUARE";
 
 export type ProductAvailability = {
   status: ProductAvailabilityStatus;

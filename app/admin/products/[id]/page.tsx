@@ -38,6 +38,7 @@ type Variant = {
   size: string;
   pricePerCube: string;
   pricePerPiece: string;
+  pricePerSquareMeter: string;
   piecesPerCube: string;
   inStock: boolean;
   _tempId?: string;
@@ -60,6 +61,7 @@ type Product = {
     size: string;
     pricePerCube: string | null;
     pricePerPiece: string | null;
+    pricePerSquareMeter: string | null;
     piecesPerCube: number | null;
     inStock: boolean;
   }>;
@@ -169,14 +171,14 @@ function calcReadiness(p: {
   categoryId: string;
   slug: string;
   images: string[];
-  variants: Array<{ size: string; pricePerCube: string; pricePerPiece: string }>;
+  variants: Array<{ size: string; pricePerCube: string; pricePerPiece: string; pricePerSquareMeter?: string }>;
   shortDescription: string;
   description: string;
 }): { percent: number; missing: string[] } {
   const checks: Array<{ ok: boolean; label: string }> = [
     { ok: !!p.name?.trim() && !!p.categoryId && !!p.slug?.trim(), label: "Название, категория, URL" },
     { ok: (p.images?.length ?? 0) > 0, label: "Хотя бы одно фото" },
-    { ok: (p.variants?.length ?? 0) > 0 && p.variants.every(v => v.size && (v.pricePerCube || v.pricePerPiece)), label: "Размеры и цены" },
+    { ok: (p.variants?.length ?? 0) > 0 && p.variants.every(v => v.size && (v.pricePerCube || v.pricePerPiece || v.pricePerSquareMeter)), label: "Размеры и цены" },
     { ok: (p.shortDescription?.trim().length ?? 0) >= 55 && (p.shortDescription?.trim().length ?? 0) <= 155, label: "Короткое описание (55–155 символов)" },
     { ok: (p.description?.trim().length ?? 0) >= 180, label: "SEO-описание (от 180 символов)" },
   ];
@@ -293,6 +295,7 @@ export default function AdminProductEditPage() {
                 size: v.size,
                 pricePerCube: v.pricePerCube ? String(v.pricePerCube) : "",
                 pricePerPiece: v.pricePerPiece ? String(v.pricePerPiece) : "",
+                pricePerSquareMeter: v.pricePerSquareMeter ? String(v.pricePerSquareMeter) : "",
                 piecesPerCube: v.piecesPerCube ? String(v.piecesPerCube) : "",
                 inStock: v.inStock,
               }))
@@ -427,7 +430,8 @@ export default function AdminProductEditPage() {
         return;
       }
       const hasPrice = (v.pricePerCube != null && v.pricePerCube !== "") ||
-                       (v.pricePerPiece != null && v.pricePerPiece !== "");
+                       (v.pricePerPiece != null && v.pricePerPiece !== "") ||
+                       (v.pricePerSquareMeter != null && v.pricePerSquareMeter !== "");
       if (!hasPrice) {
         alert(`Вариант "${v.size}": укажите хотя бы одну цену (за м³ или за шт)`);
         return;
@@ -519,7 +523,7 @@ export default function AdminProductEditPage() {
   };
 
   const addVariant = () => setVariants((prev) => [...prev, {
-    size: "", pricePerCube: "", pricePerPiece: "", piecesPerCube: "", inStock: true,
+    size: "", pricePerCube: "", pricePerPiece: "", pricePerSquareMeter: "", piecesPerCube: "", inStock: true,
     _tempId: `temp-${Date.now()}`,
   }]);
 
@@ -579,18 +583,22 @@ export default function AdminProductEditPage() {
     setToast(changed ? "Варианты отсортированы по размеру" : "Уже отсортировано по размеру");
   };
 
-  // Массово изменить цены в % — по колонке (pricePerCube или pricePerPiece)
-  const bulkPriceAdjust = (percent: number, field: "pricePerCube" | "pricePerPiece") => {
-    const label = field === "pricePerCube" ? "цены за м³" : "цены за шт";
+  const bulkPriceAdjust = (percent: number, field: "pricePerCube" | "pricePerPiece" | "pricePerSquareMeter") => {
+    const label =
+      field === "pricePerCube"
+        ? "\u0446\u0435\u043d\u044b \u0437\u0430 \u043c\u00b3"
+        : field === "pricePerSquareMeter"
+          ? "\u0446\u0435\u043d\u044b \u0437\u0430 \u043c\u00b2"
+          : "\u0446\u0435\u043d\u044b \u0437\u0430 \u0448\u0442";
     const sign = percent > 0 ? "+" : "";
-    if (!confirm(`Изменить все ${label} на ${sign}${percent}%? Это применится только локально — сохраните товар чтобы применить.`)) return;
+    if (!confirm(`\u0418\u0437\u043c\u0435\u043d\u0438\u0442\u044c \u0432\u0441\u0435 ${label} \u043d\u0430 ${sign}${percent}%? \u0421\u043e\u0445\u0440\u0430\u043d\u0438\u0442\u0435 \u0442\u043e\u0432\u0430\u0440, \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u0438\u043c\u0435\u043d\u0438\u0442\u044c.`)) return;
     setVariants((prev) => prev.map(v => {
       const old = parseFloat(v[field] || "0");
       if (!old) return v;
       const next = Math.round(old * (1 + percent / 100));
       return { ...v, [field]: String(next) };
     }));
-    setToast(`Цены ${field === "pricePerCube" ? "за м³" : "за шт"} изменены на ${sign}${percent}%`);
+    setToast(`\u0426\u0435\u043d\u044b ${label.replace("\u0446\u0435\u043d\u044b ", "")} \u0438\u0437\u043c\u0435\u043d\u0435\u043d\u044b \u043d\u0430 ${sign}${percent}%`);
   };
 
   // Улучшить описание через AI (тот же endpoint что и в drawer)
@@ -624,22 +632,32 @@ export default function AdminProductEditPage() {
     const priced = variants.find((variant) => {
       const cube = Number(variant.pricePerCube || 0);
       const piece = Number(variant.pricePerPiece || 0);
-      return cube > 0 || piece > 0;
+      const square = Number(variant.pricePerSquareMeter || 0);
+      if (saleUnit === "SQUARE") return square > 0;
+      if (saleUnit === "PIECE") return piece > 0;
+      return cube > 0 || square > 0 || piece > 0;
     });
     if (!priced) return { price: null, unit: null };
 
     const cube = Number(priced.pricePerCube || 0);
     const piece = Number(priced.pricePerPiece || 0);
+    const square = Number(priced.pricePerSquareMeter || 0);
     if (saleUnit !== "PIECE" && cube > 0) {
       return {
-        price: `от ${new Intl.NumberFormat("ru-RU").format(Math.round(cube))} ₽`,
-        unit: "за м³",
+        price: `\u043e\u0442 ${new Intl.NumberFormat("ru-RU").format(Math.round(cube))} \u20bd`,
+        unit: "\u0437\u0430 \u043c\u00b3",
+      };
+    }
+    if (square > 0) {
+      return {
+        price: `\u043e\u0442 ${new Intl.NumberFormat("ru-RU").format(Math.round(square))} \u20bd`,
+        unit: "\u0437\u0430 \u043c\u00b2",
       };
     }
     if (piece > 0) {
       return {
-        price: `от ${new Intl.NumberFormat("ru-RU").format(Math.round(piece))} ₽`,
-        unit: "за шт",
+        price: `\u043e\u0442 ${new Intl.NumberFormat("ru-RU").format(Math.round(piece))} \u20bd`,
+        unit: "\u0437\u0430 \u0448\u0442",
       };
     }
     return { price: null, unit: null };
@@ -673,6 +691,7 @@ export default function AdminProductEditPage() {
             size: variant.size,
             pricePerCube: variant.pricePerCube,
             pricePerPiece: variant.pricePerPiece,
+            pricePerSquareMeter: variant.pricePerSquareMeter,
             inStock: variant.inStock,
           })),
           benefits: previewCardTags.length ? previewCardTags : undefined,
@@ -1369,9 +1388,10 @@ export default function AdminProductEditPage() {
               <label className="block text-sm font-medium mb-2">Единица продажи</label>
               <div className="flex flex-wrap gap-2">
                 {[
-                  { value: "BOTH", label: "м³ и штуки" },
-                  { value: "CUBE", label: "Только м³" },
-                  { value: "PIECE", label: "Только шт" },
+                  { value: "BOTH", label: "\u043c\u00b3 / \u043c\u00b2 / \u0448\u0442" },
+                  { value: "CUBE", label: "\u0422\u043e\u043b\u044c\u043a\u043e \u043c\u00b3" },
+                  { value: "SQUARE", label: "\u0422\u043e\u043b\u044c\u043a\u043e \u043c\u00b2" },
+                  { value: "PIECE", label: "\u0422\u043e\u043b\u044c\u043a\u043e \u0448\u0442" },
                 ].map((opt) => (
                   <button
                     key={opt.value}
@@ -1419,7 +1439,7 @@ export default function AdminProductEditPage() {
                 <button
                   type="button"
                   onClick={() => bulkPriceAdjust(10, "pricePerCube")}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-primary/20 text-primary hover:bg-primary/[0.08] hover:border-primary/40 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl border border-primary/20 text-primary hover:bg-primary/[0.08] hover:border-primary/40 transition-colors"
                   title="Поднять все цены за м³ на 10%"
                 >
                   <TrendingUp className="w-3 h-3" /> +10%
@@ -1427,10 +1447,28 @@ export default function AdminProductEditPage() {
                 <button
                   type="button"
                   onClick={() => bulkPriceAdjust(-10, "pricePerCube")}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-primary/20 text-primary hover:bg-primary/[0.08] hover:border-primary/40 transition-colors"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl border border-primary/20 text-primary hover:bg-primary/[0.08] hover:border-primary/40 transition-colors"
                   title="Снизить все цены за м³ на 10%"
                 >
                   <TrendingDown className="w-3 h-3" /> −10%
+                </button>
+                <span className="text-muted-foreground/30 mx-1">{"\u00b7"}</span>
+                <span className="text-muted-foreground">{"\u0437\u0430 \u043c\u00b2:"}</span>
+                <button
+                  type="button"
+                  onClick={() => bulkPriceAdjust(10, "pricePerSquareMeter")}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl border border-primary/20 text-primary hover:bg-primary/[0.08] hover:border-primary/40 transition-colors"
+                  title="\u041f\u043e\u0434\u043d\u044f\u0442\u044c \u0432\u0441\u0435 \u0446\u0435\u043d\u044b \u0437\u0430 \u043c\u00b2 \u043d\u0430 10%"
+                >
+                  <TrendingUp className="w-3 h-3" /> +10%
+                </button>
+                <button
+                  type="button"
+                  onClick={() => bulkPriceAdjust(-10, "pricePerSquareMeter")}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-xl border border-primary/20 text-primary hover:bg-primary/[0.08] hover:border-primary/40 transition-colors"
+                  title="\u0421\u043d\u0438\u0437\u0438\u0442\u044c \u0432\u0441\u0435 \u0446\u0435\u043d\u044b \u0437\u0430 \u043c\u00b2 \u043d\u0430 10%"
+                >
+                  <TrendingDown className="w-3 h-3" /> {"\u221210%"}
                 </button>
                 <span className="text-muted-foreground/30 mx-1">·</span>
                 <span className="text-muted-foreground">за шт:</span>
@@ -1487,7 +1525,7 @@ export default function AdminProductEditPage() {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                       <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         Цена м3
                         <input
@@ -1505,6 +1543,16 @@ export default function AdminProductEditPage() {
                           value={v.pricePerPiece}
                           onChange={(e) => updateVariant(idx, "pricePerPiece", e.target.value)}
                           placeholder="420"
+                          className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </label>
+                      <label className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {"\u0426\u0435\u043d\u0430 \u043c\u00b2"}
+                        <input
+                          type="number"
+                          value={v.pricePerSquareMeter}
+                          onChange={(e) => updateVariant(idx, "pricePerSquareMeter", e.target.value)}
+                          placeholder="850"
                           className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-normal normal-case tracking-normal text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                         />
                       </label>
@@ -1554,12 +1602,13 @@ export default function AdminProductEditPage() {
               </div>
 
               <div className="hidden overflow-x-auto -mx-5 px-5 md:block">
-              <div className="min-w-[560px] space-y-1">
+              <div className="min-w-[660px] space-y-1">
                 {/* Table header */}
-                <div className="grid grid-cols-[1fr_100px_100px_80px_44px_32px] gap-2 px-2 pb-1">
+                <div className="grid grid-cols-[1fr_100px_100px_100px_80px_44px_32px] gap-2 px-2 pb-1">
                   <span className="text-xs text-muted-foreground">Размер</span>
                   <span className="text-xs text-muted-foreground">Цена м³</span>
                   <span className="text-xs text-muted-foreground">Цена шт</span>
+                  <span className="text-xs text-muted-foreground">{"\u0426\u0435\u043d\u0430 \u043c\u00b2"}</span>
                   <span className="text-xs text-muted-foreground">Шт/м³</span>
                   <span className="text-xs text-muted-foreground">Нал.</span>
                   <span />
@@ -1568,7 +1617,7 @@ export default function AdminProductEditPage() {
                   <div
                     key={v.id || v._tempId}
                     className={cn(
-                      "grid grid-cols-[1fr_100px_100px_80px_44px_32px] gap-2 items-center p-2 rounded-xl transition-colors",
+                      "grid grid-cols-[1fr_100px_100px_100px_80px_44px_32px] gap-2 items-center p-2 rounded-xl transition-colors",
                       idx % 2 === 0 ? "bg-muted/30" : ""
                     )}
                   >
@@ -1591,6 +1640,13 @@ export default function AdminProductEditPage() {
                       onChange={(e) => updateVariant(idx, "pricePerPiece", e.target.value)}
                       placeholder="420"
                       className="w-full px-2.5 py-2.5 rounded-lg border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                    <input
+                      type="number"
+                      value={v.pricePerSquareMeter}
+                      onChange={(e) => updateVariant(idx, "pricePerSquareMeter", e.target.value)}
+                      placeholder="850"
+                      className="w-full px-2.5 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
                     />
                     <div className="relative">
                       <input

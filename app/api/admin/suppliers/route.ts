@@ -55,6 +55,7 @@ function serializeSupplier(supplier: any) {
       ...offer,
       pricePerCube: serializeMoney(offer.pricePerCube),
       pricePerPiece: serializeMoney(offer.pricePerPiece),
+      pricePerSquareMeter: serializeMoney(offer.pricePerSquareMeter),
       minOrderQty: serializeMoney(offer.minOrderQty),
     })) ?? [],
   };

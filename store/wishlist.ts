@@ -7,12 +7,13 @@ export type WishlistItem = {
   category: string;
   images: string[];
   cardTags?: string[] | null;
-  saleUnit: "CUBE" | "PIECE" | "BOTH";
+  saleUnit: "CUBE" | "PIECE" | "SQUARE" | "BOTH";
   variants: Array<{
     id: string;
     size: string;
     pricePerCube: number | null;
     pricePerPiece: number | null;
+    pricePerSquareMeter: number | null;
     piecesPerCube: number | null;
     inStock: boolean;
     stockQty?: number | null;
@@ -40,7 +41,10 @@ function normalizeWishlistItems(value: unknown): WishlistItem[] {
   return value.flatMap((rawItem) => {
     if (!rawItem || typeof rawItem !== "object") return [];
     const item = rawItem as Partial<WishlistItem>;
-    const saleUnit = item.saleUnit === "PIECE" || item.saleUnit === "BOTH" ? item.saleUnit : "CUBE";
+    const saleUnit =
+      item.saleUnit === "PIECE" || item.saleUnit === "SQUARE" || item.saleUnit === "BOTH"
+        ? item.saleUnit
+        : "CUBE";
     const variants = Array.isArray(item.variants)
       ? item.variants.flatMap((rawVariant) => {
           if (!rawVariant || typeof rawVariant !== "object") return [];
@@ -52,6 +56,7 @@ function normalizeWishlistItems(value: unknown): WishlistItem[] {
               size: variant.size,
               pricePerCube: typeof variant.pricePerCube === "number" ? variant.pricePerCube : null,
               pricePerPiece: typeof variant.pricePerPiece === "number" ? variant.pricePerPiece : null,
+              pricePerSquareMeter: typeof variant.pricePerSquareMeter === "number" ? variant.pricePerSquareMeter : null,
               piecesPerCube: typeof variant.piecesPerCube === "number" ? variant.piecesPerCube : null,
               inStock: variant.inStock !== false,
               stockQty: typeof variant.stockQty === "number" ? variant.stockQty : null,

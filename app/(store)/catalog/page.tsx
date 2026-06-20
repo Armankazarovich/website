@@ -149,9 +149,9 @@ function absoluteSiteUrl(pathOrUrl: string) {
   return `https://pilo-rus.ru${pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`}`;
 }
 
-function productMinPrice(product: { variants: Array<{ pricePerCube: unknown; pricePerPiece: unknown }> }) {
+function productMinPrice(product: { variants: Array<{ pricePerCube: unknown; pricePerPiece: unknown; pricePerSquareMeter?: unknown }> }) {
   const prices = product.variants
-    .flatMap((variant) => [variant.pricePerPiece, variant.pricePerCube])
+    .flatMap((variant) => [variant.pricePerPiece, variant.pricePerSquareMeter, variant.pricePerCube])
     .map((value) => Number(value))
     .filter((value) => Number.isFinite(value) && value > 0);
 
@@ -187,6 +187,7 @@ export default async function CatalogPage({
     };
     variantWhere.OR = [
       { pricePerCube: { not: null, ...priceBounds } },
+      { pricePerSquareMeter: { not: null, ...priceBounds } },
       { pricePerPiece: { not: null, ...priceBounds } },
     ];
   }
@@ -311,8 +312,8 @@ export default async function CatalogPage({
 
   let categories: any[] = [], productsRaw: any[] = [], totalCount = 0, allVariantSizes: any[] = [], productsForTypes: any[] = [];
   let priceRangeResult: {
-    _min: { pricePerCube: unknown; pricePerPiece: unknown };
-    _max: { pricePerCube: unknown; pricePerPiece: unknown };
+    _min: { pricePerCube: unknown; pricePerPiece: unknown; pricePerSquareMeter: unknown };
+    _max: { pricePerCube: unknown; pricePerPiece: unknown; pricePerSquareMeter: unknown };
   } | null = null;
   try {
     [categories, productsRaw, totalCount, allVariantSizes, productsForTypes, priceRangeResult] = await Promise.all([
@@ -325,7 +326,7 @@ export default async function CatalogPage({
         where,
         include: {
           category: true,
-          variants: { where: publicVariantFilter, orderBy: { pricePerCube: "asc" } },
+          variants: { where: publicVariantFilter, orderBy: [{ pricePerCube: "asc" }, { pricePerSquareMeter: "asc" }, { pricePerPiece: "asc" }] },
         },
         orderBy:
           searchParams.sort === "name" ? { name: "asc" } : { createdAt: "desc" },
@@ -357,8 +358,8 @@ export default async function CatalogPage({
           product: whereForPriceRange,
           ...publicVariantFilter,
         },
-        _min: { pricePerCube: true, pricePerPiece: true },
-        _max: { pricePerCube: true, pricePerPiece: true },
+        _min: { pricePerCube: true, pricePerSquareMeter: true, pricePerPiece: true },
+        _max: { pricePerCube: true, pricePerSquareMeter: true, pricePerPiece: true },
       }),
     ]);
   } catch (err) {
@@ -368,7 +369,7 @@ export default async function CatalogPage({
 
   // Price sort (JS post-fetch since Prisma can't orderBy on has-many aggregate)
   const getMinPrice = (p: typeof productsRaw[0]) =>
-    Math.min(...p.variants.map((v: any) => Number(v.pricePerCube ?? v.pricePerPiece ?? 999999)));
+    Math.min(...p.variants.flatMap((v: any) => [v.pricePerCube, v.pricePerSquareMeter, v.pricePerPiece].map((value) => Number(value || 999999))));
   const products = [...productsRaw];
   if (searchParams.sort === "price_asc") {
     products.sort((a, b) => getMinPrice(a) - getMinPrice(b));
@@ -379,10 +380,10 @@ export default async function CatalogPage({
   // Доступные типы — ДИНАМИЧЕСКИ из реальных названий товаров
   const productNames = productsForTypes.map((p) => p.name);
   const dynamicTypes = applyProductTypeSettings(getAvailableTypes(productNames), productTypeSettings);
-  const minPriceCandidates = [priceRangeResult?._min.pricePerCube, priceRangeResult?._min.pricePerPiece]
+  const minPriceCandidates = [priceRangeResult?._min.pricePerCube, priceRangeResult?._min.pricePerSquareMeter, priceRangeResult?._min.pricePerPiece]
     .map((value) => Number(value))
     .filter((value) => Number.isFinite(value) && value > 0);
-  const maxPriceCandidates = [priceRangeResult?._max.pricePerCube, priceRangeResult?._max.pricePerPiece]
+  const maxPriceCandidates = [priceRangeResult?._max.pricePerCube, priceRangeResult?._max.pricePerSquareMeter, priceRangeResult?._max.pricePerPiece]
     .map((value) => Number(value))
     .filter((value) => Number.isFinite(value) && value > 0);
   const rawPriceMin = minPriceCandidates.length > 0 ? Math.min(...minPriceCandidates) : 0;
@@ -945,6 +946,7 @@ export default async function CatalogPage({
                     id: v.id,
                     size: v.size,
                     pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
+                    pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
                     pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
                     piecesPerCube: v.piecesPerCube,
                     inStock: v.inStock,

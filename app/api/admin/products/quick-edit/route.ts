@@ -13,7 +13,7 @@ async function checkAdmin() {
 export async function PATCH(req: Request) {
   if (!(await checkAdmin())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const tenantId = getCurrentTenantId();
-  const { variantId, pricePerCube, pricePerPiece, inStock } = await req.json();
+  const { variantId, pricePerCube, pricePerPiece, pricePerSquareMeter, inStock } = await req.json();
   if (!variantId) return NextResponse.json({ error: "variantId required" }, { status: 400 });
 
   const variant = await prisma.productVariant.findFirst({
@@ -25,6 +25,7 @@ export async function PATCH(req: Request) {
   const data: any = {};
   if (pricePerCube !== undefined) data.pricePerCube = pricePerCube;
   if (pricePerPiece !== undefined) data.pricePerPiece = pricePerPiece;
+  if (pricePerSquareMeter !== undefined) data.pricePerSquareMeter = pricePerSquareMeter;
   if (inStock !== undefined) data.inStock = inStock;
 
   await prisma.productVariant.update({ where: { id: variantId }, data });

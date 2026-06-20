@@ -37,6 +37,7 @@ export type VariantForSeo = {
   size?: string | null;
   pricePerCube?: number | string | null | { toNumber?: () => number };
   pricePerPiece?: number | string | null | { toNumber?: () => number };
+  pricePerSquareMeter?: number | string | null | { toNumber?: () => number };
   inStock?: boolean;
 };
 
@@ -68,18 +69,22 @@ function formatRub(n: number): string {
 
 function getMinPrice(variants: VariantForSeo[]): {
   value: number;
-  unit: "м³" | "шт";
+  unit: "\u043c\u00b3" | "\u0448\u0442" | "\u043c\u00b2";
 } | null {
   let minCube: number | null = null;
   let minPiece: number | null = null;
+  let minSquare: number | null = null;
   for (const v of variants) {
     const cube = toNumber(v.pricePerCube);
     const piece = toNumber(v.pricePerPiece);
+    const square = toNumber(v.pricePerSquareMeter);
     if (cube != null && cube > 0 && (minCube == null || cube < minCube)) minCube = cube;
     if (piece != null && piece > 0 && (minPiece == null || piece < minPiece)) minPiece = piece;
+    if (square != null && square > 0 && (minSquare == null || square < minSquare)) minSquare = square;
   }
-  if (minCube != null) return { value: minCube, unit: "м³" };
-  if (minPiece != null) return { value: minPiece, unit: "шт" };
+  if (minCube != null) return { value: minCube, unit: "\u043c\u00b3" };
+  if (minSquare != null) return { value: minSquare, unit: "\u043c\u00b2" };
+  if (minPiece != null) return { value: minPiece, unit: "\u0448\u0442" };
   return null;
 }
 
@@ -126,6 +131,7 @@ export function generateProductDescription(
       size: variant.size,
       pricePerCube: toNumber(variant.pricePerCube),
       pricePerPiece: toNumber(variant.pricePerPiece),
+      pricePerSquareMeter: toNumber(variant.pricePerSquareMeter),
       inStock: variant.inStock,
     })),
     benefits: ["понятная цена", "размеры в наличии", "доставка 1-3 дня"],
@@ -216,7 +222,8 @@ export function checkProductReadiness(
     const hasAnyPrice = variants.some((v) => {
       const cube = toNumber(v.pricePerCube);
       const piece = toNumber(v.pricePerPiece);
-      return (cube != null && cube > 0) || (piece != null && piece > 0);
+      const square = toNumber(v.pricePerSquareMeter);
+      return (cube != null && cube > 0) || (piece != null && piece > 0) || (square != null && square > 0);
     });
     if (!hasAnyPrice) blockers.push("no-price");
 
@@ -296,6 +303,7 @@ function getPublicVariantAnyPriceFilter(): Prisma.ProductVariantWhereInput {
     OR: [
       { pricePerCube: { not: null, gt: 0 } },
       { pricePerPiece: { not: null, gt: 0 } },
+      { pricePerSquareMeter: { not: null, gt: 0 } },
     ],
   };
 }
@@ -307,14 +315,16 @@ export function getPublicVariantsFilter(): Prisma.ProductVariantWhereInput {
   };
 }
 
-export function getPublicVariantUnitFilter(unitType: "CUBE" | "PIECE"): Prisma.ProductVariantWhereInput {
+export function getPublicVariantUnitFilter(unitType: "CUBE" | "PIECE" | "SQUARE"): Prisma.ProductVariantWhereInput {
   return {
     inStock: true,
     AND: [
       getPublicVariantStockFilter(),
       unitType === "CUBE"
         ? { pricePerCube: { not: null, gt: 0 } }
-        : { pricePerPiece: { not: null, gt: 0 } },
+        : unitType === "SQUARE"
+          ? { pricePerSquareMeter: { not: null, gt: 0 } }
+          : { pricePerPiece: { not: null, gt: 0 } },
     ],
   };
 }

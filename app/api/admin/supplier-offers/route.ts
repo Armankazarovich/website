@@ -38,6 +38,7 @@ function serializeOffer(offer: any) {
     ...offer,
     pricePerCube: serializeMoney(offer.pricePerCube),
     pricePerPiece: serializeMoney(offer.pricePerPiece),
+    pricePerSquareMeter: serializeMoney(offer.pricePerSquareMeter),
     minOrderQty: serializeMoney(offer.minOrderQty),
   };
 }
@@ -89,12 +90,13 @@ export async function POST(req: Request) {
 
   const pricePerCube = cleanNumber(body.pricePerCube);
   const pricePerPiece = cleanNumber(body.pricePerPiece);
+  const pricePerSquareMeter = cleanNumber(body.pricePerSquareMeter);
   const stockQty = cleanNumber(body.stockQty);
   const minOrderQty = cleanNumber(body.minOrderQty);
   const leadTimeDays = cleanNumber(body.leadTimeDays);
 
-  if (pricePerCube === null && pricePerPiece === null) {
-    return NextResponse.json({ error: "Укажите цену поставщика за м3 или за штуку" }, { status: 400 });
+  if (pricePerCube === null && pricePerPiece === null && pricePerSquareMeter === null) {
+    return NextResponse.json({ error: "Укажите цену поставщика за м3, м2 или штуку" }, { status: 400 });
   }
 
   const preferred = body.preferred === true;
@@ -113,6 +115,7 @@ export async function POST(req: Request) {
       variantId,
       pricePerCube,
       pricePerPiece,
+      pricePerSquareMeter,
       stockQty: stockQty === null ? null : Math.round(stockQty),
       minOrderQty,
       leadTimeDays: leadTimeDays === null ? null : Math.round(leadTimeDays),
@@ -126,6 +129,7 @@ export async function POST(req: Request) {
     update: {
       pricePerCube,
       pricePerPiece,
+      pricePerSquareMeter,
       stockQty: stockQty === null ? null : Math.round(stockQty),
       minOrderQty,
       leadTimeDays: leadTimeDays === null ? null : Math.round(leadTimeDays),

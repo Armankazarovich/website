@@ -13,7 +13,7 @@ import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-
 import { getCurrentTenantId } from "@/lib/tenant-context";
 import { applyOrderInventory, isOrderInventoryError } from "@/lib/order-inventory";
 
-const UNIT_TYPES = new Set(["CUBE", "PIECE"]);
+const UNIT_TYPES = new Set(["CUBE", "PIECE", "SQUARE"]);
 const HIDDEN_CATEGORY_SORT_ORDER = 999;
 
 export async function POST(req: NextRequest) {
@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
               variantId: item.variantId,
               productName: item.productName,
               variantSize: item.variantSize,
-              unitType: item.unitType as "CUBE" | "PIECE",
+              unitType: item.unitType as "CUBE" | "PIECE" | "SQUARE",
               quantity: item.quantity,
               price: item.price,
             })),
