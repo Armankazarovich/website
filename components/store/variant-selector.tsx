@@ -21,6 +21,14 @@ import {
   getVariantUnitPrice as readVariantUnitPrice,
   quantityStepForUnit,
 } from "@/lib/product-units";
+import {
+  getVariantOptionMeta,
+  matchesVariantQuery,
+  uniqueVariantOptionValues,
+  type VariantOptionKey,
+  type VariantOptionMeta,
+} from "@/lib/variant-options";
+import { VariantOptionFilterGroups } from "@/components/store/variant-option-filter-groups";
 
 interface Variant {
   id: string;
@@ -112,16 +120,43 @@ function normalizeQuantityForUnit(
   return Math.max(step, clamped);
 }
 
+type VariantRow = {
+  variant: Variant;
+  meta: VariantOptionMeta;
+};
+
+type VariantFilters = Record<VariantOptionKey, string | null>;
+
+function variantMatchesFilters(row: VariantRow, filters: VariantFilters) {
+  return (
+    (!filters.grade || row.meta.grade === filters.grade) &&
+    (!filters.section || row.meta.section === filters.section) &&
+    (!filters.length || row.meta.length === filters.length)
+  );
+}
+
+function pickBestRow(rows: VariantRow[], saleUnit: VariantSelectorProps["saleUnit"]) {
+  return (
+    rows.find((row) => isProductVariantPurchasable(row.variant) && getPreferredUnit(row.variant, saleUnit)) ||
+    rows[0] ||
+    null
+  );
+}
+
 export function VariantSelector({
   productId, productName, productSlug, productImage, saleUnit, variants, phoneLink,
 }: VariantSelectorProps) {
   const effectivePhone = phoneLink || PHONE_LINK;
   const { addItem } = useCartStore();
   const initialVariant = pickInitialVariant(variants, saleUnit);
+  const initialMeta = initialVariant ? getVariantOptionMeta(initialVariant.size) : null;
 
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
     initialVariant
   );
+  const [selectedGrade, setSelectedGrade] = useState<string | null>(initialMeta?.grade ?? null);
+  const [selectedSection, setSelectedSection] = useState<string | null>(initialMeta?.section ?? null);
+  const [selectedLength, setSelectedLength] = useState<string | null>(initialMeta?.length ?? null);
   const [unitType, setUnitType] = useState<UnitType>(
     getPreferredUnit(initialVariant, saleUnit) ||
       (saleUnit === "PIECE" ? "PIECE" : saleUnit === "SQUARE" ? "SQUARE" : "CUBE")
@@ -151,18 +186,71 @@ export function VariantSelector({
   const canUseSquare = Boolean(getVariantUnitPrice(selectedVariant, "SQUARE"));
 
   const totalPrice = currentPrice ? currentPrice * quantity : 0;
-  const visibleVariants = useMemo(() => {
-    const query = variantQuery.trim().toLowerCase();
-    if (!query) return variants;
-    return variants.filter((variant) =>
-      [
-        variant.size,
-        variant.pricePerCube?.toString() || "",
-        variant.pricePerPiece?.toString() || "",
-        variant.pricePerSquareMeter?.toString() || "",
-      ].some((value) => value.toLowerCase().includes(query)),
-    );
-  }, [variantQuery, variants]);
+  const variantRows = useMemo(
+    () => variants.map((variant) => ({ variant, meta: getVariantOptionMeta(variant.size) })),
+    [variants],
+  );
+  const selectedFilters: VariantFilters = {
+    grade: selectedGrade,
+    section: selectedSection,
+    length: selectedLength,
+  };
+  const gradeOptions = useMemo(() => uniqueVariantOptionValues(variantRows, "grade"), [variantRows]);
+  const sectionOptions = useMemo(() => uniqueVariantOptionValues(variantRows, "section"), [variantRows]);
+  const lengthOptions = useMemo(() => uniqueVariantOptionValues(variantRows, "length"), [variantRows]);
+  const visibleRows = useMemo(
+    () =>
+      variantRows.filter((row) =>
+        variantMatchesFilters(row, selectedFilters) && matchesVariantQuery(row.meta, variantQuery),
+      ),
+    [variantRows, selectedGrade, selectedSection, selectedLength, variantQuery],
+  );
+  const selectedMeta = selectedVariant ? getVariantOptionMeta(selectedVariant.size) : null;
+
+  const setFilters = (filters: VariantFilters) => {
+    setSelectedGrade(filters.grade);
+    setSelectedSection(filters.section);
+    setSelectedLength(filters.length);
+  };
+
+  const selectVariant = (variant: Variant) => {
+    const meta = getVariantOptionMeta(variant.size);
+    setSelectedVariant(variant);
+    setFilters({
+      grade: meta.grade,
+      section: meta.section,
+      length: meta.length,
+    });
+  };
+
+  const applyFilter = (key: VariantOptionKey, value: string | null) => {
+    let nextFilters: VariantFilters = {
+      grade: selectedGrade,
+      section: selectedSection,
+      length: selectedLength,
+      [key]: value,
+    };
+
+    let candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
+    if (candidates.length === 0 && key === "grade") {
+      nextFilters = { ...nextFilters, section: null, length: null };
+      candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
+    }
+    if (candidates.length === 0 && key === "section") {
+      nextFilters = { ...nextFilters, length: null };
+      candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
+    }
+    if (candidates.length === 0 && key === "length") {
+      nextFilters = { grade: null, section: null, length: value };
+      candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
+    }
+
+    const best = pickBestRow(candidates, saleUnit);
+    if (best) {
+      setSelectedVariant(best.variant);
+    }
+    setFilters(nextFilters);
+  };
 
   // Calculate equivalent in other unit
   const equivalentInfo = () => {
@@ -228,28 +316,41 @@ export function VariantSelector({
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
             <h3 className="font-medium">
-              Выберите размер
-              {selectedVariant && (
-                <span className="ml-2 text-sm font-normal text-muted-foreground">
-                  {selectedVariant.size}
+              Выберите вариант
+              {selectedMeta && (
+                <span className="ml-2 inline-flex max-w-full flex-wrap items-center gap-1 align-middle text-sm font-normal text-muted-foreground">
+                  <span>{selectedMeta.cleanSize}</span>
+                  {selectedMeta.grade && (
+                    <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                      {selectedMeta.grade}
+                    </span>
+                  )}
                 </span>
               )}
             </h3>
             {variants.length > 10 && (
               <p className="mt-1 text-xs text-muted-foreground">
-                {variants.length} вариантов: можно быстро найти размер или сорт.
+                {variants.length} вариантов
               </p>
             )}
           </div>
         </div>
+        <VariantOptionFilterGroups
+          groups={[
+            { keyName: "grade", label: "Сорт", values: gradeOptions, selected: selectedGrade },
+            { keyName: "section", label: "Сечение", values: sectionOptions, selected: selectedSection },
+            { keyName: "length", label: "Длина", values: lengthOptions, selected: selectedLength },
+          ]}
+          onSelect={applyFilter}
+        />
         {variants.length > 10 && (
-          <label className="relative mb-3 block">
-            <span className="sr-only">Найти размер</span>
+          <label className="relative mb-3 mt-3 block">
+            <span className="sr-only">Найти вариант</span>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={variantQuery}
               onChange={(event) => setVariantQuery(event.target.value)}
-              placeholder="Найти размер, длину или сорт..."
+              placeholder="Поиск по размеру, длине, сорту..."
               className="h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
             />
           </label>
@@ -261,30 +362,35 @@ export function VariantSelector({
               : "flex flex-wrap gap-2",
           )}
         >
-          {visibleVariants.map((v) => {
+          {visibleRows.map(({ variant: v, meta }) => {
             const hasSaleUnit = Boolean(getPreferredUnit(v, saleUnit));
             const disabled = !isProductVariantPurchasable(v) || !hasSaleUnit;
 
             return (
             <button
               key={v.id}
-              onClick={() => setSelectedVariant(v)}
+              onClick={() => selectVariant(v)}
               disabled={disabled}
               className={cn(
-                "px-4 py-3 sm:py-1.5 rounded-lg border text-sm font-medium transition-all",
+                "min-h-[3.25rem] rounded-xl border px-3 py-2 text-left text-sm font-medium transition-all",
                 selectedVariant?.id === v.id
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border hover:border-primary/50",
                 disabled && "opacity-40 cursor-not-allowed line-through"
               )}
             >
-              {v.size}
+              <span className="block leading-tight">{meta.cleanSize}</span>
+              {meta.grade && (
+                <span className="mt-1 block text-[11px] font-semibold text-muted-foreground">
+                  {meta.grade}
+                </span>
+              )}
             </button>
           );
           })}
-          {visibleVariants.length === 0 && (
+          {visibleRows.length === 0 && (
             <p className="col-span-full rounded-xl border border-border bg-muted/30 px-3 py-4 text-center text-sm text-muted-foreground">
-              Такого размера не нашли
+              Вариант не найден
             </p>
           )}
         </div>

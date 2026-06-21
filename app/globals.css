@@ -3389,6 +3389,17 @@ button, a, [role="button"], input, select, textarea {
   white-space: nowrap;
 }
 
+.store-card-price-size small {
+  min-width: 0;
+  overflow: hidden;
+  color: currentColor;
+  font-size: 0.86em;
+  line-height: 1;
+  opacity: 0.72;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .store-card-price-size svg {
   flex: 0 0 auto;
   color: currentColor;

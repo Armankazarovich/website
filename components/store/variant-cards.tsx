@@ -7,6 +7,14 @@ import { formatPrice } from "@/lib/utils";
 import { flyToCart } from "@/lib/cart-fly";
 import { getPurchasableQuantityLimit, isProductVariantPurchasable } from "@/lib/product-availability";
 import { getUnitLabel, getVariantUnitPrice, pickVariantUnit, type ProductUnitType } from "@/lib/product-units";
+import {
+  getVariantOptionMeta,
+  matchesVariantQuery,
+  uniqueVariantOptionValues,
+  type VariantOptionKey,
+  type VariantOptionMeta,
+} from "@/lib/variant-options";
+import { VariantOptionFilterGroups } from "@/components/store/variant-option-filter-groups";
 
 interface Variant {
   id: string;
@@ -30,6 +38,8 @@ interface VariantCardsProps {
 }
 
 type PurchaseUnit = ProductUnitType;
+type VariantFilters = Record<VariantOptionKey, string | null>;
+type VariantRow = { variant: Variant; meta: VariantOptionMeta };
 
 function getVariantPurchaseOption(variant: Variant, saleUnit: string) {
   const preferredUnit: PurchaseUnit | null = pickVariantUnit(variant, saleUnit);
@@ -46,6 +56,14 @@ function getVariantPurchaseOption(variant: Variant, saleUnit: string) {
   };
 }
 
+function variantMatchesFilters(row: VariantRow, filters: VariantFilters) {
+  return (
+    (!filters.grade || row.meta.grade === filters.grade) &&
+    (!filters.section || row.meta.section === filters.section) &&
+    (!filters.length || row.meta.length === filters.length)
+  );
+}
+
 export function VariantCards({
   productId,
   productName,
@@ -56,18 +74,58 @@ export function VariantCards({
 }: VariantCardsProps) {
   const addItem = useCartStore((s) => s.addItem);
   const [query, setQuery] = useState("");
-  const visibleVariants = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return variants;
-    return variants.filter((variant) =>
-      [
-        variant.size,
-        variant.pricePerCube?.toString() || "",
-        variant.pricePerPiece?.toString() || "",
-        variant.pricePerSquareMeter?.toString() || "",
-      ].some((value) => value.toLowerCase().includes(normalized)),
-    );
-  }, [query, variants]);
+  const [selectedGrade, setSelectedGrade] = useState<string | null>(null);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
+  const [selectedLength, setSelectedLength] = useState<string | null>(null);
+  const variantRows = useMemo(
+    () => variants.map((variant) => ({ variant, meta: getVariantOptionMeta(variant.size) })),
+    [variants],
+  );
+  const selectedFilters: VariantFilters = {
+    grade: selectedGrade,
+    section: selectedSection,
+    length: selectedLength,
+  };
+  const gradeOptions = useMemo(() => uniqueVariantOptionValues(variantRows, "grade"), [variantRows]);
+  const sectionOptions = useMemo(() => uniqueVariantOptionValues(variantRows, "section"), [variantRows]);
+  const lengthOptions = useMemo(() => uniqueVariantOptionValues(variantRows, "length"), [variantRows]);
+  const visibleRows = useMemo(
+    () =>
+      variantRows.filter((row) =>
+        variantMatchesFilters(row, selectedFilters) && matchesVariantQuery(row.meta, query),
+      ),
+    [variantRows, selectedGrade, selectedSection, selectedLength, query],
+  );
+
+  const setFilters = (filters: VariantFilters) => {
+    setSelectedGrade(filters.grade);
+    setSelectedSection(filters.section);
+    setSelectedLength(filters.length);
+  };
+
+  const applyFilter = (key: VariantOptionKey, value: string | null) => {
+    let nextFilters: VariantFilters = {
+      grade: selectedGrade,
+      section: selectedSection,
+      length: selectedLength,
+      [key]: value,
+    };
+
+    let candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
+    if (candidates.length === 0 && key === "grade") {
+      nextFilters = { ...nextFilters, section: null, length: null };
+      candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
+    }
+    if (candidates.length === 0 && key === "section") {
+      nextFilters = { ...nextFilters, length: null };
+      candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
+    }
+    if (candidates.length === 0 && key === "length") {
+      nextFilters = { grade: null, section: null, length: value };
+    }
+
+    setFilters(nextFilters);
+  };
 
   const handleAdd = (e: React.MouseEvent<HTMLDivElement>, v: Variant) => {
     if (!isProductVariantPurchasable(v)) return;
@@ -97,6 +155,14 @@ export function VariantCards({
 
   return (
     <div className="space-y-3">
+      <VariantOptionFilterGroups
+        groups={[
+          { keyName: "grade", label: "Сорт", values: gradeOptions, selected: selectedGrade },
+          { keyName: "section", label: "Сечение", values: sectionOptions, selected: selectedSection },
+          { keyName: "length", label: "Длина", values: lengthOptions, selected: selectedLength },
+        ]}
+        onSelect={applyFilter}
+      />
       {variants.length > 12 && (
         <label className="relative block">
           <span className="sr-only">Найти вариант товара</span>
@@ -104,13 +170,13 @@ export function VariantCards({
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Быстро найти размер, длину или сорт..."
+            placeholder="Поиск по размеру, длине, сорту..."
             className="h-11 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/40 focus:ring-2 focus:ring-primary/10"
           />
         </label>
       )}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-      {visibleVariants.map((v) => {
+      {visibleRows.map(({ variant: v, meta }) => {
         const option = getVariantPurchaseOption(v, saleUnit);
         const isPurchasable = isProductVariantPurchasable(v);
 
@@ -133,8 +199,13 @@ export function VariantCards({
 
             {/* Size */}
             <p className="font-mono font-semibold text-sm leading-tight mb-3 pr-4">
-              {v.size}
+              {meta.cleanSize}
             </p>
+            {meta.grade && (
+              <p className="-mt-2 mb-3 text-[11px] font-semibold text-muted-foreground">
+                {meta.grade}
+              </p>
+            )}
 
             {/* Price */}
             {option ? (
@@ -178,9 +249,9 @@ export function VariantCards({
           </div>
         );
       })}
-      {visibleVariants.length === 0 && (
+      {visibleRows.length === 0 && (
         <div className="col-span-full rounded-2xl border border-border bg-muted/30 px-4 py-8 text-center text-sm text-muted-foreground">
-          По такому размеру вариантов нет
+          Вариант не найден
         </div>
       )}
       </div>

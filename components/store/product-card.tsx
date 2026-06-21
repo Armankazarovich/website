@@ -49,6 +49,7 @@ import {
   pickVariantUnit,
   quantityStepForUnit,
 } from "@/lib/product-units";
+import { getVariantOptionMeta } from "@/lib/variant-options";
 
 const PUSH_TOAST_KEY = "push_cart_toast_shown";
 
@@ -223,6 +224,9 @@ export function ProductCard({
   const selectedVariant = selectedId
     ? (variants.find((v) => v.id === selectedId) ?? defaultVariant)
     : defaultVariant;
+  const selectedVariantMeta = selectedVariant ? getVariantOptionMeta(selectedVariant.size) : null;
+  const selectedVariantSizeLabel = selectedVariantMeta?.cleanSize ?? selectedVariant?.size ?? "";
+  const selectedVariantGradeLabel = selectedVariantMeta?.grade;
 
   // Expand all sizes on "+N" click
   // Unit type: catalog cards must add to cart in one tap.
@@ -548,23 +552,27 @@ export function ProductCard({
           {/* Sizes */}
           {variants.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
-              {variants.slice(0, 3).map((v) => (
-                <button
-                  key={v.id}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    pickVariant(v);
-                  }}
-                  disabled={!isProductVariantPurchasable(v)}
-                  className={cn(
-                    "store-size-chip is-overlay",
-                    selectedVariant?.id === v.id && isProductVariantPurchasable(v) && "is-selected",
-                    !isProductVariantPurchasable(v) && "is-disabled"
-                  )}
-                >
-                  {v.size}
-                </button>
-              ))}
+              {variants.slice(0, 3).map((v) => {
+                const meta = getVariantOptionMeta(v.size);
+                return (
+                  <button
+                    key={v.id}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      pickVariant(v);
+                    }}
+                    title={v.size}
+                    disabled={!isProductVariantPurchasable(v)}
+                    className={cn(
+                      "store-size-chip is-overlay",
+                      selectedVariant?.id === v.id && isProductVariantPurchasable(v) && "is-selected",
+                      !isProductVariantPurchasable(v) && "is-disabled"
+                    )}
+                  >
+                    {meta.cleanSize}
+                  </button>
+                );
+              })}
             </div>
           )}
 
@@ -747,14 +755,22 @@ export function ProductCard({
                   >
                     <span className="store-card-price-size-label">Размер</span>
                     <span className="store-card-price-size">
-                      <span>{selectedVariant.size}</span>
+                      <span>{selectedVariantSizeLabel}</span>
+                      {selectedVariantGradeLabel && (
+                        <small>{selectedVariantGradeLabel}</small>
+                      )}
                       <ChevronRight className="h-3 w-3" aria-hidden="true" />
                     </span>
                   </button>
                 ) : (
                   <div className="store-card-price-size-row">
                     <span className="store-card-price-size-label">Размер</span>
-                    <span className="store-card-price-size">{selectedVariant.size}</span>
+                    <span className="store-card-price-size">
+                      <span>{selectedVariantSizeLabel}</span>
+                      {selectedVariantGradeLabel && (
+                        <small>{selectedVariantGradeLabel}</small>
+                      )}
+                    </span>
                   </div>
                 )
               )}
@@ -830,6 +846,7 @@ export function ProductCard({
                 <div className="store-card-variant-grid">
                   {variants.map((variant) => {
                     const selected = selectedVariant?.id === variant.id;
+                    const variantMeta = getVariantOptionMeta(variant.size);
                     const fallbackUnit = pickVariantUnit(variant, saleUnit);
                     const priceUnit = getUnitPrice(variant, effectiveUnit) ? effectiveUnit : fallbackUnit;
                     const price = priceUnit ? getUnitPrice(variant, priceUnit) : null;
@@ -854,7 +871,10 @@ export function ProductCard({
                           (!isProductVariantPurchasable(variant) || !priceInfo) && "is-disabled",
                         )}
                       >
-                        <span className="store-card-variant-size">{variant.size}</span>
+                        <span className="store-card-variant-size">{variantMeta.cleanSize}</span>
+                        {variantMeta.grade && (
+                          <small className="store-card-variant-caption">{variantMeta.grade}</small>
+                        )}
                         {priceInfo && (
                           <span className="store-card-variant-price">
                             {formatPrice(priceInfo.price)}
@@ -979,6 +999,7 @@ export function ProductCard({
                     <div className="store-variant-sheet-grid mt-2 grid grid-cols-2 gap-2 overflow-y-auto pr-1">
                       {variants.map((variant) => {
                         const selected = selectedVariant?.id === variant.id;
+                        const variantMeta = getVariantOptionMeta(variant.size);
                         const fallbackUnit = pickVariantUnit(variant, saleUnit);
                         const priceUnit = getUnitPrice(variant, effectiveUnit) ? effectiveUnit : fallbackUnit;
                         const price = priceUnit ? getUnitPrice(variant, priceUnit) : null;
@@ -1003,7 +1024,12 @@ export function ProductCard({
                               !isProductVariantPurchasable(variant) && "is-disabled",
                             )}
                           >
-                            <span className="store-variant-option-size">{variant.size}</span>
+                            <span className="store-variant-option-size">{variantMeta.cleanSize}</span>
+                            {variantMeta.grade && (
+                              <span className="store-variant-option-prices">
+                                <span className="store-variant-option-price">{variantMeta.grade}</span>
+                              </span>
+                            )}
                             {priceInfo && (
                               <span className="store-variant-option-prices">
                                 <span className={cn("store-variant-option-price", selected && "is-active")}>
