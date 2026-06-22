@@ -53,6 +53,7 @@ type Story = {
 };
 
 const PHOTO_STORY_MS = 6500;
+const STORY_VIDEO_FALLBACK_POSTER = "/images/production/hero-main.webp";
 
 function isVideo(type: StoreStoryKind) {
   return type === "VIDEO" || type === "LIVE";
@@ -68,9 +69,12 @@ function isExternalHref(href: string) {
 }
 
 function storyVisual(story: Story) {
-  if (story.type === "IMAGE") return story.mediaUrl || story.posterUrl || "";
-  if (story.posterUrl) return story.posterUrl;
-  return story.mediaUrl && canInlineVideo(story.mediaUrl) ? story.mediaUrl : "";
+  const poster =
+    story.posterUrl ||
+    story.relations?.find((relation) => Boolean(relation.image))?.image ||
+    (isVideo(story.type) ? STORY_VIDEO_FALLBACK_POSTER : "");
+  if (story.type === "IMAGE") return story.mediaUrl || poster;
+  return poster;
 }
 
 function relationLabel(type: string) {
@@ -135,7 +139,7 @@ function StoryVisual({
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
-  const visual = story.type === "IMAGE" ? storyVisual(story) : story.posterUrl || "";
+  const visual = storyVisual(story);
   const hasVideo = Boolean(active && isVideo(story.type) && story.mediaUrl && canInlineVideo(story.mediaUrl));
 
   useEffect(() => {

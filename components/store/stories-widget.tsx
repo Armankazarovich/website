@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, CirclePlay, Eye, Pause, Play, Radio, Sparkles, Volume2, VolumeX, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,6 +42,9 @@ type StoryRelation = {
 
 const PHOTO_STORY_MS = 6500;
 const STORIES_WIDGET_HIDDEN_KEY = "pilorus:stories-widget-hidden";
+const STORY_PREVIEW_VIDEO_DELAY_MS = 1800;
+const STORY_PREVIEW_VIDEO_MAX_BYTES = 12 * 1024 * 1024;
+const STORY_VIDEO_FALLBACK_POSTER = "/images/production/hero-main.webp";
 
 function deriveEntity(pathname: string) {
   const productMatch = pathname.match(/^\/product\/([^/?#]+)/);
@@ -62,10 +65,17 @@ function canInlineVideo(url?: string | null) {
   return /^(blob:|data:video)/i.test(value) || /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(value);
 }
 
+function storyPoster(story: Story) {
+  return (
+    story.posterUrl ||
+    story.relations?.find((relation) => Boolean(relation.image))?.image ||
+    (isVideoStory(story) ? STORY_VIDEO_FALLBACK_POSTER : "")
+  );
+}
+
 function storyVisual(story: Story) {
-  if (story.type === "IMAGE") return story.mediaUrl || story.posterUrl || "";
-  if (story.posterUrl) return story.posterUrl;
-  return story.mediaUrl && canInlineVideo(story.mediaUrl) ? story.mediaUrl : "";
+  if (story.type === "IMAGE") return story.mediaUrl || storyPoster(story);
+  return storyPoster(story);
 }
 
 function storyRelations(story: Story) {
@@ -102,6 +112,7 @@ function StoryMedia({
   onVideoProgress,
   onVideoEnded,
   onTogglePaused,
+  allowPreviewVideo = false,
 }: {
   story: Story;
   expanded: boolean;
@@ -110,38 +121,98 @@ function StoryMedia({
   onVideoProgress?: (progress: number) => void;
   onVideoEnded?: () => void;
   onTogglePaused?: () => void;
+  allowPreviewVideo?: boolean;
 }) {
+  const [previewHost, setPreviewHost] = useState<HTMLElement | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
-  const src = story.type === "IMAGE" ? storyVisual(story) : story.posterUrl || "";
-  const showVideo = Boolean(expanded && isVideoStory(story) && story.mediaUrl && canInlineVideo(story.mediaUrl));
+  const [previewVideoEnabled, setPreviewVideoEnabled] = useState(false);
+  const src = storyVisual(story);
+  const hasInlineVideo = Boolean(isVideoStory(story) && story.mediaUrl && canInlineVideo(story.mediaUrl));
+  const showVideo = Boolean((expanded || previewVideoEnabled) && hasInlineVideo);
+  const videoActive = expanded || previewVideoEnabled;
+  const setVideoNode = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    setPreviewHost(node);
+  }, []);
 
   useEffect(() => {
-    setVideoLoading(showVideo);
-  }, [showVideo, story.mediaUrl]);
+    setPreviewVisible(false);
+    if (!allowPreviewVideo || !previewHost || typeof window === "undefined") return;
+
+    if (!("IntersectionObserver" in window)) {
+      const rect = previewHost.getBoundingClientRect();
+      setPreviewVisible(rect.width > 0 && rect.height > 0);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setPreviewVisible(Boolean(entry?.isIntersecting && entry.intersectionRatio > 0));
+      },
+      { threshold: 0.15 },
+    );
+    observer.observe(previewHost);
+    return () => observer.disconnect();
+  }, [allowPreviewVideo, previewHost]);
+
+  useEffect(() => {
+    setVideoLoading(showVideo && expanded);
+  }, [expanded, showVideo, story.mediaUrl]);
+
+  useEffect(() => {
+    setPreviewVideoEnabled(false);
+    if (expanded || !allowPreviewVideo || !previewVisible || !hasInlineVideo || !story.mediaUrl) return;
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (mediaQuery.matches) return;
+
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+    if (connection?.saveData || /(^|-)2g$/i.test(connection?.effectiveType || "")) return;
+
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(story.mediaUrl || "", { method: "HEAD", cache: "force-cache" });
+        const bytes = Number(response.headers.get("content-length") || 0);
+        if (!cancelled && bytes > 0 && bytes <= STORY_PREVIEW_VIDEO_MAX_BYTES) {
+          setPreviewVideoEnabled(true);
+        }
+      } catch {
+        // If the server cannot answer HEAD, keep the compact widget lightweight.
+      }
+    }, STORY_PREVIEW_VIDEO_DELAY_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [allowPreviewVideo, expanded, hasInlineVideo, previewVisible, story.mediaUrl]);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !expanded) return;
-    if (paused) {
+    if (!video || !videoActive) return;
+    if (expanded && paused) {
       video.pause();
       return;
     }
     video.play().catch(() => null);
-  }, [expanded, paused, story.mediaUrl]);
+  }, [expanded, paused, previewVideoEnabled, story.mediaUrl, videoActive]);
 
   if (showVideo) {
     return (
       <div className="relative h-full w-full bg-background">
         <video
-          ref={videoRef}
+          ref={setVideoNode}
           className="h-full w-full bg-background object-cover"
           src={story.mediaUrl || undefined}
           poster={story.posterUrl || undefined}
           playsInline
           muted={!expanded || !soundEnabled}
           loop={!expanded}
-          autoPlay={expanded}
+          autoPlay={videoActive}
           controls={false}
           preload="metadata"
           onClick={() => {
@@ -173,19 +244,28 @@ function StoryMedia({
   }
 
   if (src) {
-    return <img src={src} alt={story.title} className="h-full w-full bg-background object-cover" loading="lazy" decoding="async" />;
+    return (
+      <img
+        ref={setPreviewHost}
+        src={src}
+        alt={story.title}
+        className="h-full w-full bg-background object-cover"
+        loading="lazy"
+        decoding="async"
+      />
+    );
   }
 
   if (isVideoStory(story)) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-card text-primary">
+      <div ref={setPreviewHost} className="flex h-full w-full items-center justify-center bg-card text-primary">
         <CirclePlay className="h-10 w-10" />
       </div>
     );
   }
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-card text-primary">
+    <div ref={setPreviewHost} className="flex h-full w-full items-center justify-center bg-card text-primary">
       <Sparkles className="h-10 w-10" />
     </div>
   );
@@ -391,7 +471,7 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
           onClick={openStory}
           className="group relative h-[214px] w-full overflow-hidden rounded-2xl border border-primary/28 bg-card shadow-2xl shadow-black/25 transition-colors hover:border-primary/58"
         >
-          <StoryMedia story={current} expanded={false} />
+          <StoryMedia story={current} expanded={false} allowPreviewVideo />
           <span className="absolute inset-0 bg-background/68" />
           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-1 text-[10px] font-semibold text-foreground">
             {current.type === "LIVE" ? <Radio className="h-3 w-3" /> : <CirclePlay className="h-3 w-3" />}
@@ -441,7 +521,7 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
           aria-label="Открыть сторис"
           title={current.title}
         >
-          <StoryMedia story={current} expanded={false} />
+          <StoryMedia story={current} expanded={false} allowPreviewVideo />
           <span className="absolute inset-0 bg-background/35" />
           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/95 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-foreground">
             {current.type === "LIVE" ? <Radio className="h-2.5 w-2.5 text-primary" /> : <CirclePlay className="h-2.5 w-2.5 text-primary" />}
