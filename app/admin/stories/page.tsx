@@ -1,7 +1,7 @@
 "use client";
 
 import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
@@ -13,7 +13,9 @@ import {
   Image as ImageIcon,
   Link2,
   Loader2,
+  Pause,
   Pencil,
+  Play,
   Plus,
   Radio,
   Search,
@@ -271,14 +273,27 @@ function StoryPreview({ story }: { story: StoryForm | Story }) {
   const visual = story.posterUrl || mediaUrl;
   const Icon = getTypeIcon(story.type);
   const shouldRenderVideo = story.type !== "IMAGE" && mediaUrl.length > 0 && storyTypeFromMedia(mediaUrl) === "VIDEO";
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const [previewSound, setPreviewSound] = useState(false);
+  const [previewPaused, setPreviewPaused] = useState(false);
   useEffect(() => {
     setPreviewSound(false);
+    setPreviewPaused(false);
   }, [mediaUrl]);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !shouldRenderVideo) return;
+    if (previewPaused) {
+      video.pause();
+      return;
+    }
+    video.play().catch(() => null);
+  }, [previewPaused, shouldRenderVideo]);
   return (
     <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-border bg-background">
       {shouldRenderVideo ? (
         <video
+          ref={videoRef}
           src={mediaUrl}
           poster={story.posterUrl || undefined}
           className="h-full w-full object-cover"
@@ -287,6 +302,7 @@ function StoryPreview({ story }: { story: StoryForm | Story }) {
           playsInline
           autoPlay
           preload="metadata"
+          onClick={() => setPreviewPaused((paused) => !paused)}
         />
       ) : visual ? (
         <img src={visual} alt={story.title || "Story"} className="h-full w-full object-cover" />
@@ -301,25 +317,41 @@ function StoryPreview({ story }: { story: StoryForm | Story }) {
         {TYPE_LABEL[story.type]}
       </span>
       {shouldRenderVideo && (
-        <button
-          type="button"
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            setPreviewSound((enabled) => !enabled);
-          }}
-          className={cn(
-            "absolute right-3 top-3 inline-flex min-h-7 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold transition-colors",
-            previewSound
-                  ? "border-primary/45 bg-primary/15 text-primary"
-              : "border-border bg-card/90 text-foreground hover:border-primary/40",
-          )}
-          aria-label={previewSound ? "Выключить звук превью" : "Включить звук превью"}
-          title={previewSound ? "Выключить звук" : "Включить звук"}
-        >
-          {previewSound ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3 text-primary" />}
-          {previewSound ? "выкл." : "звук"}
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setPreviewPaused((paused) => !paused);
+            }}
+            className="absolute left-3 top-3 inline-flex min-h-7 items-center gap-1 rounded-full border border-border bg-card/90 px-2 text-[10px] font-semibold text-foreground transition-colors hover:border-primary/40"
+            aria-label={previewPaused ? "Продолжить превью" : "Поставить превью на паузу"}
+            title={previewPaused ? "Продолжить" : "Пауза"}
+          >
+            {previewPaused ? <Play className="h-3 w-3 text-primary" /> : <Pause className="h-3 w-3 text-primary" />}
+            {previewPaused ? "пуск" : "пауза"}
+          </button>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              setPreviewSound((enabled) => !enabled);
+            }}
+            className={cn(
+              "absolute right-3 top-3 inline-flex min-h-7 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold transition-colors",
+              previewSound
+                    ? "border-primary/45 bg-primary/15 text-primary"
+                : "border-border bg-card/90 text-foreground hover:border-primary/40",
+            )}
+            aria-label={previewSound ? "Выключить звук превью" : "Включить звук превью"}
+            title={previewSound ? "Выключить звук" : "Включить звук"}
+          >
+            {previewSound ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3 text-primary" />}
+            {previewSound ? "выкл." : "звук"}
+          </button>
+        </>
       )}
       <span className={cn(
         "absolute right-3 rounded-full border border-border bg-card/90 px-2 py-1 text-[10px] font-semibold text-muted-foreground",

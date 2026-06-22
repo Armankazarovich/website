@@ -140,6 +140,23 @@ function polishStoryDraft(value: string, kind: StoryMessageKind, relationName?: 
   return buildArayBusinessMessengerText({ text: value, kind, relationLabel: relationName });
 }
 
+function storyDraftSuggestion(kind: StoryMessageKind, relationName?: string | null, attachmentsCount = 0) {
+  const relation = relationName ? ` по "${relationName}"` : "";
+  if (attachmentsCount > 0) {
+    return `Здравствуйте. Прикрепил(а) файл${relation}. Подскажите, пожалуйста, что можно сделать и какой следующий шаг.`;
+  }
+  if (kind === "offer") {
+    return `Здравствуйте. Рассчитайте, пожалуйста${relation}: размер ___, объем ___, доставка в ___. Подскажите итоговую цену и срок.`;
+  }
+  if (kind === "review") {
+    return `Хочу оставить отзыв${relation}: товар понравился, доставка прошла ___, менеджер помог ___.`;
+  }
+  if (kind === "comment") {
+    return `Комментарий по сторис${relation}: хочу уточнить ___ и понять, подойдет ли это для моей задачи.`;
+  }
+  return `Здравствуйте. Подскажите, пожалуйста${relation}: есть ли в наличии, какой сорт и когда возможна доставка.`;
+}
+
 function contactPayload(value: string) {
   const contact = value.replace(/\s+/g, " ").trim();
   if (!contact) return {};
@@ -378,7 +395,7 @@ export function StoryActionDrawer({
   };
 
   const polishDraft = () => {
-    const source = draft || (attachments.length ? "Передаю вложение для уточнения." : "");
+    const source = draft.trim() || storyDraftSuggestion(messageKind, relationName, attachments.length);
     setDraft(polishStoryDraft(source, messageKind, relationName));
     setMessageStatus("idle");
     setMessageError("");

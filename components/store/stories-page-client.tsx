@@ -8,6 +8,8 @@ import {
   ChevronLeft,
   ChevronRight,
   CirclePlay,
+  Pause,
+  Play,
   Radio,
   Sparkles,
   Volume2,
@@ -118,21 +120,36 @@ function StoryVisual({
   story,
   active,
   soundEnabled = false,
+  paused = false,
   onVideoProgress,
   onVideoEnded,
+  onTogglePaused,
 }: {
   story: Story;
   active?: boolean;
   soundEnabled?: boolean;
+  paused?: boolean;
   onVideoProgress?: (progress: number) => void;
   onVideoEnded?: () => void;
+  onTogglePaused?: () => void;
 }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const visual = storyVisual(story);
   const hasVideo = isVideo(story.type) && story.mediaUrl && canInlineVideo(story.mediaUrl);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !active) return;
+    if (paused) {
+      video.pause();
+      return;
+    }
+    video.play().catch(() => null);
+  }, [active, paused, story.mediaUrl]);
 
   if (hasVideo) {
     return (
       <video
+        ref={videoRef}
         src={story.mediaUrl || undefined}
         poster={story.posterUrl || undefined}
         className="h-full w-full bg-background object-cover"
@@ -142,6 +159,9 @@ function StoryVisual({
         loop={!active}
         playsInline
         preload="metadata"
+        onClick={() => {
+          if (active) onTogglePaused?.();
+        }}
         onLoadedMetadata={() => onVideoProgress?.(0)}
         onTimeUpdate={(event) => {
           const video = event.currentTarget;
@@ -225,6 +245,7 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
   const searchParams = useSearchParams();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const timerRef = useRef<number | null>(null);
@@ -237,6 +258,7 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
   const close = () => {
     setActiveIndex(null);
     setSoundEnabled(false);
+    setPaused(false);
     setProgress(0);
     setDetailsOpen(false);
   };
@@ -244,6 +266,7 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
   const open = (index: number) => {
     setActiveIndex(index);
     setSoundEnabled(false);
+    setPaused(false);
     setProgress(0);
     setDetailsOpen(false);
   };
@@ -257,24 +280,27 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
   const next = useCallback(() => {
     if (!total) return;
     setProgress(0);
+    setPaused(false);
     setActiveIndex((value) => (value === null ? 0 : (value + 1) % total));
   }, [total]);
 
   const prev = useCallback(() => {
     if (!total) return;
     setProgress(0);
+    setPaused(false);
     setActiveIndex((value) => (value === null ? 0 : (value - 1 + total) % total));
   }, [total]);
 
   useEffect(() => {
     setProgress(0);
     setDetailsOpen(false);
+    setPaused(false);
   }, [activeStory?.id]);
 
   useEffect(() => {
     if (!activeStory) return;
     if (timerRef.current) window.clearInterval(timerRef.current);
-    if (detailsOpen) return;
+    if (detailsOpen || paused) return;
     if (isVideo(activeStory.type) && activeStory.mediaUrl && canInlineVideo(activeStory.mediaUrl)) return;
 
     const startedAt = Date.now();
@@ -287,7 +313,7 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
-  }, [activeStory, detailsOpen, next]);
+  }, [activeStory, detailsOpen, next, paused]);
 
   if (stories.length === 0) {
     return (
@@ -302,6 +328,16 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
       </div>
     );
   }
+
+  const storyFrozen = paused || detailsOpen;
+  const toggleStoryPaused = () => {
+    if (storyFrozen) {
+      setDetailsOpen(false);
+      setPaused(false);
+      return;
+    }
+    setPaused(true);
+  };
 
   return (
     <>
@@ -404,35 +440,49 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
                 story={activeStory}
                 active
                 soundEnabled={soundEnabled}
+                paused={storyFrozen}
+                onTogglePaused={toggleStoryPaused}
                 onVideoProgress={(nextProgress) => {
-                  if (!detailsOpen) setProgress(nextProgress);
+                  if (!storyFrozen) setProgress(nextProgress);
                 }}
                 onVideoEnded={() => {
-                  if (detailsOpen) return;
+                  if (storyFrozen) return;
                   setProgress(1);
                   if (total > 1) next();
                 }}
               />
               {isVideo(activeStory.type) && activeStory.mediaUrl && canInlineVideo(activeStory.mediaUrl) && (
-                <button
-                  type="button"
-                  onClick={() => setSoundEnabled((enabled) => !enabled)}
-                  className={cn(
-                    "absolute right-3 top-3 inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition-colors",
-                    soundEnabled
-                      ? "border-primary/45 bg-primary/15 text-primary hover:bg-primary/20"
-                      : "border-border bg-card/95 text-foreground hover:border-primary/45",
-                  )}
-                  aria-label={soundEnabled ? "Выключить звук сторис" : "Включить звук сторис"}
-                  title={soundEnabled ? "Выключить звук" : "Включить звук"}
-                >
-                  {soundEnabled ? (
-                    <VolumeX className="h-4 w-4 text-primary-foreground" />
-                  ) : (
-                    <Volume2 className="h-4 w-4 text-primary" />
-                  )}
-                  {soundEnabled ? "Выключить звук" : "Включить звук"}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={toggleStoryPaused}
+                    className="absolute left-3 top-3 inline-flex min-h-9 items-center gap-2 rounded-full border border-border bg-card/95 px-3 text-xs font-semibold text-foreground transition-colors hover:border-primary/45"
+                    aria-label={storyFrozen ? "Продолжить сторис" : "Поставить сторис на паузу"}
+                    title={storyFrozen ? "Продолжить" : "Пауза"}
+                  >
+                    {storyFrozen ? <Play className="h-4 w-4 text-primary" /> : <Pause className="h-4 w-4 text-primary" />}
+                    {storyFrozen ? "Продолжить" : "Пауза"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSoundEnabled((enabled) => !enabled)}
+                    className={cn(
+                      "absolute right-3 top-3 inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition-colors",
+                      soundEnabled
+                        ? "border-primary/45 bg-primary/15 text-primary hover:bg-primary/20"
+                        : "border-border bg-card/95 text-foreground hover:border-primary/45",
+                    )}
+                    aria-label={soundEnabled ? "Выключить звук сторис" : "Включить звук сторис"}
+                    title={soundEnabled ? "Выключить звук" : "Включить звук"}
+                  >
+                    {soundEnabled ? (
+                      <VolumeX className="h-4 w-4 text-primary-foreground" />
+                    ) : (
+                      <Volume2 className="h-4 w-4 text-primary" />
+                    )}
+                    {soundEnabled ? "Выключить звук" : "Включить звук"}
+                  </button>
+                </>
               )}
               {total > 1 && (
                 <>

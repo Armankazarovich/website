@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight, CirclePlay, Eye, Radio, Sparkles, Volume2, VolumeX, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, CirclePlay, Eye, Pause, Play, Radio, Sparkles, Volume2, VolumeX, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFloatingChromeHidden } from "@/lib/use-floating-ui";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
@@ -98,19 +98,35 @@ function StoryMedia({
   story,
   expanded,
   soundEnabled = false,
+  paused = false,
   onVideoProgress,
   onVideoEnded,
+  onTogglePaused,
 }: {
   story: Story;
   expanded: boolean;
   soundEnabled?: boolean;
+  paused?: boolean;
   onVideoProgress?: (progress: number) => void;
   onVideoEnded?: () => void;
+  onTogglePaused?: () => void;
 }) {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const src = storyVisual(story);
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !expanded) return;
+    if (paused) {
+      video.pause();
+      return;
+    }
+    video.play().catch(() => null);
+  }, [expanded, paused, story.mediaUrl]);
+
   if (isVideoStory(story) && story.mediaUrl && canInlineVideo(story.mediaUrl)) {
     return (
       <video
+        ref={videoRef}
         className="h-full w-full bg-background object-cover"
         src={story.mediaUrl}
         poster={story.posterUrl || undefined}
@@ -119,6 +135,9 @@ function StoryMedia({
         loop={!expanded}
         autoPlay
         controls={false}
+        onClick={() => {
+          if (expanded) onTogglePaused?.();
+        }}
         onLoadedMetadata={(event) => {
           const duration = event.currentTarget.duration;
           if (Number.isFinite(duration) && duration > 0) onVideoProgress?.(0);
@@ -159,6 +178,7 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
     }
   });
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [storyProgress, setStoryProgress] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const viewedRef = useRef<Set<string>>(new Set());
@@ -229,10 +249,11 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
   useEffect(() => {
     setStoryProgress(0);
     setDetailsOpen(false);
+    setPaused(false);
   }, [current?.id, expanded]);
 
   useEffect(() => {
-    if (!expanded || detailsOpen || !current) return;
+    if (!expanded || detailsOpen || paused || !current) return;
     if (isVideoStory(current) && current.mediaUrl && canInlineVideo(current.mediaUrl)) return;
 
     const startedAt = Date.now();
@@ -246,16 +267,18 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
     }, 80);
 
     return () => window.clearInterval(timer);
-  }, [current, expanded, detailsOpen, total]);
+  }, [current, expanded, detailsOpen, paused, total]);
 
   if (!current || total === 0 || (floatingChromeHidden && !expanded)) return null;
 
   const next = () => {
     setStoryProgress(0);
+    setPaused(false);
     setIndex((value) => (value + 1) % total);
   };
   const prev = () => {
     setStoryProgress(0);
+    setPaused(false);
     setIndex((value) => (value - 1 + total) % total);
   };
   const relatedActions = storyRelations(current).slice(0, 6);
@@ -266,16 +289,27 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
   const compactLabel = current.type === "LIVE" ? "LIVE" : "Обзор";
   const openStory = () => {
     setSoundEnabled(false);
+    setPaused(false);
     setExpanded(true);
   };
   const closeStory = () => {
     setExpanded(false);
     setSoundEnabled(false);
+    setPaused(false);
     setStoryProgress(0);
   };
   const hideWidget = () => {
     setHidden(true);
     closeStory();
+  };
+  const storyFrozen = paused || detailsOpen;
+  const toggleStoryPaused = () => {
+    if (storyFrozen) {
+      setDetailsOpen(false);
+      setPaused(false);
+      return;
+    }
+    setPaused(true);
   };
 
   if (hidden) {
@@ -369,34 +403,34 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
       {!expanded && (
       <div
         data-store-stories-mini-video
-        className="fixed right-3 z-[44] h-[108px] w-[70px] sm:hidden"
+        className="fixed right-2 z-[44] h-[112px] w-[76px] sm:hidden"
         style={{ bottom: "calc(5.75rem + env(safe-area-inset-bottom, 0px))" }}
       >
         <button
           type="button"
           onClick={openStory}
           data-store-stories-compact-trigger
-          className="relative flex h-full w-full overflow-hidden rounded-[20px] border border-primary/35 bg-card shadow-2xl shadow-black/25 transition-transform active:scale-[0.96]"
+          className="relative flex h-full w-full overflow-hidden rounded-2xl border border-border bg-card transition-colors active:scale-[0.97]"
           aria-label="Открыть сторис"
           title={current.title}
         >
           <StoryMedia story={current} expanded={false} />
-          <span className="absolute inset-0 bg-background/45" />
-          <span className="absolute left-1.5 top-1.5 inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/95 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-foreground">
+          <span className="absolute inset-0 bg-background/35" />
+          <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/95 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-foreground">
             {current.type === "LIVE" ? <Radio className="h-2.5 w-2.5 text-primary" /> : <CirclePlay className="h-2.5 w-2.5 text-primary" />}
             {compactLabel}
           </span>
-          <span className="absolute bottom-1.5 left-1.5 right-1.5 line-clamp-2 text-left text-[9.5px] font-semibold leading-3 text-foreground">
+          <span className="absolute bottom-2 left-2 right-2 line-clamp-2 rounded-xl border border-border/70 bg-card/95 px-2 py-1.5 text-left text-[9.5px] font-semibold leading-3 text-foreground">
             {current.title}
           </span>
           {current.type === "LIVE" && (
-            <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-card bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.75)]" />
+            <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-500" />
           )}
         </button>
         <button
           type="button"
           onClick={hideWidget}
-          className="absolute -left-2 -top-2 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary"
+          className="absolute -left-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary"
           aria-label="Свернуть сторис в бок"
           title="Свернуть в бок"
         >
@@ -515,35 +549,49 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
                 story={current}
                 expanded
                 soundEnabled={soundEnabled}
+                paused={storyFrozen}
+                onTogglePaused={toggleStoryPaused}
                 onVideoProgress={(progress) => {
-                  if (!detailsOpen) setStoryProgress(progress);
+                  if (!storyFrozen) setStoryProgress(progress);
                 }}
                 onVideoEnded={() => {
-                  if (detailsOpen) return;
+                  if (storyFrozen) return;
                   setStoryProgress(1);
                   if (total > 1) setIndex((value) => (value + 1) % total);
                 }}
               />
               {hasInlineVideo && (
-                <button
-                  type="button"
-                  onClick={() => setSoundEnabled((enabled) => !enabled)}
-                  className={cn(
-                    "absolute right-3 top-3 inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition-colors",
-                    soundEnabled
-                      ? "border-primary/45 bg-primary/15 text-primary hover:bg-primary/20"
-                      : "border-border bg-card/95 text-foreground hover:border-primary/45",
-                  )}
-                  aria-label={soundEnabled ? "Выключить звук сторис" : "Включить звук сторис"}
-                  title={soundEnabled ? "Выключить звук" : "Включить звук"}
-                >
-                  {soundEnabled ? (
-                    <VolumeX className="h-4 w-4 text-primary-foreground" />
-                  ) : (
-                    <Volume2 className="h-4 w-4 text-primary" />
-                  )}
-                  {soundEnabled ? "Выключить звук" : "Включить звук"}
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={toggleStoryPaused}
+                    className="absolute left-3 top-3 inline-flex min-h-9 items-center gap-2 rounded-full border border-border bg-card/95 px-3 text-xs font-semibold text-foreground transition-colors hover:border-primary/45"
+                    aria-label={storyFrozen ? "Продолжить сторис" : "Поставить сторис на паузу"}
+                    title={storyFrozen ? "Продолжить" : "Пауза"}
+                  >
+                    {storyFrozen ? <Play className="h-4 w-4 text-primary" /> : <Pause className="h-4 w-4 text-primary" />}
+                    {storyFrozen ? "Продолжить" : "Пауза"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSoundEnabled((enabled) => !enabled)}
+                    className={cn(
+                      "absolute right-3 top-3 inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition-colors",
+                      soundEnabled
+                        ? "border-primary/45 bg-primary/15 text-primary hover:bg-primary/20"
+                        : "border-border bg-card/95 text-foreground hover:border-primary/45",
+                    )}
+                    aria-label={soundEnabled ? "Выключить звук сторис" : "Включить звук сторис"}
+                    title={soundEnabled ? "Выключить звук" : "Включить звук"}
+                  >
+                    {soundEnabled ? (
+                      <VolumeX className="h-4 w-4 text-primary-foreground" />
+                    ) : (
+                      <Volume2 className="h-4 w-4 text-primary" />
+                    )}
+                    {soundEnabled ? "Выключить звук" : "Включить звук"}
+                  </button>
+                </>
               )}
               {total > 1 && (
                 <>
