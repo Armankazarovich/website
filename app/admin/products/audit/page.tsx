@@ -52,6 +52,7 @@ export default async function ProductsAuditPage() {
       size: v.size,
       pricePerCube: v.pricePerCube ? Number(v.pricePerCube) : null,
       pricePerPiece: v.pricePerPiece ? Number(v.pricePerPiece) : null,
+      pricePerSquareMeter: v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null,
       piecesPerCube: v.piecesPerCube,
       inStock: v.inStock,
       stockQty: v.stockQty,

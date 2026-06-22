@@ -51,6 +51,12 @@ Production domain: `pilo-rus.ru`
 - Final DB audit saved to `tmp/pilorus-price-unit-final-audit-2026-06-20.md` and `.json`: 164 variants have m2 prices, 7 products are strictly `SQUARE`, 2 imitatciya-brusa products remain `BOTH` only for documented piece exceptions, suspicious rows: 0.
 - Requested CSV `C:\Users\StormPC\Downloads\wc-product-export-19-6-2026-1781860375144.csv` was not found locally during this pass; no CSV rows were applied.
 
+## Price Unit Admin Fix On 2026-06-22
+
+- Live product check: `Планкен из кедра` (`cmqf0jb3m01acb6fdgbz9j7jv`) is active, has an image and 4 variants, all priced by `pricePerSquareMeter`.
+- Fixed admin product list/readiness, product audit, email product insertion, inventory list/edit/export/import refresh, product duplication, and bulk price updates so m2-only variants are treated as priced.
+- This prevents active m2 products from being marked as "no price" / hidden in admin screens while still appearing correctly on the public product page.
+
 ## Fixed In This Pass
 
 - Old forbidden radii were moved to approved `rounded-xl` / `rounded-2xl` patterns.

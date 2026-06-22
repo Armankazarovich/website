@@ -19,6 +19,7 @@ type ApiProduct = {
     size?: string | null;
     pricePerCube?: number | string | null;
     pricePerPiece?: number | string | null;
+    pricePerSquareMeter?: number | string | null;
     inStock?: boolean;
   }[];
 };
@@ -43,6 +44,7 @@ function normalizeProducts(products: ApiProduct[]) {
       size: variant.size ?? null,
       pricePerCube: variant.pricePerCube ?? null,
       pricePerPiece: variant.pricePerPiece ?? null,
+      pricePerSquareMeter: variant.pricePerSquareMeter ?? null,
       inStock: variant.inStock,
     })),
   }));

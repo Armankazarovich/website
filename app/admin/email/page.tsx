@@ -443,7 +443,7 @@ export default function EmailPage() {
       id: string;
       name: string;
       slug: string;
-      variants: { pricePerCube: number | null; pricePerPiece: number | null }[];
+      variants: { pricePerCube: number | null; pricePerPiece: number | null; pricePerSquareMeter: number | null }[];
     }[]
   >([]);
   const [productSearch, setProductSearch] = useState("");
@@ -506,7 +506,7 @@ export default function EmailPage() {
 
   const insertProduct = (p: (typeof productList)[0]) => {
     const price =
-      p.variants[0]?.pricePerCube ?? p.variants[0]?.pricePerPiece ?? 0;
+      p.variants[0]?.pricePerCube ?? p.variants[0]?.pricePerSquareMeter ?? p.variants[0]?.pricePerPiece ?? 0;
     const priceStr =
       price > 0 ? `от ${price.toLocaleString("ru-RU")} ₽` : "Цена по запросу";
     const block = `\n<table width="100%" cellpadding="0" cellspacing="0" style="margin:12px 0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
@@ -993,6 +993,7 @@ export default function EmailPage() {
                     .map((p) => {
                       const price =
                         p.variants[0]?.pricePerCube ??
+                        p.variants[0]?.pricePerSquareMeter ??
                         p.variants[0]?.pricePerPiece ??
                         0;
                       return (

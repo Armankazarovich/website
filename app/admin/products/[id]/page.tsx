@@ -780,6 +780,7 @@ export default function AdminProductEditPage() {
           size: v.size,
           pricePerCube: v.pricePerCube,
           pricePerPiece: v.pricePerPiece,
+          pricePerSquareMeter: v.pricePerSquareMeter,
           piecesPerCube: v.piecesPerCube,
           inStock: v.inStock,
         })),

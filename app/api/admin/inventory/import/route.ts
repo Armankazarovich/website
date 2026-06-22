@@ -271,6 +271,7 @@ export async function POST(req: NextRequest) {
       lowStockThreshold: true,
       pricePerCube: true,
       pricePerPiece: true,
+      pricePerSquareMeter: true,
     },
   });
   const alertSync = await syncLowStockAlerts(prisma, {
@@ -310,6 +311,7 @@ export async function POST(req: NextRequest) {
       ...variant,
       pricePerCube: variant.pricePerCube === null ? null : Number(variant.pricePerCube),
       pricePerPiece: variant.pricePerPiece === null ? null : Number(variant.pricePerPiece),
+      pricePerSquareMeter: variant.pricePerSquareMeter === null ? null : Number(variant.pricePerSquareMeter),
     })),
   });
 }

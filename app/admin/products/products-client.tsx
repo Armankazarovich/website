@@ -26,6 +26,7 @@ type Product = {
     size?: string | null;
     pricePerCube: number | string | null;
     pricePerPiece: number | string | null;
+    pricePerSquareMeter: number | string | null;
     inStock?: boolean;
   }[];
   category: { name: string };
@@ -179,10 +180,13 @@ export function ProductsClient({
   }, [searchParamString, searchQuery]);
 
   const minPrice = (p: Product) => {
-    const min = p.variants.reduce((m, v) => {
-      const price = Number(v.pricePerCube ?? v.pricePerPiece ?? 0);
-      return price > 0 && price < m ? price : m;
-    }, Infinity);
+    let min = Infinity;
+    for (const v of p.variants) {
+      for (const raw of [v.pricePerCube, v.pricePerSquareMeter, v.pricePerPiece]) {
+        const price = Number(raw ?? 0);
+        if (price > 0 && price < min) min = price;
+      }
+    }
     return min === Infinity ? null : min;
   };
 

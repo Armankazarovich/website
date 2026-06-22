@@ -17,6 +17,7 @@ type Variant = {
   size: string;
   pricePerCube: unknown;
   pricePerPiece: unknown;
+  pricePerSquareMeter: unknown;
   inStock: boolean;
   stockQty: number | null;
   lowStockThreshold?: number;
@@ -29,9 +30,9 @@ type Variant = {
   };
 };
 
-type EditField = "stockQty" | "pricePerCube" | "pricePerPiece";
+type EditField = "stockQty" | "pricePerCube" | "pricePerPiece" | "pricePerSquareMeter";
 
-type ColKey = "category" | "size" | "pricePerCube" | "pricePerPiece" | "stockQty" | "status";
+type ColKey = "category" | "size" | "pricePerCube" | "pricePerSquareMeter" | "pricePerPiece" | "stockQty" | "status";
 type StatusFilter = "all" | "in" | "out" | "tracked" | "low";
 
 type InventoryImportVariant = {
@@ -41,6 +42,7 @@ type InventoryImportVariant = {
   lowStockThreshold: number;
   pricePerCube: number | string | null;
   pricePerPiece: number | string | null;
+  pricePerSquareMeter: number | string | null;
 };
 
 type InventoryImportResult = {
@@ -79,12 +81,13 @@ const ALL_COLS: { key: ColKey; label: string }[] = [
   { key: "category",     label: "Категория" },
   { key: "size",         label: "Размер" },
   { key: "pricePerCube", label: "Цена м³" },
+  { key: "pricePerSquareMeter", label: "Цена м²" },
   { key: "pricePerPiece",label: "Цена шт" },
   { key: "stockQty",     label: "Остаток" },
   { key: "status",       label: "Статус" },
 ];
 
-const DEFAULT_COLS: ColKey[] = ["category","size","pricePerCube","pricePerPiece","stockQty","status"];
+const DEFAULT_COLS: ColKey[] = ["category","size","pricePerCube","pricePerSquareMeter","pricePerPiece","stockQty","status"];
 const LS_KEY = "inventory_visible_cols";
 
 const STATUS_FILTER_LABELS: Record<StatusFilter, string> = {
@@ -194,7 +197,7 @@ function EditCell({
 }) {
   const isEditing = editing?.id === v.id && editing?.field === field;
   const isSaving  = saving === v.id && isEditing;
-  const curVal = field === "stockQty" ? v.stockQty : field === "pricePerCube" ? v.pricePerCube : v.pricePerPiece;
+  const curVal = v[field];
   const [draft, setDraft] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const committedRef = useRef(false);
@@ -425,6 +428,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
           stockQty: data.stockQty,
           pricePerCube: data.pricePerCube,
           pricePerPiece: data.pricePerPiece,
+          pricePerSquareMeter: data.pricePerSquareMeter,
           lowStockThreshold: data.lowStockThreshold ?? v.lowStockThreshold,
         } : v));
         if (label) showToast(`Сохранено: ${label}`, "ok");
@@ -474,7 +478,12 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
       const curVariant = variants.find(v => v.id === id);
       if (!curVariant) return;
       setVariants(vs => vs.map(v => v.id === id ? { ...v, [field]: price } : v));
-      const label = field === "pricePerCube" ? `цена м³ ${price ?? "—"}` : `цена шт ${price ?? "—"}`;
+      const label =
+        field === "pricePerCube"
+          ? `цена м³ ${price ?? "—"}`
+          : field === "pricePerSquareMeter"
+            ? `цена м² ${price ?? "—"}`
+            : `цена шт ${price ?? "—"}`;
       const ok = await patchVariant(id, { [field]: price }, label);
       if (!ok) setVariants(vs => vs.map(v => v.id === id ? curVariant : v));
     }
@@ -567,6 +576,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
       "Товар",
       "Размер",
       "Цена м³",
+      "Цена м²",
       "Цена шт",
       "Остаток",
       "Статус",
@@ -578,6 +588,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
       v.product.name,
       v.size,
       v.pricePerCube ?? "",
+      v.pricePerSquareMeter ?? "",
       v.pricePerPiece ?? "",
       v.stockQty ?? "",
       stockStatusForExport(v),
@@ -634,6 +645,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
               lowStockThreshold: next.lowStockThreshold,
               pricePerCube: next.pricePerCube,
               pricePerPiece: next.pricePerPiece,
+              pricePerSquareMeter: next.pricePerSquareMeter,
             }
           : variant;
       }));
@@ -834,11 +846,17 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                   </div>
                   <StockBadge v={v} onToggle={() => requestStatusToggle(v)} />
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
+                <div className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
                   {col("pricePerCube") && (
                     <div className="min-w-0">
                       <p className="text-muted-foreground mb-0.5">Цена м³</p>
                       <EditCell v={v} field="pricePerCube" display={fmt(v.pricePerCube)} placeholder="0" {...editProps} />
+                    </div>
+                  )}
+                  {col("pricePerSquareMeter") && (
+                    <div className="min-w-0">
+                      <p className="text-muted-foreground mb-0.5">Цена м²</p>
+                      <EditCell v={v} field="pricePerSquareMeter" display={fmt(v.pricePerSquareMeter)} placeholder="0" {...editProps} />
                     </div>
                   )}
                   {col("pricePerPiece") && (
@@ -896,10 +914,14 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                     <StockBadge v={v} onToggle={() => requestStatusToggle(v)} />
                   </div>
 
-                  <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs xl:grid-cols-4">
                     <div className="rounded-xl bg-muted/35 px-2 py-1.5">
                       <p className="text-muted-foreground">Цена м³</p>
                       <EditCell v={v} field="pricePerCube" display={fmt(v.pricePerCube)} placeholder="0" {...editProps} />
+                    </div>
+                    <div className="rounded-xl bg-muted/35 px-2 py-1.5">
+                      <p className="text-muted-foreground">Цена м²</p>
+                      <EditCell v={v} field="pricePerSquareMeter" display={fmt(v.pricePerSquareMeter)} placeholder="0" {...editProps} />
                     </div>
                     <div className="rounded-xl bg-muted/35 px-2 py-1.5">
                       <p className="text-muted-foreground">Цена шт</p>
@@ -941,6 +963,7 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                     {col("category")      && <th className="text-left px-4 py-3 font-medium text-muted-foreground">Категория</th>}
                     {col("size")          && <th className="text-left px-4 py-3 font-medium text-muted-foreground">Размер</th>}
                     {col("pricePerCube")  && <th className="text-right px-4 py-3 font-medium text-muted-foreground">Цена м³</th>}
+                    {col("pricePerSquareMeter") && <th className="text-right px-4 py-3 font-medium text-muted-foreground">Цена м²</th>}
                     {col("pricePerPiece") && <th className="text-right px-4 py-3 font-medium text-muted-foreground">Цена шт</th>}
                     {col("stockQty")      && <th className="text-center px-4 py-3 font-medium text-muted-foreground">Остаток</th>}
                     {col("status")        && <th className="text-center px-4 py-3 font-medium text-muted-foreground print-hide">Статус</th>}
@@ -968,6 +991,11 @@ export function InventoryClient({ variants: init }: { variants: Variant[] }) {
                       {col("pricePerCube")  && (
                         <td className="px-4 py-3 text-right">
                           <EditCell v={v} field="pricePerCube" display={fmt(v.pricePerCube)} placeholder="цена" {...editProps} />
+                        </td>
+                      )}
+                      {col("pricePerSquareMeter") && (
+                        <td className="px-4 py-3 text-right">
+                          <EditCell v={v} field="pricePerSquareMeter" display={fmt(v.pricePerSquareMeter)} placeholder="цена" {...editProps} />
                         </td>
                       )}
                       {col("pricePerPiece") && (

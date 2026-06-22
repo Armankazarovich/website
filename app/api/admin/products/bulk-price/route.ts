@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   // Atomic batch: fetch current + update all in one transaction
   const variants = await prisma.productVariant.findMany({
     where: { productId: { in: productIds }, product: { tenantId } },
-    select: { id: true, productId: true, size: true, pricePerCube: true, pricePerPiece: true },
+    select: { id: true, productId: true, size: true, pricePerCube: true, pricePerPiece: true, pricePerSquareMeter: true },
   });
 
   if (variants.length === 0) {
@@ -61,12 +61,17 @@ export async function POST(req: Request) {
   // Pre-compute updates (skip null/zero prices)
   const updates = variants
     .map((v) => {
-      const data: { pricePerCube?: number; pricePerPiece?: number } = {};
+      const data: { pricePerCube?: number; pricePerPiece?: number; pricePerSquareMeter?: number } = {};
       const oldCube = v.pricePerCube ? Number(v.pricePerCube) : null;
       const oldPiece = v.pricePerPiece ? Number(v.pricePerPiece) : null;
+      const oldSquare = v.pricePerSquareMeter ? Number(v.pricePerSquareMeter) : null;
       if (oldCube && oldCube > 0) {
         const nextCube = round50(oldCube * multiplier);
         if (nextCube !== oldCube) data.pricePerCube = nextCube;
+      }
+      if (oldSquare && oldSquare > 0) {
+        const nextSquare = round50(oldSquare * multiplier);
+        if (nextSquare !== oldSquare) data.pricePerSquareMeter = nextSquare;
       }
       if (oldPiece && oldPiece > 0) {
         const nextPiece = round50(oldPiece * multiplier);

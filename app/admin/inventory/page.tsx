@@ -23,6 +23,7 @@ export default async function InventoryPage() {
       size: true,
       pricePerCube: true,
       pricePerPiece: true,
+      pricePerSquareMeter: true,
       inStock: true,
       stockQty: true,
       lowStockThreshold: true,
@@ -40,6 +41,7 @@ export default async function InventoryPage() {
     ...variant,
     pricePerCube: variant.pricePerCube === null ? null : Number(variant.pricePerCube),
     pricePerPiece: variant.pricePerPiece === null ? null : Number(variant.pricePerPiece),
+    pricePerSquareMeter: variant.pricePerSquareMeter === null ? null : Number(variant.pricePerSquareMeter),
     stockQty: variant.stockQty === null ? null : Number(variant.stockQty),
     lowStockThreshold: variant.lowStockThreshold ?? 0,
   }));

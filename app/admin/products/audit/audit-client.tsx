@@ -46,6 +46,7 @@ interface Variant {
   size: string;
   pricePerCube: number | null;
   pricePerPiece: number | null;
+  pricePerSquareMeter: number | null;
   piecesPerCube: number | null;
   inStock: boolean;
   stockQty: number | null;
@@ -75,6 +76,12 @@ interface Props {
   emptyCategories: EmptyCategory[];
 }
 
+function hasPositivePrice(variant: Variant) {
+  return [variant.pricePerCube, variant.pricePerSquareMeter, variant.pricePerPiece].some(
+    (price) => typeof price === "number" && price > 0,
+  );
+}
+
 export function AuditClient({ products, emptyCategories }: Props) {
   const router = useRouter();
   const { toast } = useToast();
@@ -84,7 +91,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
   // ─── Вычисляем проблемы ──────────────────────────────────────
 
   const checks = useMemo(() => {
-    // 1) Варианты без цены (обе цены null)
+    // 1) Варианты без цены (м³, м² и шт не заданы)
     const variantsNoPrice: Array<{ product: Product; variant: Variant }> = [];
     // 2) Варианты НЕ в наличии
     const variantsOutOfStock: Array<{ product: Product; variant: Variant }> = [];
@@ -119,7 +126,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
 
       let usableVariants = 0;
       for (const v of p.variants) {
-        const noPrice = v.pricePerCube === null && v.pricePerPiece === null;
+        const noPrice = !hasPositivePrice(v);
         if (noPrice) variantsNoPrice.push({ product: p, variant: v });
         if (!v.inStock) variantsOutOfStock.push({ product: p, variant: v });
         if (!noPrice && v.inStock) usableVariants++;
@@ -266,7 +273,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
         <ProblemSection
           icon={AlertTriangle}
           title={`Варианты без цены (${checks.variantsNoPrice.length})`}
-          subtitle="Эти варианты нельзя купить — ни цена за м³, ни цена за шт не задана. Рекомендуется скрыть (данные сохранятся, клиент вернёт когда захочет)."
+          subtitle="Эти варианты нельзя купить — не задана цена за м³, м² или шт. Рекомендуется скрыть (данные сохранятся, клиент вернёт когда захочет)."
           color="amber"
           action={
             <button
@@ -284,7 +291,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
           }
         >
           <Table
-            headers={["Товар", "Размер", "₽/м³", "₽/шт", "В наличии", "Действие"]}
+            headers={["Товар", "Размер", "₽/м³", "₽/м²", "₽/шт", "В наличии", "Действие"]}
             rows={checks.variantsNoPrice.map((v) => [
               <Link
                 key="n"
@@ -296,6 +303,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
               <span key="s" className="font-mono text-xs">
                 {v.variant.size}
               </span>,
+              "—",
               "—",
               "—",
               v.variant.inStock ? (
@@ -569,7 +577,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
           color="muted"
         >
           <Table
-            headers={["Товар", "Размер", "₽/м³", "₽/шт", "Действие"]}
+            headers={["Товар", "Размер", "₽/м³", "₽/м²", "₽/шт", "Действие"]}
             rows={checks.variantsOutOfStock.map((v) => [
               <Link
                 key="n"
@@ -582,6 +590,7 @@ export function AuditClient({ products, emptyCategories }: Props) {
                 {v.variant.size}
               </span>,
               v.variant.pricePerCube ? v.variant.pricePerCube.toLocaleString("ru-RU") : "—",
+              v.variant.pricePerSquareMeter ? v.variant.pricePerSquareMeter.toLocaleString("ru-RU") : "—",
               v.variant.pricePerPiece ? v.variant.pricePerPiece.toLocaleString("ru-RU") : "—",
               <RowAction
                 key="a"
