@@ -19,11 +19,33 @@ const RESIZE_CONFIG: Record<string, { width: number; height: number; quality: nu
 
 // Whitelists
 const IMAGE_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const VIDEO_MIME = ["video/mp4", "video/webm", "video/quicktime"];
+const VIDEO_MIME = ["video/mp4", "video/webm", "video/quicktime", "video/x-quicktime", "video/mov", "video/x-m4v"];
 const IMAGE_EXT = ["jpg", "jpeg", "png", "webp", "gif"];
-const VIDEO_EXT = ["mp4", "webm", "mov"];
-const ALLOWED_MIME = [...IMAGE_MIME, ...VIDEO_MIME];
+const VIDEO_EXT = ["mp4", "webm", "mov", "m4v"];
 const ALLOWED_EXT = [...IMAGE_EXT, ...VIDEO_EXT];
+const EXT_BY_MIME: Record<string, string> = {
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+  "image/gif": "gif",
+  "video/mp4": "mp4",
+  "video/webm": "webm",
+  "video/quicktime": "mov",
+  "video/x-quicktime": "mov",
+  "video/mov": "mov",
+  "video/x-m4v": "m4v",
+};
+const MIME_BY_EXT: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+  mp4: "video/mp4",
+  webm: "video/webm",
+  mov: "video/quicktime",
+  m4v: "video/mp4",
+};
 const ALLOWED_FOLDERS = [
   "categories",
   "products",
@@ -39,9 +61,17 @@ const ALLOWED_FOLDERS = [
   "default",
 ];
 const IMAGE_MAX_SIZE = 25 * 1024 * 1024; // 25MB for phone/admin images
-const VIDEO_MAX_SIZE = 80 * 1024 * 1024; // 80MB for admin videos
+const VIDEO_MAX_SIZE = 200 * 1024 * 1024; // 200MB for admin story/service videos
 
 // Magic number validation
+function normalizeMime(mime: string, ext: string): string {
+  const cleanMime = mime.toLowerCase();
+  if (cleanMime === "video/x-quicktime" || cleanMime === "video/mov") return "video/quicktime";
+  if (cleanMime === "video/x-m4v") return "video/mp4";
+  if (IMAGE_MIME.includes(cleanMime) || VIDEO_MIME.includes(cleanMime)) return cleanMime;
+  return MIME_BY_EXT[ext] ?? cleanMime;
+}
+
 function validateImageMagic(buffer: Buffer, mime: string): boolean {
   if (buffer.length < 12) return false;
   if (mime === "image/jpeg") return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
@@ -70,7 +100,7 @@ function validateVideoMagic(buffer: Buffer, mime: string, ext: string): boolean 
   if (mime === "video/webm" || ext === "webm") {
     return buffer[0] === 0x1a && buffer[1] === 0x45 && buffer[2] === 0xdf && buffer[3] === 0xa3;
   }
-  if (mime === "video/mp4" || mime === "video/quicktime" || ext === "mp4" || ext === "mov") {
+  if (mime === "video/mp4" || mime === "video/quicktime" || ext === "mp4" || ext === "mov" || ext === "m4v") {
     return buffer.toString("ascii", 4, 8) === "ftyp";
   }
   return false;
@@ -91,13 +121,26 @@ export async function POST(req: Request) {
 
   // Whitelist folder (prevents path traversal like "../../secrets")
   const folder = ALLOWED_FOLDERS.includes(rawFolder) ? rawFolder : "default";
-  const isImage = IMAGE_MIME.includes(file.type);
-  const isVideo = VIDEO_MIME.includes(file.type);
-
-  // MIME whitelist
-  if (!ALLOWED_MIME.includes(file.type)) {
+  const extFromName = file.name.includes(".") ? file.name.split(".").pop()?.toLowerCase() || "" : "";
+  const normalizedMime = normalizeMime(file.type || "", extFromName);
+  const mimeLooksImage = IMAGE_MIME.includes(normalizedMime);
+  const mimeLooksVideo = VIDEO_MIME.includes(normalizedMime);
+  const extLooksImage = IMAGE_EXT.includes(extFromName);
+  const extLooksVideo = VIDEO_EXT.includes(extFromName);
+  if ((mimeLooksImage && extLooksVideo) || (mimeLooksVideo && extLooksImage)) {
     return NextResponse.json(
-      { error: "Допустимы JPG/PNG/WebP/GIF и MP4/WebM/MOV" },
+      { error: "Расширение файла не соответствует типу файла" },
+      { status: 400 }
+    );
+  }
+  const isImage = mimeLooksImage || extLooksImage;
+  const isVideo = mimeLooksVideo || extLooksVideo;
+  const extRaw = extLooksImage || extLooksVideo ? extFromName : EXT_BY_MIME[normalizedMime] || "";
+
+  // MIME/extension whitelist. MOV from phones often arrives with an alias or empty MIME.
+  if (!isImage && !isVideo) {
+    return NextResponse.json(
+      { error: "Допустимы JPG/PNG/WebP/GIF и MP4/WebM/MOV/M4V" },
       { status: 400 }
     );
   }
@@ -106,13 +149,12 @@ export async function POST(req: Request) {
   const maxSize = isVideo ? VIDEO_MAX_SIZE : IMAGE_MAX_SIZE;
   if (file.size > maxSize) {
     return NextResponse.json(
-      { error: `Максимальный размер ${isVideo ? "80MB" : "25MB"}` },
+      { error: `Максимальный размер ${isVideo ? "200MB" : "25MB"}` },
       { status: 400 }
     );
   }
 
   // Extension whitelist
-  const extRaw = file.name.split(".").pop()?.toLowerCase() || "jpg";
   if (!ALLOWED_EXT.includes(extRaw)) {
     return NextResponse.json(
       { error: "Недопустимое расширение файла" },
@@ -124,13 +166,13 @@ export async function POST(req: Request) {
   const inputBuffer = Buffer.from(bytes);
 
   // Magic number validation (anti-spoof)
-  if (isImage && !validateImageMagic(inputBuffer, file.type)) {
+  if (isImage && !validateImageMagic(inputBuffer, normalizedMime)) {
     return NextResponse.json(
       { error: "Файл не является валидным изображением" },
       { status: 400 }
     );
   }
-  if (isVideo && !validateVideoMagic(inputBuffer, file.type, extRaw)) {
+  if (isVideo && !validateVideoMagic(inputBuffer, normalizedMime, extRaw)) {
     return NextResponse.json(
       { error: "Файл не является валидным видео" },
       { status: 400 }

@@ -362,7 +362,7 @@ function ServiceModal({
                 <input
                   ref={serviceMediaInputRef}
                   type="file"
-                  accept="image/*,video/mp4,video/webm,video/quicktime"
+                  accept="image/*,video/*,.mp4,.webm,.mov,.m4v"
                   className="hidden"
                   onChange={(event) => {
                     const file = event.target.files?.[0];

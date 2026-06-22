@@ -35,6 +35,10 @@ const MediaPickerModal = dynamic(
 
 type StoryType = "IMAGE" | "VIDEO" | "LIVE";
 type PickedMediaKind = "image" | "video" | "document";
+const STORY_MEDIA_ACCEPT = "image/*,video/*,.mp4,.webm,.mov,.m4v";
+const STORY_POSTER_ACCEPT = "image/*,.jpg,.jpeg,.png,.webp,.gif";
+const STORY_IMAGE_EXTENSIONS = new Set(["avif", "gif", "jpg", "jpeg", "png", "svg", "webp"]);
+const STORY_VIDEO_EXTENSIONS = new Set(["m4v", "mov", "mp4", "webm"]);
 
 type Story = {
   id: string;
@@ -156,9 +160,17 @@ function storyTypeFromMedia(url: string, kind?: PickedMediaKind): StoryType | nu
   if (kind === "video") return "VIDEO";
 
   const cleanUrl = url.trim().split(/[?#]/)[0] || "";
-  if (/^data:image\//i.test(url) || /\.(avif|gif|jpe?g|png|svg|webp)$/i.test(cleanUrl)) return "IMAGE";
-  if (/^(blob:|data:video\/)/i.test(url) || /\.(m4v|mov|mp4|webm)$/i.test(cleanUrl)) return "VIDEO";
+  const ext = cleanUrl.split(".").pop()?.toLowerCase() ?? "";
+  if (/^data:image\//i.test(url) || STORY_IMAGE_EXTENSIONS.has(ext)) return "IMAGE";
+  if (/^(blob:|data:video\/)/i.test(url) || STORY_VIDEO_EXTENSIONS.has(ext)) return "VIDEO";
   return null;
+}
+
+function pickedMediaKindFromFile(file: File): PickedMediaKind | undefined {
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  if (file.type.startsWith("image/") || STORY_IMAGE_EXTENSIONS.has(ext)) return "image";
+  if (file.type.startsWith("video/") || STORY_VIDEO_EXTENSIONS.has(ext)) return "video";
+  return undefined;
 }
 
 function normalizeRelations(story?: Partial<Story> | null): StoryRelation[] {
@@ -435,7 +447,7 @@ function StoryModal({
       const res = await fetch("/api/admin/upload", { method: "POST", body: data });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.url) throw new Error(json.error || "Не удалось загрузить файл");
-      const pickedKind: PickedMediaKind | undefined = file.type.startsWith("image/") ? "image" : file.type.startsWith("video/") ? "video" : undefined;
+      const pickedKind = pickedMediaKindFromFile(file);
       applyStoryMedia(target, json.url, pickedKind);
     } catch (err: any) {
       setError(err.message || "Не удалось загрузить файл");
@@ -523,11 +535,12 @@ function StoryModal({
               Медиа
               <input
                 type="file"
-                accept="image/*,video/mp4,video/webm,video/quicktime"
+                accept={STORY_MEDIA_ACCEPT}
                 className="hidden"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) uploadFile(file, "media");
+                  event.currentTarget.value = "";
                 }}
               />
             </label>
@@ -536,11 +549,12 @@ function StoryModal({
               Обложка
               <input
                 type="file"
-                accept="image/*"
+                accept={STORY_POSTER_ACCEPT}
                 className="hidden"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
                   if (file) uploadFile(file, "poster");
+                  event.currentTarget.value = "";
                 }}
               />
             </label>

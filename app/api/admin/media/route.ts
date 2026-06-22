@@ -30,7 +30,7 @@ const MEDIA_DIRS = [
   "default",
 ];
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "webp", "svg", "gif"]);
-const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov"]);
+const VIDEO_EXTENSIONS = new Set(["mp4", "webm", "mov", "m4v"]);
 const DEFAULT_MEDIA_LIMIT = 500;
 type MediaUsage = {
   type: "product" | "category" | "service" | "post" | "story" | "review" | "promotion" | "settings";

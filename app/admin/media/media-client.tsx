@@ -17,6 +17,9 @@ type MediaKind = "image" | "video" | "document";
 type PickerKind = "image" | "video" | "all";
 type QuickFilter = "all" | "missing-alt" | "used" | "unused" | "images" | "videos";
 const MEDIA_BATCH = 96;
+const MEDIA_UPLOAD_ACCEPT = "image/*,video/*,.mp4,.webm,.mov,.m4v";
+const CAMERA_IMAGE_ACCEPT = "image/*,.jpg,.jpeg,.png,.webp,.gif";
+const VIDEO_FILE_EXTENSIONS = new Set(["mp4", "webm", "mov", "m4v"]);
 const FOLDER_LABELS: Record<string, string> = {
   all: "Все",
   products: "Товары",
@@ -66,6 +69,12 @@ function fmtDate(ts: number) {
 
 function folderLabel(folder: string) {
   return FOLDER_LABELS[folder] ?? folder;
+}
+
+function fileLooksVideo(file?: File) {
+  if (!file) return false;
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  return file.type.startsWith("video/") || VIDEO_FILE_EXTENSIONS.has(ext);
 }
 
 // ── File card ─────────────────────────────────────────────────────────────────
@@ -370,9 +379,9 @@ export function MediaClient({
     return true;
   }
 
-  function resolveUploadFolder(fileType = "") {
+  function resolveUploadFolder(file?: File) {
     if (folder !== "all") return folder;
-    return initialFolder ?? (fileType.startsWith("video/") || pickerKind === "video" ? "videos" : "products");
+    return initialFolder ?? (fileLooksVideo(file) || pickerKind === "video" ? "videos" : "products");
   }
 
   // Filter
@@ -437,7 +446,7 @@ export function MediaClient({
     setUploadError("");
     const fd = new FormData();
     fd.append("file", file);
-    fd.append("folder", resolveUploadFolder(file.type));
+    fd.append("folder", resolveUploadFolder(file));
 
     try {
       const response = await fetch("/api/admin/upload", { method: "POST", body: fd });
@@ -669,9 +678,9 @@ export function MediaClient({
           dragOver ? "border-primary bg-primary/15" : "border-border hover:border-primary/40 hover:bg-primary/[0.05]"
         }`}
       >
-        <input ref={fileRef} type="file" multiple accept="image/*,video/mp4,video/webm,video/quicktime" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+        <input ref={fileRef} type="file" multiple accept={MEDIA_UPLOAD_ACCEPT} className="hidden" onChange={(e) => handleFiles(e.target.files)} />
         {/* Camera input for mobile */}
-        <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+        <input ref={cameraRef} type="file" accept={CAMERA_IMAGE_ACCEPT} capture="environment" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
           {uploading ? (
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -686,7 +695,7 @@ export function MediaClient({
               : "Перетащите фото или видео, либо нажмите для выбора"}
           </p>
           <p className="text-xs">
-            Фото до 25MB · видео MP4/WebM/MOV до 80MB · папка: {folderLabel(uploadTargetFolder)}
+            Фото до 25MB · видео MP4/WebM/MOV/M4V до 200MB · папка: {folderLabel(uploadTargetFolder)}
           </p>
         </div>
       </div>

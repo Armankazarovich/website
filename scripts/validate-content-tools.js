@@ -21,6 +21,8 @@ const checks = [
       "initialFolder?: string",
       'pickerKind === "all"',
       "initialFolder ??",
+      "MEDIA_UPLOAD_ACCEPT",
+      "fileLooksVideo",
     ],
   },
   {
@@ -38,7 +40,7 @@ const checks = [
   {
     file: "app/api/admin/upload/route.ts",
     label: "upload endpoint accepts service and story media",
-    patterns: ['"services"', '"stories"', "VIDEO_MAX_SIZE"],
+    patterns: ['"services"', '"stories"', "VIDEO_MAX_SIZE", "video/x-quicktime", "normalizeMime", "MOV/M4V", "200MB"],
   },
   {
     file: "app/admin/stories/page.tsx",
@@ -49,6 +51,8 @@ const checks = [
       "shareCopied",
       "setShareCopied(true)",
       "uploadFile(file, \"media\")",
+      "STORY_MEDIA_ACCEPT",
+      "pickedMediaKindFromFile",
     ],
   },
   {
