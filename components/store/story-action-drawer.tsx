@@ -9,9 +9,12 @@ import {
 
 import {
   ArrowRight,
+  BadgeCheck,
+  Calculator,
   Check,
   ChevronDown,
   ChevronUp,
+  Clock3,
   FileText,
   Heart,
   ImageIcon,
@@ -66,11 +69,35 @@ export type StoryActionStory = {
   brandIconUrl?: string | null;
 };
 
-const MESSAGE_KIND_OPTIONS: Array<{ value: StoryMessageKind; label: string; hint: string }> = [
-  { value: "question", label: "Вопрос", hint: "по товару" },
-  { value: "offer", label: "Расчёт", hint: "цена, объём" },
-  { value: "review", label: "Отзыв", hint: "о заказе" },
-  { value: "comment", label: "Комментарий", hint: "к сторис" },
+const MESSAGE_KIND_OPTIONS: Array<{ value: StoryMessageKind; label: string; hint: string; helper: string; placeholder: string }> = [
+  {
+    value: "question",
+    label: "Вопрос",
+    hint: "по товару",
+    helper: "Менеджер увидит сторис, товар и ваш вопрос.",
+    placeholder: "Напишите, что нужно уточнить: сорт, наличие, доставка, оплата...",
+  },
+  {
+    value: "offer",
+    label: "Расчёт",
+    hint: "цена, объём",
+    helper: "Для расчёта добавьте размер, объём и адрес доставки.",
+    placeholder: "Напишите объём, размер, адрес доставки или вопрос по цене...",
+  },
+  {
+    value: "review",
+    label: "Отзыв",
+    hint: "о заказе",
+    helper: "Отзыв уйдёт на модерацию и может попасть в общий виджет.",
+    placeholder: "Напишите отзыв о товаре, доставке или менеджере...",
+  },
+  {
+    value: "comment",
+    label: "Комментарий",
+    hint: "к сторис",
+    helper: "Короткий комментарий сохранится вместе с контекстом сторис.",
+    placeholder: "Напишите короткий комментарий по этой сторис...",
+  },
 ];
 
 function isExternalHref(href: string) {
@@ -231,6 +258,7 @@ export function StoryActionDrawer({
   const [hydrated, setHydrated] = useState(false);
   const socialKey = useMemo(() => storySocialKey(story.id), [story.id]);
   const relationName = primaryRelation?.label || story.subtitle || story.title;
+  const activeKindOption = MESSAGE_KIND_OPTIONS.find((item) => item.value === messageKind) ?? MESSAGE_KIND_OPTIONS[0];
 
   useEffect(() => {
     setHydrated(false);
@@ -454,7 +482,7 @@ export function StoryActionDrawer({
     <div
       className={cn(
         "store-story-action-drawer absolute inset-x-2 bottom-2 z-20 overflow-hidden rounded-2xl border border-border text-foreground sm:inset-x-3 sm:bottom-3",
-        expanded && "max-h-[72%] overflow-y-auto",
+        expanded && "max-h-[82%] overflow-y-auto",
       )}
     >
       <button
@@ -560,62 +588,116 @@ export function StoryActionDrawer({
 
       {expanded && (
         <div className="space-y-3 border-t border-border px-3 py-3">
-          {(story.subtitle || story.description) && (
+          {!commentOpen && (story.subtitle || story.description) && (
             <div className="rounded-2xl border border-border bg-background/55 p-3">
               {story.subtitle && <p className="text-sm font-semibold leading-5">{story.subtitle}</p>}
               {story.description && <p className="mt-2 text-sm leading-6 text-muted-foreground">{story.description}</p>}
             </div>
           )}
 
-          <div className="rounded-2xl border border-border bg-card/95 p-3 shadow-xl shadow-black/10">
-            <div className="mb-3 flex items-start gap-2.5">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/35 bg-primary/10 text-primary">
-                <MessageCircle className="h-4 w-4" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-bold leading-5">Написать менеджеру</p>
-                <p className="text-[11px] leading-4 text-muted-foreground">Вопрос, расчёт или отзыв по этой сторис. Ответим с контекстом товара.</p>
+          <div className="rounded-2xl border border-border bg-card/95 p-3">
+            <div className="mb-3 flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/35 bg-primary/10 text-primary">
+                  <MessageCircle className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold leading-5">Быстро связаться</p>
+                  <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+                    Сторис, товар и выбранный сценарий попадут менеджеру вместе с сообщением.
+                  </p>
+                </div>
               </div>
+              <span className="hidden shrink-0 items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary sm:inline-flex">
+                <Clock3 className="h-3 w-3" />
+                быстро
+              </span>
             </div>
 
-            <div className="mb-2 grid grid-cols-2 gap-1.5">
-              {MESSAGE_KIND_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    setMessageKind(option.value);
-                    setCommentOpen(true);
-                    setMessageStatus("idle");
-                  }}
-                  className={cn(
-                    "rounded-xl border border-border bg-background px-3 py-2 text-left transition-colors hover:border-primary/45",
-                    messageKind === option.value && "border-primary/55 bg-primary/10 text-primary shadow-[0_0_0_1px_hsl(var(--primary)/0.12)_inset]",
+            {primaryRelation && (
+              <div className="mb-3 flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background/65 p-2">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-card">
+                  {primaryRelation.image ? (
+                    <img src={primaryRelation.image} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <Sparkles className="h-4 w-4 text-primary" />
                   )}
-                >
-                  <span className="block text-[13px] font-bold leading-4">{option.label}</span>
-                  <span className="mt-0.5 block truncate text-[10px] font-semibold text-muted-foreground">{option.hint}</span>
-                </button>
-              ))}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[10px] font-bold uppercase tracking-wide text-primary">
+                    {relationLabel(primaryRelation.entityType)} в контексте
+                  </span>
+                  <span className="mt-0.5 block truncate text-xs font-semibold">
+                    {primaryRelation.label || primaryRelation.entityId}
+                  </span>
+                </span>
+                <BadgeCheck className="h-4 w-4 shrink-0 text-primary" />
+              </div>
+            )}
+
+            <div className="mb-3 grid grid-cols-2 gap-1.5">
+              {MESSAGE_KIND_OPTIONS.map((option) => {
+                const OptionIcon =
+                  option.value === "offer"
+                    ? Calculator
+                    : option.value === "review"
+                      ? Star
+                      : option.value === "comment"
+                        ? FileText
+                        : MessageCircle;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setMessageKind(option.value);
+                      setCommentOpen(true);
+                      setMessageStatus("idle");
+                    }}
+                    className={cn(
+                      "flex min-h-12 items-center gap-2 rounded-xl border border-border bg-background px-2.5 py-1.5 text-left transition-colors hover:border-primary/45",
+                      messageKind === option.value && "border-primary/55 bg-primary/10 text-primary",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground",
+                        messageKind === option.value && "border-primary/35 bg-primary/10 text-primary",
+                      )}
+                    >
+                      <OptionIcon className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-[13px] font-bold leading-4">{option.label}</span>
+                      <span className="mt-0.5 block truncate text-[10px] font-semibold text-muted-foreground">{option.hint}</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
             <form onSubmit={submitComment} className="grid gap-2">
-              <textarea
-                value={draft}
-                onChange={(event) => {
-                  setDraft(event.target.value);
-                  setMessageStatus("idle");
-                }}
-                maxLength={1200}
-                placeholder={
-                  messageKind === "offer"
-                    ? "Напишите объём, размер, адрес доставки или вопрос по цене..."
-                    : messageKind === "review"
-                      ? "Напишите отзыв о товаре, доставке или менеджере..."
-                      : "Напишите вопрос или короткий комментарий..."
-                }
-                className="min-h-20 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm leading-5 outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary/55"
-              />
+              <div className="overflow-hidden rounded-xl border border-border bg-background transition-colors focus-within:border-primary/55">
+                <div className="flex items-center justify-between gap-2 border-b border-border/70 px-3 py-2">
+                  <span className="text-[11px] font-bold text-primary">{activeKindOption.label}</span>
+                  <span className="text-[10px] font-semibold text-muted-foreground">{draft.length}/1200</span>
+                </div>
+                <textarea
+                  value={draft}
+                  onChange={(event) => {
+                    setDraft(event.target.value);
+                    setMessageStatus("idle");
+                  }}
+                  maxLength={1200}
+                  placeholder={activeKindOption.placeholder}
+                  className="min-h-16 w-full resize-none bg-transparent px-3 py-2.5 text-sm leading-5 outline-none placeholder:text-muted-foreground/70"
+                />
+              </div>
+
+              <p className="flex items-start gap-1.5 text-[11px] leading-4 text-muted-foreground">
+                <BadgeCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                {activeKindOption.helper}
+              </p>
 
               <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                 <input
@@ -625,13 +707,13 @@ export function StoryActionDrawer({
                   className="min-h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/75 focus:border-primary/55"
                 />
                 {messageKind === "review" && (
-                  <div className="flex min-h-10 items-center gap-1 rounded-xl border border-border bg-background px-2">
+                  <div className="flex min-h-10 items-center justify-center gap-1 rounded-xl border border-border bg-background px-2">
                     {[1, 2, 3, 4, 5].map((value) => (
                       <button
                         key={value}
                         type="button"
                         onClick={() => setRating(value)}
-                        className={cn("flex h-7 w-7 items-center justify-center rounded-xl text-muted-foreground", value <= rating && "text-primary")}
+                        className={cn("flex h-7 w-7 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-primary", value <= rating && "text-primary")}
                         aria-label={`${value} из 5`}
                       >
                         <Star className={cn("h-4 w-4", value <= rating && "fill-current")} />
@@ -695,7 +777,7 @@ export function StoryActionDrawer({
                   className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-bold transition-colors hover:border-primary/45 hover:text-primary"
                 >
                   <Paperclip className="h-3.5 w-3.5" />
-                  Файл
+                  {attachments.length > 0 ? `${attachments.length} файл` : "Файл"}
                 </button>
                 <button
                   type="submit"
