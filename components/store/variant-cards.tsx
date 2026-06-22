@@ -111,19 +111,6 @@ export function VariantCards({
       [key]: value,
     };
 
-    let candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
-    if (candidates.length === 0 && key === "grade") {
-      nextFilters = { ...nextFilters, section: null, length: null };
-      candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
-    }
-    if (candidates.length === 0 && key === "section") {
-      nextFilters = { ...nextFilters, length: null };
-      candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
-    }
-    if (candidates.length === 0 && key === "length") {
-      nextFilters = { grade: null, section: null, length: value };
-    }
-
     setFilters(nextFilters);
   };
 

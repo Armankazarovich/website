@@ -167,25 +167,6 @@ export function VariantSelector({
   const [variantQuery, setVariantQuery] = useState("");
   const justAddedTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  // Sync unit type with saleUnit and selected size.
-  useEffect(() => {
-    const preferred = getPreferredUnit(selectedVariant, saleUnit, unitType);
-    if (!preferred) return;
-    if (preferred !== unitType) {
-      setUnitType(preferred);
-      setQuantity(normalizeQuantityForUnit(1, preferred, selectedVariant));
-      return;
-    }
-    setQuantity((value) => normalizeQuantityForUnit(value, preferred, selectedVariant));
-  }, [saleUnit, selectedVariant, unitType]);
-
-  const currentPrice = getVariantUnitPrice(selectedVariant, unitType);
-  const maxQuantity = getPurchasableQuantityLimit(selectedVariant, unitType);
-  const canUseCube = Boolean(getVariantUnitPrice(selectedVariant, "CUBE"));
-  const canUsePiece = Boolean(getVariantUnitPrice(selectedVariant, "PIECE"));
-  const canUseSquare = Boolean(getVariantUnitPrice(selectedVariant, "SQUARE"));
-
-  const totalPrice = currentPrice ? currentPrice * quantity : 0;
   const variantRows = useMemo(
     () => variants.map((variant) => ({ variant, meta: getVariantOptionMeta(variant.size) })),
     [variants],
@@ -205,7 +186,35 @@ export function VariantSelector({
       ),
     [variantRows, selectedGrade, selectedSection, selectedLength, variantQuery],
   );
-  const selectedMeta = selectedVariant ? getVariantOptionMeta(selectedVariant.size) : null;
+  const activeVariant = useMemo(() => {
+    if (!selectedVariant) return null;
+    const meta = getVariantOptionMeta(selectedVariant.size);
+    const row = { variant: selectedVariant, meta };
+    if (!variantMatchesFilters(row, selectedFilters)) return null;
+    if (!matchesVariantQuery(meta, variantQuery)) return null;
+    return selectedVariant;
+  }, [selectedVariant, selectedGrade, selectedSection, selectedLength, variantQuery]);
+
+  // Sync unit type with saleUnit and selected size.
+  useEffect(() => {
+    const preferred = getPreferredUnit(activeVariant, saleUnit, unitType);
+    if (!preferred) return;
+    if (preferred !== unitType) {
+      setUnitType(preferred);
+      setQuantity(normalizeQuantityForUnit(1, preferred, activeVariant));
+      return;
+    }
+    setQuantity((value) => normalizeQuantityForUnit(value, preferred, activeVariant));
+  }, [activeVariant, saleUnit, unitType]);
+
+  const currentPrice = getVariantUnitPrice(activeVariant, unitType);
+  const maxQuantity = getPurchasableQuantityLimit(activeVariant, unitType);
+  const canUseCube = Boolean(getVariantUnitPrice(activeVariant, "CUBE"));
+  const canUsePiece = Boolean(getVariantUnitPrice(activeVariant, "PIECE"));
+  const canUseSquare = Boolean(getVariantUnitPrice(activeVariant, "SQUARE"));
+
+  const totalPrice = currentPrice ? currentPrice * quantity : 0;
+  const selectedMeta = activeVariant ? getVariantOptionMeta(activeVariant.size) : null;
 
   const setFilters = (filters: VariantFilters) => {
     setSelectedGrade(filters.grade);
@@ -232,53 +241,42 @@ export function VariantSelector({
     };
 
     let candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
-    if (candidates.length === 0 && key === "grade") {
-      nextFilters = { ...nextFilters, section: null, length: null };
-      candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
-    }
-    if (candidates.length === 0 && key === "section") {
-      nextFilters = { ...nextFilters, length: null };
-      candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
-    }
-    if (candidates.length === 0 && key === "length") {
-      nextFilters = { grade: null, section: null, length: value };
-      candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
-    }
-
     const best = pickBestRow(candidates, saleUnit);
     if (best) {
       setSelectedVariant(best.variant);
+    } else {
+      setSelectedVariant(null);
     }
     setFilters(nextFilters);
   };
 
   // Calculate equivalent in other unit
   const equivalentInfo = () => {
-    if (!selectedVariant || !selectedVariant.piecesPerCube) return null;
+    if (!activeVariant || !activeVariant.piecesPerCube) return null;
     if (unitType === "SQUARE") return null;
     if (unitType === "CUBE") {
-      const pieces = Math.round(quantity * selectedVariant.piecesPerCube);
+      const pieces = Math.round(quantity * activeVariant.piecesPerCube);
       return `≈ ${pieces} шт`;
     } else {
-      const cubes = (quantity / selectedVariant.piecesPerCube).toFixed(2);
+      const cubes = (quantity / activeVariant.piecesPerCube).toFixed(2);
       return `≈ ${cubes} м³`;
     }
   };
 
   const handleAdd = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!selectedVariant || !isProductVariantPurchasable(selectedVariant) || !currentPrice) return;
-    const safeQuantity = normalizeQuantityForUnit(quantity, unitType, selectedVariant);
+    if (!activeVariant || !isProductVariantPurchasable(activeVariant) || !currentPrice) return;
+    const safeQuantity = normalizeQuantityForUnit(quantity, unitType, activeVariant);
     if (safeQuantity <= 0) return;
 
     flyToCart(e.currentTarget, productImage ?? null);
     haptic("success"); // двойной пульс — подтверждение добавления
 
     addItem({
-      variantId: selectedVariant.id,
+      variantId: activeVariant.id,
       productId,
       productName,
       productSlug,
-      variantSize: selectedVariant.size,
+      variantSize: activeVariant.size,
       productImage,
       unitType,
       quantity: safeQuantity,
@@ -288,9 +286,9 @@ export function VariantSelector({
     trackArayMetrikaGoal("aray_cart_add", {
       source: "product_page",
       productId,
-      variantId: selectedVariant.id,
+      variantId: activeVariant.id,
       productName,
-      variantSize: selectedVariant.size,
+      variantSize: activeVariant.size,
       unit: unitType,
       quantity: safeQuantity,
       price: Number(currentPrice),
@@ -306,7 +304,7 @@ export function VariantSelector({
 
   const adjustQty = (delta: number) => {
     const step = quantityStep(unitType);
-    setQuantity((value) => normalizeQuantityForUnit(value + delta * step, unitType, selectedVariant));
+    setQuantity((value) => normalizeQuantityForUnit(value + delta * step, unitType, activeVariant));
   };
 
   return (
@@ -373,7 +371,7 @@ export function VariantSelector({
               disabled={disabled}
               className={cn(
                 "min-h-[3.25rem] rounded-xl border px-3 py-2 text-left text-sm font-medium transition-all",
-                selectedVariant?.id === v.id
+                activeVariant?.id === v.id
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border hover:border-primary/50",
                 disabled && "opacity-40 cursor-not-allowed line-through"
@@ -410,7 +408,7 @@ export function VariantSelector({
                 key={unit}
                 onClick={() => {
                   setUnitType(unit);
-                  setQuantity(normalizeQuantityForUnit(1, unit, selectedVariant));
+                  setQuantity(normalizeQuantityForUnit(1, unit, activeVariant));
                 }}
                 disabled={!enabled}
                 className={cn(
@@ -471,7 +469,7 @@ export function VariantSelector({
               value={quantity}
               onChange={(e) => {
                 const v = parseFloat(e.target.value);
-                if (!isNaN(v) && v > 0) setQuantity(normalizeQuantityForUnit(v, unitType, selectedVariant));
+                if (!isNaN(v) && v > 0) setQuantity(normalizeQuantityForUnit(v, unitType, activeVariant));
               }}
               className="w-20 text-center text-base py-3 bg-background border-x border-border font-medium focus:outline-none"
               step={quantityStep(unitType)}
@@ -505,7 +503,7 @@ export function VariantSelector({
               : ""
           )}
           onClick={handleAdd}
-          disabled={!selectedVariant || !isProductVariantPurchasable(selectedVariant) || !currentPrice || justAdded}
+          disabled={!activeVariant || !isProductVariantPurchasable(activeVariant) || !currentPrice || justAdded}
         >
           {justAdded ? (
             <span className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-1 duration-200">
@@ -514,7 +512,7 @@ export function VariantSelector({
                 {quantity} {getUnitLabel(unitType)} {"\u00b7"} {formatPrice(addedTotal)}
               </span>
             </span>
-          ) : !selectedVariant || !isProductVariantPurchasable(selectedVariant) ? (
+          ) : !activeVariant || !isProductVariantPurchasable(activeVariant) ? (
             "Нет в наличии"
           ) : (
             <>
@@ -530,7 +528,7 @@ export function VariantSelector({
         </Button>
       </div>
 
-      {(!selectedVariant || !isProductVariantPurchasable(selectedVariant)) && (
+      {(!activeVariant || !isProductVariantPurchasable(activeVariant)) && (
         <p className="text-sm text-muted-foreground text-center">
           Этот размер временно отсутствует.{" "}
           <a href={`tel:${effectivePhone}`} className="text-primary hover:underline">
