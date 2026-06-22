@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Calculator, CheckCircle, Truck, MapPin, Clock, FileText, Phone } from "lucide-react";
 import { BackButton } from "@/components/ui/back-button";
 import { getSiteSettings, getSetting } from "@/lib/site-settings";
+import { getPrimaryServiceAreas } from "@/lib/store-service-areas";
 
 export const metadata: Metadata = {
   title: "Доставка и оплата пиломатериалов по Москве и МО",
@@ -42,6 +43,7 @@ export default async function DeliveryPage() {
   const workingHours = getSetting(settings, "working_hours") || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00";
   const phone = getSetting(settings, "phone");
   const phoneLink = getSetting(settings, "phone_link");
+  const serviceAreas = getPrimaryServiceAreas(24);
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -198,6 +200,37 @@ export default async function DeliveryPage() {
           ))}
         </div>
       </div>
+
+      <section className="mb-12 rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <div className="mb-5 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+          <div>
+            <h2 className="font-display text-2xl font-bold">Доставка по Москве и городам МО</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+              Отгружаем со склада в Химках. Для каждого направления считаем маршрут, объем, разгрузку и дату отдельно.
+            </p>
+          </div>
+          <Link
+            href="/catalog"
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-background px-4 text-sm font-semibold transition-colors hover:border-primary/45 hover:text-primary"
+          >
+            Смотреть каталог
+          </Link>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {serviceAreas.map((area) => (
+            <Link
+              key={area.slug}
+              href={`/delivery/${area.slug}`}
+              className="rounded-xl border border-border bg-background p-3 transition-colors hover:border-primary/45"
+            >
+              <span className="block text-sm font-semibold">{area.name}</span>
+              <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+                {area.deliveryWindow} · {area.distanceKm} км
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* FAQ */}
       <div className="bg-muted/30 rounded-2xl p-8 mb-8">

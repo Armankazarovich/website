@@ -76,6 +76,9 @@ export function ArayGlobalAssistant({
 
   useEffect(() => {
     if (!enabled) return;
+    const shouldPreloadWidget =
+      page?.startsWith("/admin") || page === "/aray" || page === "/zaidr";
+    if (!shouldPreloadWidget) return;
     const pendingWindow = window as ArayPendingWindow;
     let cancelled = false;
     let idleId: number | null = null;
@@ -103,6 +106,9 @@ export function ArayGlobalAssistant({
 
   useEffect(() => {
     if (!enabled || widgetMountedRef.current) return;
+    const shouldAutoMountWidget =
+      page?.startsWith("/admin") || page === "/aray" || page === "/zaidr";
+    if (!shouldAutoMountWidget) return;
 
     const mountDelay = page?.startsWith("/admin") ? 900 : 1800;
     const timer = window.setTimeout(() => {

@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { getPublicProductsFilter } from "@/lib/product-seo";
 import { getManagedProductTypes, getProductTypeSettings } from "@/lib/product-type-settings";
+import { STORE_SERVICE_AREAS } from "@/lib/store-service-areas";
 import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 
 const BASE = "https://pilo-rus.ru";
@@ -111,8 +112,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: "monthly" as const,
   }));
 
+  const serviceAreaRoutes: MetadataRoute.Sitemap = STORE_SERVICE_AREAS.map((area) => ({
+    url: `${BASE}/delivery/${area.slug}`,
+    lastModified: LAUNCH_LAST_MODIFIED,
+    priority: area.slug === "moscow" || area.slug === "khimki" ? 0.74 : 0.68,
+    changeFrequency: "monthly" as const,
+  }));
+
   return [
     ...staticRoutes,
+    ...serviceAreaRoutes,
     ...categoryRoutes,
     ...productTypeRoutes,
     ...categoryTypeRoutes,

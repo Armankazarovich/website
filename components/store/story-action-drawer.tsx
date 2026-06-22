@@ -317,14 +317,6 @@ export function StoryActionDrawer({
   const openComments = () => {
     setCommentOpen(true);
     if (!expanded) onToggle();
-    openArayStoryContext({
-      story,
-      kind: messageKind,
-      text: draft.trim() || "Открыт чат по сторис.",
-      relationName,
-      attachmentsCount: attachments.length,
-      sourceAction: "open",
-    });
   };
 
   const toggleLike = () => {

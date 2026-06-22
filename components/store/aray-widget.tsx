@@ -3604,23 +3604,17 @@ export function ArayWidget({ page, productName, cartTotal, enabled = true, staff
     const handler = (event: Event) => {
       const payload = (event as CustomEvent<ArayStoryContextPayload>).detail;
       if (!payload) return;
+      if (payload.sourceAction === "open") return;
       const kindLabel = payload.kindLabel || "Сообщение";
       const relation = payload.relationName?.trim();
       const sourceText = payload.text?.trim();
-      const isOpen = payload.sourceAction === "open";
       const title = payload.storyTitle?.trim() || "сторис";
-      const assistantText = isOpen
-        ? [
-            `Открыл чат по сторис «${title}».`,
-            relation ? `Контекст: ${relation}.` : "",
-            "Можно принять вопрос, отзыв, предложение или комментарий. Я помогу оформить и передать дальше.",
-          ].filter(Boolean).join("\n")
-        : [
-            `${kindLabel} из сторис принято.`,
-            relation ? `Контекст: ${relation}.` : "",
-            sourceText ? `Смысл: ${sourceText}` : "",
-            payload.reply || "Я сохранил рабочий контекст. Следующий шаг: ответить клиенту, создать задачу или открыть связанный объект.",
-          ].filter(Boolean).join("\n");
+      const assistantText = [
+        `${kindLabel} из сторис принято.`,
+        relation ? `Контекст: ${relation}.` : "",
+        sourceText ? `Смысл: ${sourceText}` : "",
+        payload.reply || "Я сохранил рабочий контекст. Следующий шаг: ответить клиенту, создать задачу или открыть связанный объект.",
+      ].filter(Boolean).join("\n");
       const actions: ArayAction[] = [
         {
           type: "prompt",
