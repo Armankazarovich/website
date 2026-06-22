@@ -134,8 +134,14 @@ function StoryVisual({
   onTogglePaused?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const visual = storyVisual(story);
-  const hasVideo = isVideo(story.type) && story.mediaUrl && canInlineVideo(story.mediaUrl);
+  const [videoLoading, setVideoLoading] = useState(false);
+  const visual = story.type === "IMAGE" ? storyVisual(story) : story.posterUrl || "";
+  const hasVideo = Boolean(active && isVideo(story.type) && story.mediaUrl && canInlineVideo(story.mediaUrl));
+
+  useEffect(() => {
+    setVideoLoading(hasVideo);
+  }, [hasVideo, story.mediaUrl]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !active) return;
@@ -148,34 +154,53 @@ function StoryVisual({
 
   if (hasVideo) {
     return (
-      <video
-        ref={videoRef}
-        src={story.mediaUrl || undefined}
-        poster={story.posterUrl || undefined}
-        className="h-full w-full bg-background object-cover"
-        muted={!active || !soundEnabled}
-        controls={false}
-        autoPlay
-        loop={!active}
-        playsInline
-        preload="metadata"
-        onClick={() => {
-          if (active) onTogglePaused?.();
-        }}
-        onLoadedMetadata={() => onVideoProgress?.(0)}
-        onTimeUpdate={(event) => {
-          const video = event.currentTarget;
-          if (active && Number.isFinite(video.duration) && video.duration > 0) {
-            onVideoProgress?.(Math.min(1, video.currentTime / video.duration));
-          }
-        }}
-        onEnded={active ? onVideoEnded : undefined}
-      />
+      <div className="relative h-full w-full bg-background">
+        <video
+          ref={videoRef}
+          src={story.mediaUrl || undefined}
+          poster={story.posterUrl || undefined}
+          className="h-full w-full bg-background object-cover"
+          muted={!active || !soundEnabled}
+          controls={false}
+          autoPlay={active}
+          loop={!active}
+          playsInline
+          preload="metadata"
+          onClick={() => {
+            if (active) onTogglePaused?.();
+          }}
+          onLoadedMetadata={() => onVideoProgress?.(0)}
+          onLoadedData={() => setVideoLoading(false)}
+          onCanPlay={() => setVideoLoading(false)}
+          onPlaying={() => setVideoLoading(false)}
+          onWaiting={() => setVideoLoading(true)}
+          onTimeUpdate={(event) => {
+            const video = event.currentTarget;
+            if (active && Number.isFinite(video.duration) && video.duration > 0) {
+              onVideoProgress?.(Math.min(1, video.currentTime / video.duration));
+            }
+          }}
+          onEnded={active ? onVideoEnded : undefined}
+        />
+        {videoLoading && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/55 text-primary">
+            <CirclePlay className="h-12 w-12 animate-pulse" />
+          </div>
+        )}
+      </div>
     );
   }
 
   if (visual) {
-    return <img src={visual} alt={story.title} className="h-full w-full bg-background object-cover" loading="lazy" />;
+    return <img src={visual} alt={story.title} className="h-full w-full bg-background object-cover" loading="lazy" decoding="async" />;
+  }
+
+  if (isVideo(story.type)) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-card text-primary">
+        <CirclePlay className="h-10 w-10" />
+      </div>
+    );
   }
 
   return (

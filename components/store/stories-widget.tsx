@@ -112,7 +112,14 @@ function StoryMedia({
   onTogglePaused?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const src = storyVisual(story);
+  const [videoLoading, setVideoLoading] = useState(false);
+  const src = story.type === "IMAGE" ? storyVisual(story) : story.posterUrl || "";
+  const showVideo = Boolean(expanded && isVideoStory(story) && story.mediaUrl && canInlineVideo(story.mediaUrl));
+
+  useEffect(() => {
+    setVideoLoading(showVideo);
+  }, [showVideo, story.mediaUrl]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !expanded) return;
@@ -123,38 +130,58 @@ function StoryMedia({
     video.play().catch(() => null);
   }, [expanded, paused, story.mediaUrl]);
 
-  if (isVideoStory(story) && story.mediaUrl && canInlineVideo(story.mediaUrl)) {
+  if (showVideo) {
     return (
-      <video
-        ref={videoRef}
-        className="h-full w-full bg-background object-cover"
-        src={story.mediaUrl}
-        poster={story.posterUrl || undefined}
-        playsInline
-        muted={!expanded || !soundEnabled}
-        loop={!expanded}
-        autoPlay
-        controls={false}
-        onClick={() => {
-          if (expanded) onTogglePaused?.();
-        }}
-        onLoadedMetadata={(event) => {
-          const duration = event.currentTarget.duration;
-          if (Number.isFinite(duration) && duration > 0) onVideoProgress?.(0);
-        }}
-        onTimeUpdate={(event) => {
-          const video = event.currentTarget;
-          if (expanded && Number.isFinite(video.duration) && video.duration > 0) {
-            onVideoProgress?.(Math.min(1, video.currentTime / video.duration));
-          }
-        }}
-        onEnded={expanded ? onVideoEnded : undefined}
-      />
+      <div className="relative h-full w-full bg-background">
+        <video
+          ref={videoRef}
+          className="h-full w-full bg-background object-cover"
+          src={story.mediaUrl || undefined}
+          poster={story.posterUrl || undefined}
+          playsInline
+          muted={!expanded || !soundEnabled}
+          loop={!expanded}
+          autoPlay={expanded}
+          controls={false}
+          preload="metadata"
+          onClick={() => {
+            if (expanded) onTogglePaused?.();
+          }}
+          onLoadedMetadata={(event) => {
+            const duration = event.currentTarget.duration;
+            if (Number.isFinite(duration) && duration > 0) onVideoProgress?.(0);
+          }}
+          onLoadedData={() => setVideoLoading(false)}
+          onCanPlay={() => setVideoLoading(false)}
+          onPlaying={() => setVideoLoading(false)}
+          onWaiting={() => setVideoLoading(true)}
+          onTimeUpdate={(event) => {
+            const video = event.currentTarget;
+            if (expanded && Number.isFinite(video.duration) && video.duration > 0) {
+              onVideoProgress?.(Math.min(1, video.currentTime / video.duration));
+            }
+          }}
+          onEnded={expanded ? onVideoEnded : undefined}
+        />
+        {videoLoading && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/55 text-primary">
+            <CirclePlay className="h-12 w-12 animate-pulse" />
+          </div>
+        )}
+      </div>
     );
   }
 
   if (src) {
-    return <img src={src} alt={story.title} className="h-full w-full bg-background object-cover" loading="lazy" />;
+    return <img src={src} alt={story.title} className="h-full w-full bg-background object-cover" loading="lazy" decoding="async" />;
+  }
+
+  if (isVideoStory(story)) {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-card text-primary">
+        <CirclePlay className="h-10 w-10" />
+      </div>
+    );
   }
 
   return (
