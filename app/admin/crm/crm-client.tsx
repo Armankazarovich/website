@@ -1363,9 +1363,11 @@ function OrdersKanban({ search }: { search: string }) {
     hasLoadedOrdersRef.current = true;
   }, [fetchOrders]);
 
-  // Auto-refresh every 30s
+  // Auto-refresh only while the tab is visible, so background CRM pages do not compete with active admin work.
   useEffect(() => {
-    const timer = setInterval(() => { fetchOrders(); }, 30000);
+    const timer = setInterval(() => {
+      if (document.visibilityState === "visible") fetchOrders();
+    }, 60000);
     return () => clearInterval(timer);
   }, [fetchOrders]);
 
@@ -1661,7 +1663,10 @@ export function CrmClient() {
   const searchParams = useSearchParams();
   const selectedLeadId = searchParams.get("leadId") || "";
   const initialSearch = searchParams.get("search") || "";
-  const [tab, setTab] = useState<"orders" | "leads">(selectedLeadId || initialSearch ? "leads" : "orders");
+  const initialTab = searchParams.get("tab");
+  const [tab, setTab] = useState<"orders" | "leads">(
+    initialTab === "orders" && !selectedLeadId && !initialSearch ? "orders" : "leads",
+  );
   const [leads, setLeads] = useState<Lead[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);

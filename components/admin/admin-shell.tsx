@@ -25,6 +25,7 @@
  */
 
 import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -52,7 +53,6 @@ import { LazyAdminArayAssistant } from "@/components/admin/lazy-components";
 import { AppHeader } from "@/components/layout/app-header";
 import { RouteTransition } from "@/components/layout/route-transition";
 import { AdminHeaderSearch } from "@/components/admin/admin-header-search";
-import { AdminSearchPanel } from "@/components/admin/admin-search-panel";
 import { AdminNotificationBell } from "@/components/admin/admin-notification-bell";
 import { AdminNavRail } from "@/components/admin/admin-nav-rail";
 import { ArayControlCenter } from "@/components/admin/aray-control-center";
@@ -78,6 +78,11 @@ const LS_BG_MODE = "aray-bg-mode";
 const LS_BG_MODE_MIGRATION = "aray-bg-clean-default-v2";
 const LS_ACTIVE_SITE = "aray-active-site";
 export const LS_FONT = "aray-font-size";
+
+const LazyAdminSearchPanel = dynamic(
+  () => import("@/components/admin/admin-search-panel").then((m) => ({ default: m.AdminSearchPanel })),
+  { loading: () => null, ssr: false },
+);
 
 type AdminBgMode = "clean";
 type BgMode = AdminBgMode | "classic";
@@ -303,7 +308,7 @@ function AdminShellInner({
       hrefs.forEach((href) => {
         try { router.prefetch(href); } catch {}
       });
-    }, 1800);
+    }, 5000);
 
     return cancel;
   }, [headerActions, pathname, router]);
@@ -367,16 +372,11 @@ function AdminShellInner({
         .then((r) => (r.ok ? r.json() : null))
         .then((d) => { if (!cancelled && d?.avatarUrl) setAvatarUrl(d.avatarUrl); })
         .catch(() => {});
-    }, 1800);
+    }, 3500);
     return () => {
       cancelled = true;
       cancel();
     };
-  }, []);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setArayAssistantMounted(true), 900);
-    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -636,12 +636,14 @@ function AdminShellInner({
       )}
 
       {/* ─── Поиск-панель слева (по кнопке Search или ⌘K) ── */}
-      <AdminSearchPanel
-        open={searchOpen}
-        onClose={() => setSearchOpen(false)}
-        role={role}
-        disabledModuleIds={disabledModuleIds}
-      />
+      {searchOpen && (
+        <LazyAdminSearchPanel
+          open={searchOpen}
+          onClose={() => setSearchOpen(false)}
+          role={role}
+          disabledModuleIds={disabledModuleIds}
+        />
+      )}
 
       {/* ─── ARAY — единый PiloRus assistant surface: dock + voice-first panel. ── */}
       {arayAssistantMounted && !isMessengerWorkspace && (

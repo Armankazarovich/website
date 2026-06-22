@@ -345,7 +345,10 @@ export function AdminNotificationBell({ role }: { role: string }) {
   }, []);
 
   useEffect(() => {
-    loadFeed();
+    let cancelled = false;
+    const initialTimer = window.setTimeout(() => {
+      if (!cancelled && document.visibilityState === "visible") loadFeed();
+    }, 2500);
     const timer = window.setInterval(() => {
       if (document.visibilityState === "visible") loadFeed();
     }, 60000);
@@ -354,6 +357,8 @@ export function AdminNotificationBell({ role }: { role: string }) {
     };
     document.addEventListener("visibilitychange", onVisibility);
     return () => {
+      cancelled = true;
+      window.clearTimeout(initialTimer);
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisibility);
     };

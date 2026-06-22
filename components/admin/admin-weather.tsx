@@ -133,6 +133,11 @@ function useAdminWeather() {
   useEffect(() => {
     let cancelled = false;
 
+    const cachedWeather = readJson<WeatherCache>(WEATHER_KEY);
+    if (cachedWeather && Date.now() - cachedWeather.ts < 10 * 60_000) {
+      setWeather(cachedWeather);
+    }
+
     async function boot() {
       const cachedWeather = readJson<WeatherCache>(WEATHER_KEY);
       if (cachedWeather && Date.now() - cachedWeather.ts < 10 * 60_000) {
@@ -161,9 +166,13 @@ function useAdminWeather() {
       }
     }
 
-    boot();
+    const timer = window.setTimeout(() => {
+      if (!cancelled) void boot();
+    }, 3500);
+
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
   }, [requestLocation]);
 
