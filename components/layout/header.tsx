@@ -659,8 +659,21 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
               <Search className="w-4 h-4" strokeWidth={1.9} />
             </button>
 
+            {/* Call — mobile quick action */}
+            {phones[0] && (
+              <a
+                href={`tel:${phones[0].tel}`}
+                aria-label={`Позвонить ${phones[0].display}`}
+                className="store-header-action flex items-center justify-center text-primary xl:hidden"
+              >
+                <Phone className="w-4 h-4" strokeWidth={1.9} />
+              </a>
+            )}
+
             {/* Wishlist */}
-            <WishlistCount />
+            <div className="max-[360px]:hidden">
+              <WishlistCount />
+            </div>
 
             {/* Compare */}
             <CompareCount className="hidden sm:flex" />
@@ -827,6 +840,30 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
                     </div>
                     <PhoneLinks phones={phones} variant="mobile-menu" />
                   </div>
+                </div>
+
+                {/* Контакты */}
+                <div className="mx-4 mb-4 space-y-2 rounded-2xl border border-border/70 bg-card/55 p-3">
+                  <div className="flex items-start gap-3 rounded-xl bg-muted/30 px-3 py-2.5">
+                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={1.8} />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">График</p>
+                      <p className="mt-1 text-sm leading-snug text-foreground">
+                        {workingHours || "Пн–Пт: 09:00–18:00, Сб: 09:00–15:00"}
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/contacts"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-start gap-3 rounded-xl bg-muted/30 px-3 py-2.5 transition-colors hover:bg-primary/10"
+                  >
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" strokeWidth={1.8} />
+                    <div className="min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">Адрес</p>
+                      <p className="mt-1 text-sm leading-snug text-foreground">Химки, ул. Заводская 2А, стр.28</p>
+                    </div>
+                  </Link>
                 </div>
 
                 {/* Навигация */}
