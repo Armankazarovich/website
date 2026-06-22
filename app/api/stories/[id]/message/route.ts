@@ -80,15 +80,19 @@ function checkRateLimit(key: string) {
 
 function buildArayReply(kind: StoryMessageKind) {
   if (kind === "review") {
-    return "Спасибо. ARAY отправил отзыв на модерацию, менеджер увидит контекст сторис и связанный товар.";
+    return "Спасибо. Отзыв отправлен на модерацию, менеджер увидит сторис и связанный товар.";
   }
   if (kind === "offer") {
-    return "Спасибо. ARAY оформил деловое предложение и создал задачу, чтобы менеджер быстро разобрал условия.";
+    return "Спасибо. Заявка на расчёт принята, менеджер быстро разберёт условия.";
   }
   if (kind === "comment") {
-    return "Спасибо. ARAY сохранил комментарий и передал его в рабочий контекст сторис.";
+    return "Спасибо. Комментарий сохранён, менеджер увидит контекст сторис.";
   }
-  return "Спасибо. ARAY передал вопрос менеджеру и создал рабочую задачу, чтобы вам ответили по контексту сторис.";
+  return "Спасибо. Вопрос передан менеджеру, вам ответят по контексту сторис.";
+}
+
+function notificationPreview(primary: string, fallback: string) {
+  return cleanText(primary || fallback, 90).replace(/\s+/g, " ").trim().slice(0, 80);
 }
 
 async function resolveStoryProductId(storyId: string, fallbackEntityType?: string | null, fallbackEntityId?: string | null) {
@@ -196,6 +200,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const businessEventPlan = buildArayBusinessEventPlan(businessEventInput);
     const businessEventPayload = buildArayBusinessEventPayload(businessEventInput, businessEventPlan);
     const enrichedContext = `${context}\n\n${formatArayBusinessEventForCrm(businessEventPlan)}`;
+    const staffPreview = notificationPreview(originalText, text);
 
     if (kind === "review") {
       const product = await resolveStoryProductId(story.id, story.entityType, story.entityId);
@@ -235,7 +240,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
       await sendPushToStaff({
         title: "Новый отзыв из сторис",
-        body: `${name}: ${text.slice(0, 80)}`,
+        body: `${name}: ${staffPreview}`,
         url: "/admin/reviews?status=pending",
       }).catch(() => null);
 
@@ -297,8 +302,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       .catch(() => null);
 
     await sendPushToStaff({
-      title: kind === "offer" ? "Предложение из сторис" : "Сообщение из сторис",
-      body: `${name}: ${text.slice(0, 80)}`,
+      title: kind === "offer" ? "Расчёт из сторис" : "Сообщение из сторис",
+      body: `${name}: ${staffPreview}`,
       url: `/admin/crm?leadId=${lead.id}`,
     }).catch(() => null);
 

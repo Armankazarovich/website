@@ -23,7 +23,13 @@ const checks = [
       "initialFolder ??",
       "MEDIA_UPLOAD_ACCEPT",
       "fileLooksVideo",
+      "uploadAdminMediaFile",
     ],
+  },
+  {
+    file: "app/api/admin/upload/chunk/route.ts",
+    label: "chunked admin upload bypasses proxy body limits for heavy media",
+    patterns: ["CHUNK_MAX_SIZE", "STORY_VIDEO_MAX_SIZE", "validateImageMagic", "validateVideoMagic"],
   },
   {
     file: "app/api/admin/media/route.ts",

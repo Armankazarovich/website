@@ -29,7 +29,15 @@ export function cleanArayBusinessInput(value: string, maxLength = 1400) {
 
 function stripGreeting(value: string) {
   return value
-    .replace(/^(здравствуйте|добрый день|добрый вечер|доброе утро|привет|салам)[,!\s-]*/i, "")
+    .replace(/^(здравствуйте|добрый день|добрый вечер|доброе утро|привет|салам)[,.!\s-]*/i, "")
+    .trim();
+}
+
+function stripGeneratedContext(value: string) {
+  return value
+    .replace(/\s+Контекст:\s*[^.]+\.?/gi, " ")
+    .replace(/\s+Вложения:\s*\d+\.?/gi, " ")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -40,7 +48,10 @@ function stripBusinessInstruction(value: string) {
       .replace(/^(?:клиенту|покупателю|заказчику|продавцу|менеджеру|курьеру|поставщику|сотруднику)\s+/i, "")
       .replace(/^(?:напиши|ответь|скажи|передай|перепиши|оформи|сделай|сформулируй|подготовь)\s+/i, "")
       .replace(/^(?:без воды|по делу|грамотно|вежливо|спокойно|коротко|нормально|по-человечески)\s+/i, "")
+      .replace(/^(?:подскажите|уточните|скажите)(?:,\s*пожалуйста)?[:.,!\s-]*/i, "")
+      .replace(/^(?:пожалуйста)[:.,!\s-]*/i, "")
       .replace(/^(?:что|так[:,-]?|такое[:,-]?|текст[:,-]?)\s+/i, "")
+      .replace(/^[:.,!\s-]+/i, "")
       .trim();
   }
   return next;
@@ -87,32 +98,33 @@ export function buildArayBusinessMessengerText({
 }) {
   const cleaned = cleanArayBusinessInput(text);
   const fallback = attachmentsCount > 0 ? "Передаю вложение для уточнения." : "Нужно коротко и по делу уточнить детали.";
-  const source = polishBusinessMeaning(stripGreeting(stripBusinessInstruction(cleaned || fallback)));
+  const source = polishBusinessMeaning(stripGeneratedContext(stripGreeting(stripBusinessInstruction(cleaned || fallback))));
   const orderNumber = findOrderNumber(source);
   const relationLine = relationLabel ? ` Контекст: ${relationLabel}.` : "";
   const attachmentLine = attachmentsCount > 0 ? ` Вложения: ${attachmentsCount}.` : "";
+  const sourceSentence = ensurePeriod(source).replace(/\.$/, "");
 
   if (kind === "question") {
     if (orderNumber) {
       const details = source.replace(orderNumber, "").replace(/(?:заказ|заявка|номер|№|#)\s*[:№#-]?/gi, "").trim();
       return ensurePeriod(`Здравствуйте. Подскажите, пожалуйста, статус заказа №${orderNumber}${details ? `: ${details}` : ""}.${relationLine}${attachmentLine}`);
     }
-    return ensurePeriod(`Здравствуйте. Подскажите, пожалуйста: ${source}.${relationLine}${attachmentLine}`);
+    return ensurePeriod(`Здравствуйте. Подскажите, пожалуйста: ${sourceSentence}.${relationLine}${attachmentLine}`);
   }
 
   if (kind === "review") {
-    return ensurePeriod(`Хочу оставить отзыв: ${source}.${relationLine}${attachmentLine}`);
+    return ensurePeriod(`Хочу оставить отзыв: ${sourceSentence}.${relationLine}${attachmentLine}`);
   }
 
   if (kind === "comment") {
-    return ensurePeriod(`Комментарий по теме: ${source}.${relationLine}${attachmentLine}`);
+    return ensurePeriod(`Комментарий по теме: ${sourceSentence}.${relationLine}${attachmentLine}`);
   }
 
   if (/(доставка|самовывоз|оплат|адрес|срок|заказ|готов)/i.test(source)) {
-    return ensurePeriod(`Здравствуйте. ${capitalizeFirst(source)}.${relationLine}${attachmentLine}`);
+    return ensurePeriod(`Здравствуйте. ${capitalizeFirst(sourceSentence)}.${relationLine}${attachmentLine}`);
   }
 
-  return ensurePeriod(`Здравствуйте. Предлагаю обсудить условия: ${source}.${relationLine}${attachmentLine} Готов(а) уточнить детали и следующий шаг`);
+  return ensurePeriod(`Здравствуйте. Нужно рассчитать условия: ${sourceSentence}.${relationLine}${attachmentLine} Готов(а) уточнить детали и следующий шаг`);
 }
 
 export function isArayBusinessMessengerRequest(text: string) {

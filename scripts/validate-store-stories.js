@@ -63,6 +63,21 @@ const checks = [
     patterns: ["requireManager", "buildStoryWrite", "relations", "storyRelationsInclude"],
   },
   {
+    file: "app/api/admin/upload/route.ts",
+    label: "story video uploads tolerate short heavy MOV files",
+    patterns: ["STORY_VIDEO_MAX_SIZE", "500MB", 'folder === "stories"'],
+  },
+  {
+    file: "app/api/admin/upload/chunk/route.ts",
+    label: "admin media uploads can bypass proxy body limits with chunks",
+    patterns: ["CHUNK_MAX_SIZE", "STORY_VIDEO_MAX_SIZE", "validateVideoMagic", "video/x-quicktime"],
+  },
+  {
+    file: "lib/admin-upload-client.ts",
+    label: "admin media client uses chunked uploads for heavy files",
+    patterns: ["ADMIN_UPLOAD_CHUNK_SIZE", "/api/admin/upload/chunk", "uploadAdminMediaFile"],
+  },
+  {
     file: "app/api/admin/stories/entity-options/route.ts",
     label: "admin editor can choose products, services, promotions and reviews",
     patterns: ["products", "services", "promotions", "reviews", "entityType"],
@@ -72,6 +87,7 @@ const checks = [
     label: "admin editor exposes media, library, sharing and multi-related templates",
     patterns: [
       "normalizeRelations",
+      "uploadAdminMediaFile(file, \"stories\")",
       "addRelation",
       "entityOptions",
       "Библиотека",
@@ -99,6 +115,8 @@ const checks = [
       "PHOTO_STORY_MS",
       "storyProgress",
       "soundEnabled",
+      "VolumeX",
+      "Выключить звук",
       "relatedActions",
       "StoryActionDrawer",
       "setHidden(true)",
@@ -133,6 +151,8 @@ const checks = [
       "RelatedAction",
       "StoryActionDrawer",
       "soundEnabled",
+      "VolumeX",
+      "Выключить звук",
       "StoriesPageClient",
     ],
   },

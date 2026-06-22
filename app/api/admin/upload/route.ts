@@ -61,7 +61,8 @@ const ALLOWED_FOLDERS = [
   "default",
 ];
 const IMAGE_MAX_SIZE = 25 * 1024 * 1024; // 25MB for phone/admin images
-const VIDEO_MAX_SIZE = 200 * 1024 * 1024; // 200MB for admin story/service videos
+const VIDEO_MAX_SIZE = 200 * 1024 * 1024; // 200MB for general admin videos
+const STORY_VIDEO_MAX_SIZE = 500 * 1024 * 1024; // short iPhone MOV stories can be heavy
 
 // Magic number validation
 function normalizeMime(mime: string, ext: string): string {
@@ -146,10 +147,10 @@ export async function POST(req: Request) {
   }
 
   // Size limit
-  const maxSize = isVideo ? VIDEO_MAX_SIZE : IMAGE_MAX_SIZE;
+  const maxSize = isVideo ? (folder === "stories" ? STORY_VIDEO_MAX_SIZE : VIDEO_MAX_SIZE) : IMAGE_MAX_SIZE;
   if (file.size > maxSize) {
     return NextResponse.json(
-      { error: `Максимальный размер ${isVideo ? "200MB" : "25MB"}` },
+      { error: `Максимальный размер ${isVideo ? (folder === "stories" ? "500MB" : "200MB") : "25MB"}` },
       { status: 400 }
     );
   }

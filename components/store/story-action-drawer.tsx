@@ -67,10 +67,10 @@ export type StoryActionStory = {
 };
 
 const MESSAGE_KIND_OPTIONS: Array<{ value: StoryMessageKind; label: string; hint: string }> = [
-  { value: "question", label: "Вопрос", hint: "лид + задача" },
-  { value: "offer", label: "Предложение", hint: "условия без воды" },
-  { value: "review", label: "Отзыв", hint: "на модерацию" },
-  { value: "comment", label: "Комментарий", hint: "контекст сторис" },
+  { value: "question", label: "Вопрос", hint: "по товару" },
+  { value: "offer", label: "Расчёт", hint: "цена, объём" },
+  { value: "review", label: "Отзыв", hint: "о заказе" },
+  { value: "comment", label: "Комментарий", hint: "к сторис" },
 ];
 
 function isExternalHref(href: string) {
@@ -407,9 +407,10 @@ export function StoryActionDrawer({
       if (!response.ok) throw new Error(typeof result.error === "string" ? result.error : "Не удалось отправить сообщение");
 
       const now = Date.now();
+      const visibleText = (draft.trim() || text).slice(0, 1200);
       const guestComment: StoryComment = {
         id: `${now}-guest`,
-        text,
+        text: visibleText,
         createdAt: new Date(now).toISOString(),
         author: "guest",
         kind: messageKind,
@@ -420,7 +421,7 @@ export function StoryActionDrawer({
         text:
           typeof result.arayReply === "string"
             ? result.arayReply
-            : "ARAY передал сообщение в рабочий контекст и сохранил историю.",
+            : "Спасибо. Менеджер увидит сторис, товар и ваше сообщение.",
         createdAt: new Date(now + 1).toISOString(),
         author: "aray",
         kind: messageKind,
@@ -566,18 +567,18 @@ export function StoryActionDrawer({
             </div>
           )}
 
-          <div className="rounded-2xl border border-border bg-card p-2.5">
-            <div className="mb-2 flex items-start gap-2">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-primary/35 bg-primary/10 text-primary">
-                <Sparkles className="h-4 w-4" />
+          <div className="rounded-2xl border border-border bg-card/95 p-3 shadow-xl shadow-black/10">
+            <div className="mb-3 flex items-start gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/35 bg-primary/10 text-primary">
+                <MessageCircle className="h-4 w-4" />
               </span>
               <div className="min-w-0">
-                <p className="text-sm font-bold leading-5">ARAY Business Messenger</p>
-                <p className="text-[11px] leading-4 text-muted-foreground">Вопросы, отзывы, предложения и вложения без воды.</p>
+                <p className="text-sm font-bold leading-5">Написать менеджеру</p>
+                <p className="text-[11px] leading-4 text-muted-foreground">Вопрос, расчёт или отзыв по этой сторис. Ответим с контекстом товара.</p>
               </div>
             </div>
 
-            <div className="mb-2 grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+            <div className="mb-2 grid grid-cols-2 gap-1.5">
               {MESSAGE_KIND_OPTIONS.map((option) => (
                 <button
                   key={option.value}
@@ -588,12 +589,12 @@ export function StoryActionDrawer({
                     setMessageStatus("idle");
                   }}
                   className={cn(
-                    "rounded-xl border border-border bg-background px-2 py-2 text-left transition-colors hover:border-primary/45",
-                    messageKind === option.value && "border-primary/55 bg-primary/10 text-primary",
+                    "rounded-xl border border-border bg-background px-3 py-2 text-left transition-colors hover:border-primary/45",
+                    messageKind === option.value && "border-primary/55 bg-primary/10 text-primary shadow-[0_0_0_1px_hsl(var(--primary)/0.12)_inset]",
                   )}
                 >
-                  <span className="block text-xs font-bold leading-4">{option.label}</span>
-                  <span className="block truncate text-[10px] font-semibold text-muted-foreground">{option.hint}</span>
+                  <span className="block text-[13px] font-bold leading-4">{option.label}</span>
+                  <span className="mt-0.5 block truncate text-[10px] font-semibold text-muted-foreground">{option.hint}</span>
                 </button>
               ))}
             </div>
@@ -608,19 +609,19 @@ export function StoryActionDrawer({
                 maxLength={1200}
                 placeholder={
                   messageKind === "offer"
-                    ? "Напишите условия, цену, срок или номер заказа..."
+                    ? "Напишите объём, размер, адрес доставки или вопрос по цене..."
                     : messageKind === "review"
-                      ? "Напишите отзыв как удобно, ARAY приведёт текст в порядок..."
-                      : "Напишите вопрос, номер заказа или короткий комментарий..."
+                      ? "Напишите отзыв о товаре, доставке или менеджере..."
+                      : "Напишите вопрос или короткий комментарий..."
                 }
-                className="min-h-20 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm leading-5 outline-none transition-colors placeholder:text-muted-foreground/75 focus:border-primary/55"
+                className="min-h-20 w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm leading-5 outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary/55"
               />
 
               <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
                 <input
                   value={contact}
                   onChange={(event) => setContact(event.target.value)}
-                  placeholder="Имя, телефон или email"
+                  placeholder="Телефон, имя или email"
                   className="min-h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/75 focus:border-primary/55"
                 />
                 {messageKind === "review" && (
@@ -686,7 +687,7 @@ export function StoryActionDrawer({
                   className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-bold transition-colors hover:border-primary/45 hover:text-primary"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
-                  ARAY
+                  Улучшить
                 </button>
                 <button
                   type="button"
@@ -716,13 +717,13 @@ export function StoryActionDrawer({
                     : "border-destructive/35 bg-destructive/10 text-destructive",
                 )}
               >
-                {messageStatus === "done" ? "Сообщение принято. ARAY передал контекст в работу." : messageError}
+                {messageStatus === "done" ? "Сообщение принято. Менеджер увидит сторис и ответит по делу." : messageError}
               </div>
             )}
 
             {comments.length > 0 && (
-              <div className="mt-2 grid max-h-44 gap-1.5 overflow-y-auto pr-1">
-                {comments.slice(0, 5).map((comment) => (
+              <div className="mt-2 grid max-h-36 gap-1.5 overflow-y-auto pr-1">
+                {comments.slice(0, 3).map((comment) => (
                   <div
                     key={comment.id}
                     className={cn(
@@ -734,13 +735,13 @@ export function StoryActionDrawer({
                   >
                     <div className="mb-1 flex items-center justify-between gap-2">
                       <span className="text-[10px] font-bold uppercase text-muted-foreground">
-                        {comment.author === "aray" ? "ARAY" : kindLabel(comment.kind)}
+                        {comment.author === "aray" ? "ПилоРус" : kindLabel(comment.kind)}
                       </span>
                       <span className="text-[10px] text-muted-foreground">
                         {new Date(comment.createdAt).toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </div>
-                    <p>{comment.text}</p>
+                    <p className="line-clamp-3">{comment.text}</p>
                     {comment.attachments && comment.attachments.length > 0 && (
                       <div className="mt-1 flex flex-wrap gap-1">
                         {comment.attachments.map((file) => (

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight, CirclePlay, Eye, Radio, Sparkles, Volume2, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, CirclePlay, Eye, Radio, Sparkles, Volume2, VolumeX, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFloatingChromeHidden } from "@/lib/use-floating-ui";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
@@ -440,8 +440,8 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
 
       {expanded && (
         <PopupPortal>
-        <div className="store-story-overlay fixed inset-0 z-[120] flex items-center justify-center bg-background/96 p-2 sm:p-4">
-          <div className="store-story-side-panel relative flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-black/40">
+        <div className="store-story-overlay fixed inset-0 z-[120] flex items-center justify-center bg-background/96 p-2 sm:p-4" onClick={closeStory}>
+          <div className="store-story-side-panel relative flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-black/40" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
@@ -524,14 +524,25 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
                   if (total > 1) setIndex((value) => (value + 1) % total);
                 }}
               />
-              {hasInlineVideo && !soundEnabled && (
+              {hasInlineVideo && (
                 <button
                   type="button"
-                  onClick={() => setSoundEnabled(true)}
-                  className="absolute right-3 top-3 inline-flex min-h-9 items-center gap-2 rounded-full border border-border bg-card/95 px-3 text-xs font-semibold text-foreground transition-colors hover:border-primary/45"
+                  onClick={() => setSoundEnabled((enabled) => !enabled)}
+                  className={cn(
+                    "absolute right-3 top-3 inline-flex min-h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition-colors",
+                    soundEnabled
+                      ? "border-primary/45 bg-primary/15 text-primary hover:bg-primary/20"
+                      : "border-border bg-card/95 text-foreground hover:border-primary/45",
+                  )}
+                  aria-label={soundEnabled ? "Выключить звук сторис" : "Включить звук сторис"}
+                  title={soundEnabled ? "Выключить звук" : "Включить звук"}
                 >
-                  <Volume2 className="h-4 w-4 text-primary" />
-                  Включить звук
+                  {soundEnabled ? (
+                    <VolumeX className="h-4 w-4 text-primary-foreground" />
+                  ) : (
+                    <Volume2 className="h-4 w-4 text-primary" />
+                  )}
+                  {soundEnabled ? "Выключить звук" : "Включить звук"}
                 </button>
               )}
               {total > 1 && (

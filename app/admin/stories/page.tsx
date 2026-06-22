@@ -21,12 +21,15 @@ import {
   Sparkles,
   Trash2,
   Upload,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { AdminSectionTitle } from "@/components/admin/admin-section-title";
 import { AdminModal } from "@/components/admin/admin-modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { uploadAdminMediaFile } from "@/lib/admin-upload-client";
 
 const MediaPickerModal = dynamic(
   () => import("@/app/admin/media/media-client").then((m) => ({ default: m.MediaPickerModal })),
@@ -268,10 +271,23 @@ function StoryPreview({ story }: { story: StoryForm | Story }) {
   const visual = story.posterUrl || mediaUrl;
   const Icon = getTypeIcon(story.type);
   const shouldRenderVideo = story.type !== "IMAGE" && mediaUrl.length > 0 && storyTypeFromMedia(mediaUrl) === "VIDEO";
+  const [previewSound, setPreviewSound] = useState(false);
+  useEffect(() => {
+    setPreviewSound(false);
+  }, [mediaUrl]);
   return (
     <div className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-border bg-background">
       {shouldRenderVideo ? (
-        <video src={mediaUrl} poster={story.posterUrl || undefined} className="h-full w-full object-cover" muted loop playsInline autoPlay preload="metadata" />
+        <video
+          src={mediaUrl}
+          poster={story.posterUrl || undefined}
+          className="h-full w-full object-cover"
+          muted={!previewSound}
+          loop
+          playsInline
+          autoPlay
+          preload="metadata"
+        />
       ) : visual ? (
         <img src={visual} alt={story.title || "Story"} className="h-full w-full object-cover" />
       ) : (
@@ -284,7 +300,31 @@ function StoryPreview({ story }: { story: StoryForm | Story }) {
         <Icon className="h-3 w-3" />
         {TYPE_LABEL[story.type]}
       </span>
-      <span className="absolute right-3 top-3 rounded-full border border-border bg-card/90 px-2 py-1 text-[10px] font-semibold text-muted-foreground">
+      {shouldRenderVideo && (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setPreviewSound((enabled) => !enabled);
+          }}
+          className={cn(
+            "absolute right-3 top-3 inline-flex min-h-7 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold transition-colors",
+            previewSound
+                  ? "border-primary/45 bg-primary/15 text-primary"
+              : "border-border bg-card/90 text-foreground hover:border-primary/40",
+          )}
+          aria-label={previewSound ? "Выключить звук превью" : "Включить звук превью"}
+          title={previewSound ? "Выключить звук" : "Включить звук"}
+        >
+          {previewSound ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3 text-primary" />}
+          {previewSound ? "выкл." : "звук"}
+        </button>
+      )}
+      <span className={cn(
+        "absolute right-3 rounded-full border border-border bg-card/90 px-2 py-1 text-[10px] font-semibold text-muted-foreground",
+        shouldRenderVideo ? "top-12" : "top-3",
+      )}>
         9:16
       </span>
       <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-card/90 p-3">
@@ -441,14 +481,9 @@ function StoryModal({
     setUploading(target);
     setError("");
     try {
-      const data = new FormData();
-      data.append("file", file);
-      data.append("folder", "stories");
-      const res = await fetch("/api/admin/upload", { method: "POST", body: data });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok || !json.url) throw new Error(json.error || "Не удалось загрузить файл");
+      const url = await uploadAdminMediaFile(file, "stories");
       const pickedKind = pickedMediaKindFromFile(file);
-      applyStoryMedia(target, json.url, pickedKind);
+      applyStoryMedia(target, url, pickedKind);
     } catch (err: any) {
       setError(err.message || "Не удалось загрузить файл");
     } finally {
@@ -559,6 +594,9 @@ function StoryModal({
               />
             </label>
           </div>
+          <p className="text-[11px] leading-5 text-muted-foreground">
+            Сторис лучше до 1 минуты; технический предел загрузки видео — 500MB. Для LIVE используйте ссылку на эфир или длинное видео.
+          </p>
           <div className="grid grid-cols-2 gap-2">
             <Button type="button" variant="outline" onClick={() => setMediaPickerTarget("media")} className="min-h-10">
               <ImageIcon className="h-4 w-4" />

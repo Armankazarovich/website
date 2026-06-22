@@ -62,6 +62,8 @@ const SOURCE_ICONS: Record<string, typeof Phone> = {
   OTHER: MoreHorizontal,
 };
 
+const MOBILE_ALL_STAGE = "ALL";
+
 type Lead = {
   id: string;
   name: string;
@@ -109,6 +111,32 @@ function timeAgo(dateStr: string) {
   return `${d} дн`;
 }
 
+function getStageInfo(stage: string) {
+  return STAGES.find(s => s.key === stage);
+}
+
+function phoneDigits(phone?: string | null) {
+  return String(phone ?? "").replace(/\D/g, "");
+}
+
+function normalizeRuPhoneDigits(phone?: string | null) {
+  const digits = phoneDigits(phone);
+  if (!digits) return "";
+  if (digits.length === 11 && digits.startsWith("8")) return `7${digits.slice(1)}`;
+  if (digits.length === 10) return `7${digits}`;
+  return digits;
+}
+
+function phoneHref(phone?: string | null) {
+  const digits = normalizeRuPhoneDigits(phone);
+  return digits ? `tel:+${digits}` : "";
+}
+
+function whatsappHref(phone?: string | null) {
+  const digits = normalizeRuPhoneDigits(phone);
+  return digits ? `https://wa.me/${digits}` : "";
+}
+
 function formatMoney(n: number) {
   if (!n) return "";
   return n.toLocaleString("ru-RU") + " ₽";
@@ -126,15 +154,22 @@ function formatOrderUnit(unit?: string) {
 // ─── LeadCard ─────────────────────────────────────────────────────────────────
 
 function LeadCard({
-  lead, onDragStart, onDragEnd, onClick, staff,
+  lead, onDragStart, onDragEnd, onClick, staff, onStageChange, showStageBadge = false, enableDrag = true,
 }: {
   lead: Lead;
   onDragStart: (e: React.DragEvent, lead: Lead) => void;
   onDragEnd: (e: React.DragEvent) => void;
   onClick: (lead: Lead) => void;
   staff: StaffMember[];
+  onStageChange?: (lead: Lead, stage: string) => void;
+  showStageBadge?: boolean;
+  enableDrag?: boolean;
 }) {
   const SrcIcon = SOURCE_ICONS[lead.source] || MoreHorizontal;
+  const stage = getStageInfo(lead.stage);
+  const callLink = phoneHref(lead.phone);
+  const chatLink = whatsappHref(lead.phone);
+  const mailLink = lead.email?.trim() ? `mailto:${lead.email.trim()}` : "";
   const isUrgent = lead.tags.some(t => {
     const normalized = t.toLowerCase();
     return normalized.includes("срочн") || normalized.includes("важн") || normalized.includes("urgent") || normalized.includes("vip");
@@ -142,11 +177,11 @@ function LeadCard({
 
   return (
     <div
-      draggable
-      onDragStart={(e) => onDragStart(e, lead)}
-      onDragEnd={onDragEnd}
+      draggable={enableDrag}
+      onDragStart={enableDrag ? (e) => onDragStart(e, lead) : undefined}
+      onDragEnd={enableDrag ? onDragEnd : undefined}
       onClick={() => onClick(lead)}
-      className={`rounded-2xl border border-border bg-card p-3.5 cursor-pointer select-none transition-colors duration-200 group min-w-0 hover:border-primary/35 hover:bg-primary/[0.035] ${
+      className={`relative rounded-2xl border border-border bg-card p-3.5 cursor-pointer select-none transition-colors duration-200 group min-w-0 hover:border-primary/35 hover:bg-primary/[0.035] ${
         isUrgent ? "arayglass-glow" : ""
       }`}
     >
@@ -163,6 +198,12 @@ function LeadCard({
             <p className="text-xs text-muted-foreground truncate flex items-center gap-1 mt-0.5">
               <Building2 className="w-3 h-3 shrink-0" />{lead.company}
             </p>
+          )}
+          {showStageBadge && stage && (
+            <span className="mt-1.5 inline-flex max-w-full items-center gap-1 rounded-xl border border-primary/15 bg-primary/[0.06] px-2 py-0.5 text-[11px] font-semibold text-muted-foreground sm:hidden">
+              <span className={`h-2 w-2 shrink-0 rounded-full ${stage.dot}`} />
+              <span className="truncate">{stage.label}</span>
+            </span>
           )}
         </div>
         {lead.value && lead.value > 0 && (
@@ -181,6 +222,60 @@ function LeadCard({
           <span className="flex min-w-0 items-center gap-1 truncate"><Mail className="w-3 h-3 shrink-0" /><span className="truncate">{lead.email}</span></span>
         )}
       </div>
+
+      <div className="mb-2 grid grid-cols-3 gap-1.5 sm:hidden" onClick={(e) => e.stopPropagation()}>
+        {callLink ? (
+          <a href={callLink} className="flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/15 bg-primary/[0.05] px-2 text-xs font-semibold text-foreground transition-colors active:scale-[0.98]">
+            <PhoneCall className="h-3.5 w-3.5 text-primary" />
+            Звонок
+          </a>
+        ) : (
+          <span className="flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-muted/20 px-2 text-xs font-semibold text-muted-foreground/50">
+            <PhoneCall className="h-3.5 w-3.5" />
+            Звонок
+          </span>
+        )}
+        {chatLink ? (
+          <a href={chatLink} target="_blank" rel="noreferrer" className="flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/15 bg-primary/[0.05] px-2 text-xs font-semibold text-foreground transition-colors active:scale-[0.98]">
+            <MessageSquare className="h-3.5 w-3.5 text-primary" />
+            WhatsApp
+          </a>
+        ) : (
+          <span className="flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-muted/20 px-2 text-xs font-semibold text-muted-foreground/50">
+            <MessageSquare className="h-3.5 w-3.5" />
+            WhatsApp
+          </span>
+        )}
+        {mailLink ? (
+          <a href={mailLink} className="flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-primary/15 bg-primary/[0.05] px-2 text-xs font-semibold text-foreground transition-colors active:scale-[0.98]">
+            <Mail className="h-3.5 w-3.5 text-primary" />
+            Почта
+          </a>
+        ) : (
+          <span className="flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-muted/20 px-2 text-xs font-semibold text-muted-foreground/50">
+            <Mail className="h-3.5 w-3.5" />
+            Почта
+          </span>
+        )}
+      </div>
+
+      {onStageChange && (
+        <div className="mb-2 sm:hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="relative">
+            <select
+              aria-label="Этап лида"
+              value={lead.stage}
+              onChange={(e) => onStageChange(lead, e.target.value)}
+              className="h-10 w-full appearance-none rounded-xl border border-primary/15 bg-background/70 px-3 pr-9 text-sm font-semibold text-foreground outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/15"
+            >
+              {STAGES.map(s => (
+                <option key={s.key} value={s.key}>{s.label}</option>
+              ))}
+            </select>
+            <ChevronRight className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 rotate-90 text-muted-foreground" />
+          </div>
+        </div>
+      )}
 
       {/* Tags */}
       {lead.tags.length > 0 && (
@@ -216,7 +311,7 @@ function LeadCard({
 
 function StageColumn({
   stage, leads, staff, total, totalValue,
-  onLeadClick, onAddLead, onDragStart, onDragEnd, onDrop, onDragOver, isDragOver,
+  onLeadClick, onAddLead, onDragStart, onDragEnd, onDrop, onDragOver, isDragOver, onStageChange,
 }: {
   stage: typeof STAGES[number];
   leads: Lead[];
@@ -230,6 +325,7 @@ function StageColumn({
   onDrop: (e: React.DragEvent, stage: string) => void;
   onDragOver: (e: React.DragEvent) => void;
   isDragOver: boolean;
+  onStageChange?: (lead: Lead, stage: string) => void;
 }) {
   return (
     <div
@@ -265,6 +361,7 @@ function StageColumn({
             onDragStart={onDragStart}
             onDragEnd={onDragEnd}
             onClick={onLeadClick}
+            onStageChange={onStageChange}
           />
         ))}
 
@@ -578,6 +675,9 @@ function LeadDetailPanel({
   };
 
   const currentStage = STAGES.find(s => s.key === lead.stage);
+  const callLink = phoneHref(lead.phone);
+  const chatLink = whatsappHref(lead.phone);
+  const mailLink = lead.email?.trim() ? `mailto:${lead.email.trim()}` : "";
 
   return (
     <>
@@ -669,10 +769,48 @@ function LeadDetailPanel({
             </div>
           ) : (
             <div className="space-y-3">
+              {(callLink || chatLink || mailLink) && (
+                <div className="grid grid-cols-3 gap-2">
+                  {callLink ? (
+                    <a href={callLink} className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-primary/15 bg-primary/[0.05] px-2 text-sm font-semibold text-foreground transition-colors hover:border-primary/35 active:scale-[0.98]">
+                      <PhoneCall className="h-4 w-4 text-primary" />
+                      Звонок
+                    </a>
+                  ) : (
+                    <span className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-muted/20 px-2 text-sm font-semibold text-muted-foreground/50">
+                      <PhoneCall className="h-4 w-4" />
+                      Звонок
+                    </span>
+                  )}
+                  {chatLink ? (
+                    <a href={chatLink} target="_blank" rel="noreferrer" className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-primary/15 bg-primary/[0.05] px-2 text-sm font-semibold text-foreground transition-colors hover:border-primary/35 active:scale-[0.98]">
+                      <MessageSquare className="h-4 w-4 text-primary" />
+                      WhatsApp
+                    </a>
+                  ) : (
+                    <span className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-muted/20 px-2 text-sm font-semibold text-muted-foreground/50">
+                      <MessageSquare className="h-4 w-4" />
+                      WhatsApp
+                    </span>
+                  )}
+                  {mailLink ? (
+                    <a href={mailLink} className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-primary/15 bg-primary/[0.05] px-2 text-sm font-semibold text-foreground transition-colors hover:border-primary/35 active:scale-[0.98]">
+                      <Mail className="h-4 w-4 text-primary" />
+                      Почта
+                    </a>
+                  ) : (
+                    <span className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-muted/20 px-2 text-sm font-semibold text-muted-foreground/50">
+                      <Mail className="h-4 w-4" />
+                      Почта
+                    </span>
+                  )}
+                </div>
+              )}
+
               {/* Contact info */}
               <div className="arayglass rounded-xl p-4 space-y-3">
                 {lead.phone && (
-                  <a href={`tel:${lead.phone}`} className="flex min-w-0 items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
+                  <a href={callLink || `tel:${lead.phone}`} className="flex min-w-0 items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors min-h-[36px]">
                     <Phone className="w-4 h-4 text-muted-foreground arayglass-icon" />
                     <span className="truncate">{lead.phone}</span>
                   </a>
@@ -781,16 +919,16 @@ function CrmStats({ leads }: { leads: Lead[] }) {
 
   return (
     <div className="border-b border-primary/[0.08] px-4 py-2.5 sm:px-5 sm:py-3 flex-shrink-0">
-      <div className="grid grid-cols-2 gap-2 lg:hidden">
+      <div className="flex gap-2 overflow-x-auto scrollbar-hide lg:hidden sm:grid sm:grid-cols-4">
         {stats.map(stat => (
-          <div key={stat.label} className="min-w-0 rounded-2xl border border-primary/15 bg-card/70 p-3">
-            <div className="mb-2 flex items-center justify-between gap-2">
+          <div key={stat.label} className="min-w-[132px] rounded-xl border border-primary/15 bg-card/70 p-2.5 sm:min-w-0">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
               <p className="truncate text-[10px] font-medium uppercase tracking-wide text-muted-foreground">{stat.label}</p>
-              <span className="rounded-lg border border-primary/10 bg-primary/[0.08] p-1.5">
-                <stat.icon className="h-3.5 w-3.5 text-primary" />
+              <span className="rounded-xl border border-primary/10 bg-primary/[0.08] p-1">
+                <stat.icon className="h-3 w-3 text-primary" />
               </span>
             </div>
-            <p className="font-display text-2xl font-bold leading-none text-foreground">{stat.value}</p>
+            <p className="font-display text-xl font-bold leading-none text-foreground">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -1534,7 +1672,7 @@ export function CrmClient() {
   const [showPresets, setShowPresets] = useState(false);
   const [dragOverStage, setDragOverStage] = useState<string | null>(null);
   const [sourceFilter, setSourceFilter] = useState("ALL");
-  const [mobileStage, setMobileStage] = useState("NEW");
+  const [mobileStage, setMobileStage] = useState(MOBILE_ALL_STAGE);
   const [leadsError, setLeadsError] = useState<string | null>(null);
   const [refreshingLeads, setRefreshingLeads] = useState(false);
   const dragLeadRef = useRef<Lead | null>(null);
@@ -1585,10 +1723,13 @@ export function CrmClient() {
 
   useEffect(() => {
     if (tab !== "leads") return;
+    if (mobileStage === MOBILE_ALL_STAGE) return;
     if ((leadsByStage[mobileStage] || []).length > 0) return;
     const firstStageWithLeads = STAGES.find(s => (leadsByStage[s.key] || []).length > 0);
     if (firstStageWithLeads && firstStageWithLeads.key !== mobileStage) {
       setMobileStage(firstStageWithLeads.key);
+    } else if (!firstStageWithLeads) {
+      setMobileStage(MOBILE_ALL_STAGE);
     }
   }, [leadsByStage, mobileStage, tab]);
 
@@ -1609,15 +1750,12 @@ export function CrmClient() {
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = async (e: React.DragEvent, newStage: string) => {
-    e.preventDefault();
-    setDragOverStage(null);
-    const lead = dragLeadRef.current;
+  const updateLeadStage = useCallback(async (lead: Lead, newStage: string) => {
     if (!lead || lead.stage === newStage) return;
-
     const prevStage = lead.stage;
-    // Оптимистичное обновление
+
     setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, stage: newStage } : l));
+    setSelectedLead(prev => prev?.id === lead.id ? { ...prev, stage: newStage } : prev);
 
     try {
       const res = await fetch(`/api/admin/crm/leads/${lead.id}`, {
@@ -1625,18 +1763,31 @@ export function CrmClient() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stage: newStage }),
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const updated = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(getApiError(updated, `HTTP ${res.status}`));
+      if (isLeadPayload(updated)) {
+        setLeads(prev => prev.map(l => l.id === lead.id ? { ...updated, _count: l._count } : l));
+        setSelectedLead(prev => prev?.id === lead.id ? { ...updated, _count: prev._count } : prev);
+      }
       const stageLabel = STAGES.find(s => s.key === newStage)?.label ?? newStage;
       toast({ title: "Этап изменён", description: `${lead.name} → ${stageLabel}` });
     } catch (err) {
-      // Откат при ошибке
       setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, stage: prevStage } : l));
+      setSelectedLead(prev => prev?.id === lead.id ? { ...prev, stage: prevStage } : prev);
       toast({
         title: "Не удалось сохранить этап",
         description: "Лид не передвинут. Проверь соединение и попробуй снова.",
         variant: "destructive",
       });
     }
+  }, [toast]);
+
+  const handleDrop = async (e: React.DragEvent, newStage: string) => {
+    e.preventDefault();
+    setDragOverStage(null);
+    const lead = dragLeadRef.current;
+    if (!lead || lead.stage === newStage) return;
+    await updateLeadStage(lead, newStage);
   };
 
   const handleAddLead = (stage: string) => {
@@ -1807,6 +1958,18 @@ export function CrmClient() {
             <>
               {/* Мобильный переключатель этапов */}
               <div className="crm-mobile-stage-strip sm:hidden flex items-center gap-1.5 px-4 py-2.5 overflow-x-auto scrollbar-hide flex-shrink-0 border-b border-primary/[0.08]">
+                <button
+                  onClick={() => setMobileStage(MOBILE_ALL_STAGE)}
+                  className={`admin-pill-btn shrink-0 min-h-11 ${mobileStage === MOBILE_ALL_STAGE ? "admin-pill-btn-active" : ""}`}
+                >
+                  <Users className="h-4 w-4" />
+                  Все
+                  {filteredLeads.length > 0 && (
+                    <span className={`px-1.5 rounded-xl text-[10px] font-bold ${mobileStage === MOBILE_ALL_STAGE ? "bg-background/20 text-foreground" : "bg-primary/10 text-primary"}`}>
+                      {filteredLeads.length}
+                    </span>
+                  )}
+                </button>
                 {STAGES.map(s => {
                   const cnt = (leadsByStage[s.key] || []).length;
                   return (
@@ -1825,7 +1988,28 @@ export function CrmClient() {
 
               {/* Мобильный вид — одна колонка */}
               <div className="crm-mobile-scroll-area sm:hidden flex-1 overflow-y-auto px-4 py-3 pb-[calc(6rem+env(safe-area-inset-bottom,0px))]">
-                {STAGES.filter(s => s.key === mobileStage).map(stage => {
+                {mobileStage === MOBILE_ALL_STAGE ? (
+                  <div className="space-y-2.5">
+                    {filteredLeads.map(lead => (
+                      <LeadCard
+                        key={lead.id}
+                        lead={lead}
+                        staff={staff}
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                        onClick={setSelectedLead}
+                        onStageChange={updateLeadStage}
+                        showStageBadge
+                        enableDrag={false}
+                      />
+                    ))}
+                    {filteredLeads.length === 0 && (
+                      <div className="rounded-2xl border border-dashed border-primary/20 bg-card/70 p-6 text-center text-sm text-muted-foreground">
+                        Заявок по этому фильтру нет.
+                      </div>
+                    )}
+                  </div>
+                ) : STAGES.filter(s => s.key === mobileStage).map(stage => {
                   const stageleads = leadsByStage[stage.key] || [];
                   const totalValue = stageleads.filter(l => l.value).reduce((s, l) => s + Number(l.value), 0);
                   return (
@@ -1843,6 +2027,7 @@ export function CrmClient() {
                       onDrop={handleDrop}
                       onDragOver={handleDragOver}
                       isDragOver={dragOverStage === stage.key}
+                      onStageChange={updateLeadStage}
                     />
                   );
                 })}

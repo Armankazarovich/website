@@ -12,6 +12,7 @@ import {
 import { InfoCard } from "@/components/admin/info-popup";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
 import { useClassicMode } from "@/lib/use-classic-mode";
+import { uploadAdminMediaFile } from "@/lib/admin-upload-client";
 
 type MediaKind = "image" | "video" | "document";
 type PickerKind = "image" | "video" | "all";
@@ -411,6 +412,7 @@ export function MediaClient({
   const visibleFiles = filtered.slice(0, renderLimit);
   const hasMoreFiles = renderLimit < filtered.length;
   const uploadTargetFolder = resolveUploadFolder();
+  const uploadVideoLimitLabel = uploadTargetFolder === "stories" ? "500MB" : "200MB";
   const canResetMediaFilters = folder !== "all" || quickFilter !== "all" || search.trim().length > 0;
 
   useEffect(() => {
@@ -444,23 +446,13 @@ export function MediaClient({
   async function upload(file: File): Promise<string | null> {
     setUploading(true);
     setUploadError("");
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("folder", resolveUploadFolder(file));
+    const uploadFolder = resolveUploadFolder(file);
 
     try {
-      const response = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      if (!response.ok) {
-        const payload = await response.json().catch(() => null);
-        throw new Error(payload?.error || "Не удалось загрузить файл");
-      }
-      const data = await response.json().catch(() => ({}));
+      const url = await uploadAdminMediaFile(file, uploadFolder);
       await loadFiles();
-      if (data?.url) {
-        setSelected(data.url);
-        return data.url;
-      }
-      return null;
+      setSelected(url);
+      return url;
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : "Не удалось загрузить файл");
       return null;
@@ -695,7 +687,7 @@ export function MediaClient({
               : "Перетащите фото или видео, либо нажмите для выбора"}
           </p>
           <p className="text-xs">
-            Фото до 25MB · видео MP4/WebM/MOV/M4V до 200MB · папка: {folderLabel(uploadTargetFolder)}
+            Фото до 25MB · видео MP4/WebM/MOV/M4V до {uploadVideoLimitLabel} · папка: {folderLabel(uploadTargetFolder)}
           </p>
         </div>
       </div>
