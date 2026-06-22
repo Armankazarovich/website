@@ -477,9 +477,6 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
             {current.type === "LIVE" ? <Radio className="h-3 w-3" /> : <CirclePlay className="h-3 w-3" />}
             {current.type === "LIVE" ? "LIVE" : "Видео"}
           </span>
-          <span className="absolute inset-x-2 bottom-2 line-clamp-2 rounded-xl border border-border bg-card px-2.5 py-2 text-left text-[11px] font-semibold leading-4 text-foreground">
-            {current.title}
-          </span>
         </button>
         <button
           type="button"
@@ -526,9 +523,6 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/95 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-foreground">
             {current.type === "LIVE" ? <Radio className="h-2.5 w-2.5 text-primary" /> : <CirclePlay className="h-2.5 w-2.5 text-primary" />}
             {compactLabel}
-          </span>
-          <span className="absolute bottom-2 left-2 right-2 line-clamp-2 rounded-xl border border-border/70 bg-card/95 px-2 py-1.5 text-left text-[9.5px] font-semibold leading-3 text-foreground">
-            {current.title}
           </span>
           {current.type === "LIVE" && (
             <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-card bg-emerald-500" />
