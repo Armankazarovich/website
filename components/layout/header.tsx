@@ -56,6 +56,7 @@ interface HeaderProps {
 }
 
 const infoLinks = [
+  { label: "Прайс-лист", href: "/price-list" },
   { label: "Доставка и оплата", href: "/delivery" },
   { label: "Акции и скидки", href: "/promotions" },
   { label: "О производстве", href: "/about" },
@@ -944,6 +945,9 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
 
                   {/* Остальные ссылки */}
                   {[
+                    { label: "Прайс-лист", href: "/price-list", icon: (
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 2h9l5 5v15H6V2z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M14 2v6h6M9 12h7M9 16h7M9 20h4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    )},
                     { label: "Доставка и оплата", href: "/delivery", icon: (
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M1 4h13v13H1V4z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><path d="M14 9h4.5L22 13v4h-8V9z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"/><circle cx="5" cy="19" r="2" stroke="currentColor" strokeWidth="1.6"/><circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.6"/></svg>
                     )},

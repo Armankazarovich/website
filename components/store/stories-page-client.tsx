@@ -1,13 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   ArrowRight,
+  Boxes,
   ChevronLeft,
   ChevronRight,
   CirclePlay,
+  Eye,
+  Film,
+  Layers3,
+  MessageCircle,
   Pause,
   Play,
   Radio,
@@ -224,6 +229,33 @@ function StoryBadge({ type }: { type: StoreStoryKind }) {
   );
 }
 
+type StoryFilter = "all" | "live" | "video" | "product" | "service";
+
+const STORY_FILTERS = [
+  { id: "all", label: "Все", icon: Layers3 },
+  { id: "live", label: "Live", icon: Radio },
+  { id: "video", label: "Видео", icon: Film },
+  { id: "product", label: "Товары", icon: Boxes },
+  { id: "service", label: "Услуги", icon: MessageCircle },
+] satisfies Array<{ id: StoryFilter; label: string; icon: typeof CirclePlay }>;
+
+function storyMatchesFilter(story: Story, filter: StoryFilter) {
+  if (filter === "all") return true;
+  if (filter === "live") return story.type === "LIVE";
+  if (filter === "video") return story.type === "VIDEO" || story.type === "LIVE";
+  return storyRelations(story).some((relation) => relation.entityType === filter);
+}
+
+function getPrimaryRelation(story: Story) {
+  const relations = storyRelations(story);
+  return relations.find((relation) => relation.ctaUrl) || relations[0] || null;
+}
+
+function formatStoryViews(views: number) {
+  if (views <= 0) return "новое";
+  return `${views} просмотров`;
+}
+
 function RelatedAction({ relation, onClick }: { relation: StoryRelation; onClick?: () => void }) {
   const content = (
     <>
@@ -277,11 +309,26 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
   const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [filter, setFilter] = useState<StoryFilter>("all");
   const timerRef = useRef<number | null>(null);
   const activeStory = activeIndex === null ? null : stories[activeIndex];
   const activePosition = activeIndex ?? 0;
   const total = stories.length;
   const requestedStoryId = initialStoryId || searchParams.get("story") || undefined;
+  const filterStats = useMemo(
+    () =>
+      STORY_FILTERS.map((item) => ({
+        ...item,
+        count: stories.filter((story) => storyMatchesFilter(story, item.id)).length,
+      })),
+    [stories],
+  );
+  const filteredStories = useMemo(
+    () => stories.filter((story) => storyMatchesFilter(story, filter)),
+    [filter, stories],
+  );
+  const spotlightStory = filteredStories[0] || stories[0];
+  const spotlightRelation = spotlightStory ? getPrimaryRelation(spotlightStory) : null;
   useAdminOverlayGuard(Boolean(activeStory));
 
   const close = () => {
@@ -298,6 +345,11 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
     setPaused(false);
     setProgress(0);
     setDetailsOpen(false);
+  };
+
+  const openStory = (storyId: string) => {
+    const nextIndex = stories.findIndex((story) => story.id === storyId);
+    if (nextIndex >= 0) open(nextIndex);
   };
 
   useEffect(() => {
@@ -370,15 +422,173 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
 
   return (
     <>
-      <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-        {stories.map((story, index) => {
+      <div className="space-y-6">
+        <div className="-mx-1 overflow-x-auto px-1 pb-2">
+          <div className="flex min-w-max gap-3">
+            {stories.slice(0, 14).map((story) => (
+              <button
+                key={`rail-${story.id}`}
+                type="button"
+                data-store-stories-rail-item={story.id}
+                onClick={() => openStory(story.id)}
+                className="group w-[92px] shrink-0 text-left"
+              >
+                <span className="relative block aspect-[3/4] overflow-hidden rounded-2xl border border-border bg-card shadow-lg shadow-black/10 transition-colors group-hover:border-primary/45">
+                  <StoryVisual story={story} />
+                  <span className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-background/15" />
+                  <span className="absolute left-2 top-2">
+                    <StoryBadge type={story.type} />
+                  </span>
+                  <span className="absolute inset-x-2 bottom-2 line-clamp-2 text-xs font-semibold text-foreground">
+                    {story.title}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {filterStats.map((item) => {
+            const Icon = item.icon;
+            const selected = filter === item.id;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setFilter(item.id)}
+                className={cn(
+                  "inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors",
+                  selected
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-foreground hover:border-primary/45",
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+                <span
+                  className={cn(
+                    "rounded-full px-1.5 py-0.5 text-[11px]",
+                    selected ? "bg-background/20 text-primary-foreground" : "bg-primary/10 text-primary",
+                  )}
+                >
+                  {item.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {spotlightStory && (
+          <section
+            data-store-stories-spotlight={spotlightStory.id}
+            className="grid overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-black/10 lg:grid-cols-[minmax(0,1.15fr)_minmax(330px,0.85fr)]"
+          >
+            <button
+              type="button"
+              data-store-stories-spotlight-media
+              onClick={() => openStory(spotlightStory.id)}
+              className="group relative block min-h-[360px] text-left"
+            >
+              <StoryVisual story={spotlightStory} />
+              <span className="absolute inset-0 bg-gradient-to-t from-background via-background/35 to-transparent" />
+              <span className="absolute left-4 top-4">
+                <StoryBadge type={spotlightStory.type} />
+              </span>
+              <span className="absolute right-4 top-4 inline-flex items-center gap-1 rounded-full border border-border bg-card/95 px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                <Eye className="h-3.5 w-3.5 text-primary" />
+                {formatStoryViews(spotlightStory.views)}
+              </span>
+              <span className="absolute inset-x-4 bottom-4 rounded-2xl border border-border/70 bg-card/95 p-4 backdrop-blur">
+                <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase text-primary">
+                  <CirclePlay className="h-4 w-4" />
+                  Смотреть сейчас
+                </span>
+                <span className="mt-2 block font-display text-2xl font-bold text-foreground md:text-3xl">
+                  {spotlightStory.title}
+                </span>
+                {spotlightStory.subtitle && (
+                  <span className="mt-1 block text-sm leading-6 text-muted-foreground">{spotlightStory.subtitle}</span>
+                )}
+              </span>
+            </button>
+
+            <div className="flex flex-col gap-4 border-t border-border p-5 lg:border-l lg:border-t-0">
+              <div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Видео-витрина
+                </div>
+                <h2 className="mt-3 font-display text-2xl font-bold">{spotlightStory.title}</h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  {spotlightStory.description || spotlightStory.subtitle || "Короткий обзор помогает быстрее понять товар, размер, цену и следующий шаг."}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="rounded-xl border border-border bg-background/35 p-3">
+                  <div className="font-semibold text-foreground">{formatStoryViews(spotlightStory.views)}</div>
+                  <div className="mt-1 text-muted-foreground">интерес</div>
+                </div>
+                <div className="rounded-xl border border-border bg-background/35 p-3">
+                  <div className="font-semibold text-foreground">{storyRelations(spotlightStory).length || 1}</div>
+                  <div className="mt-1 text-muted-foreground">связей</div>
+                </div>
+                <div className="rounded-xl border border-border bg-background/35 p-3">
+                  <div className="font-semibold text-foreground">{spotlightStory.type === "LIVE" ? "Live" : "Story"}</div>
+                  <div className="mt-1 text-muted-foreground">формат</div>
+                </div>
+              </div>
+
+              {spotlightRelation && <RelatedAction relation={spotlightRelation} />}
+
+              <div className="mt-auto grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  data-store-stories-spotlight-open
+                  onClick={() => openStory(spotlightStory.id)}
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <CirclePlay className="h-4 w-4" />
+                  Смотреть сторис
+                </button>
+                <Link
+                  href="/catalog"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border bg-background/35 px-4 text-sm font-semibold transition-colors hover:border-primary/45"
+                >
+                  В каталог
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {filteredStories.length === 0 && (
+          <div className="rounded-2xl border border-border bg-card p-8 text-center">
+            <Sparkles className="mx-auto h-8 w-8 text-primary" />
+            <h2 className="mt-3 font-display text-2xl font-bold">В этом разделе пока пусто</h2>
+            <p className="mt-2 text-sm text-muted-foreground">Можно открыть все сторисы или добавить новые материалы в админке.</p>
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl border border-primary/35 bg-primary/10 px-4 text-sm font-semibold text-primary"
+            >
+              Показать все
+            </button>
+          </div>
+        )}
+
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          {filteredStories.map((story) => {
           const relatedActions = storyRelations(story).slice(0, 2);
           return (
-            <article
-              key={story.id}
-              className="group overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/10 transition-colors hover:border-primary/35"
-            >
-              <button type="button" onClick={() => open(index)} className="block w-full text-left">
+                <article
+                  key={story.id}
+                  data-store-stories-page-card={story.id}
+                  className="group overflow-hidden rounded-2xl border border-border bg-card shadow-xl shadow-black/10 transition-colors hover:border-primary/35"
+                >
+              <button type="button" data-store-stories-page-card-media onClick={() => openStory(story.id)} className="block w-full text-left">
                 <div className="relative aspect-[9/12] overflow-hidden bg-background">
                   <StoryVisual story={story} />
                   <span className="absolute inset-0 bg-background/45" />
@@ -407,7 +617,8 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
                 )}
                 <button
                   type="button"
-                  onClick={() => open(index)}
+                  data-store-stories-page-card-open
+                  onClick={() => openStory(story.id)}
                   className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
                 >
                   <CirclePlay className="h-4 w-4" />
@@ -416,7 +627,8 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
               </div>
             </article>
           );
-        })}
+          })}
+        </div>
       </div>
 
       {activeStory && (
