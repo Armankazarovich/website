@@ -104,6 +104,21 @@ function storyRelations(story: Story) {
   });
 }
 
+function isPreviewElementVisible(element: HTMLElement) {
+  const rect = element.getBoundingClientRect();
+  const style = window.getComputedStyle(element);
+  return (
+    rect.width > 0 &&
+    rect.height > 0 &&
+    rect.bottom > 0 &&
+    rect.right > 0 &&
+    rect.top < window.innerHeight &&
+    rect.left < window.innerWidth &&
+    style.display !== "none" &&
+    style.visibility !== "hidden"
+  );
+}
+
 function StoryMedia({
   story,
   expanded,
@@ -141,20 +156,30 @@ function StoryMedia({
     setPreviewVisible(false);
     if (!allowPreviewVideo || !previewHost || typeof window === "undefined") return;
 
+    const markVisible = () => {
+      setPreviewVisible(isPreviewElementVisible(previewHost));
+    };
+
     if (!("IntersectionObserver" in window)) {
-      const rect = previewHost.getBoundingClientRect();
-      setPreviewVisible(rect.width > 0 && rect.height > 0);
+      markVisible();
       return;
     }
 
+    markVisible();
+    const raf = window.requestAnimationFrame(markVisible);
+    const fallbackTimer = window.setTimeout(markVisible, 350);
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setPreviewVisible(Boolean(entry?.isIntersecting && entry.intersectionRatio > 0));
+        setPreviewVisible(Boolean(entry?.isIntersecting && entry.intersectionRatio > 0) || isPreviewElementVisible(previewHost));
       },
       { threshold: 0.15 },
     );
     observer.observe(previewHost);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(raf);
+      window.clearTimeout(fallbackTimer);
+    };
   }, [allowPreviewVideo, previewHost]);
 
   useEffect(() => {

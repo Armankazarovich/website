@@ -266,6 +266,8 @@ async function runBrowserFlow(browserPath) {
     await client.send("Page.enable");
     await client.send("Runtime.enable");
 
+    await navigate(client, `${baseUrl}/`);
+    await client.evaluate(`localStorage.setItem("cookies-accepted", "1")`);
     await navigate(client, `${baseUrl}/catalog`);
     await sleep(1800);
     const productHref = await client.evaluate(`(${() => {
