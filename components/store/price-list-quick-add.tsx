@@ -25,6 +25,8 @@ type PriceListQuickAddProps = {
   availableUnits: QuickAddUnit[];
   stockQty: number | null;
   piecesPerCube: number | null;
+  compact?: boolean;
+  className?: string;
 };
 
 function formatQty(value: number) {
@@ -44,6 +46,8 @@ export function PriceListQuickAdd({
   availableUnits,
   stockQty,
   piecesPerCube,
+  compact = false,
+  className,
 }: PriceListQuickAddProps) {
   const { addItem, updateQuantity, hydrateCart, items } = useCartStore();
   const [selectedUnit, setSelectedUnit] = useState<UnitType>(preferredUnit);
@@ -100,16 +104,16 @@ export function PriceListQuickAdd({
 
   if (!selected) {
     return (
-      <span className="inline-flex h-10 items-center rounded-xl border border-border px-3 text-xs text-muted-foreground">
+      <span className={cn("inline-flex h-10 items-center rounded-xl border border-border px-3 text-xs text-muted-foreground", compact && "h-9 px-2", className)}>
         Нет цены
       </span>
     );
   }
 
   return (
-    <div className="flex min-w-0 flex-col items-stretch gap-2 sm:items-end">
+    <div className={cn("flex min-w-0 flex-col items-stretch gap-2 sm:items-end", compact && "items-end gap-1", className)}>
       {availableUnits.length > 1 ? (
-        <div className="inline-flex w-full overflow-hidden rounded-xl border border-border bg-background/70 p-0.5 sm:w-auto">
+        <div className={cn("inline-flex w-full overflow-hidden rounded-xl border border-border bg-background/70 p-0.5 sm:w-auto", compact && "w-auto rounded-lg")}>
           {availableUnits.map((entry) => (
             <button
               key={entry.unit}
@@ -119,6 +123,7 @@ export function PriceListQuickAdd({
               onClick={() => setSelectedUnit(entry.unit)}
               className={cn(
                 "flex-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-colors sm:flex-none",
+                compact && "px-2 py-1 text-[10px]",
                 selected.unit === entry.unit
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -129,13 +134,13 @@ export function PriceListQuickAdd({
           ))}
         </div>
       ) : (
-        <span className="self-start rounded-xl border border-border bg-muted/35 px-3 py-1.5 text-[11px] font-bold text-muted-foreground sm:self-end">
+        <span className={cn("self-start rounded-xl border border-border bg-muted/35 px-3 py-1.5 text-[11px] font-bold text-muted-foreground sm:self-end", compact && "self-end rounded-lg px-2 py-1 text-[10px]")}>
           {selected.label}
         </span>
       )}
 
       {cartQty > 0 ? (
-        <div className="grid h-11 grid-cols-[44px_minmax(56px,1fr)_44px] overflow-hidden rounded-2xl border border-primary/35 bg-primary/10">
+        <div className={cn("grid h-11 grid-cols-[44px_minmax(56px,1fr)_44px] overflow-hidden rounded-2xl border border-primary/35 bg-primary/10", compact && "h-9 grid-cols-[34px_minmax(46px,1fr)_34px] rounded-xl")}>
           <button
             type="button"
             onClick={decrement}
@@ -144,9 +149,9 @@ export function PriceListQuickAdd({
           >
             <Minus className="h-4 w-4" />
           </button>
-          <div className="flex items-center justify-center border-x border-primary/20 px-2 text-sm font-black tabular-nums text-foreground">
+          <div className={cn("flex items-center justify-center border-x border-primary/20 px-2 text-sm font-black tabular-nums text-foreground", compact && "px-1 text-xs")}>
             {formatQty(cartQty)}
-            <span className="ml-1 text-[11px] font-bold text-muted-foreground">{selected.label}</span>
+            <span className={cn("ml-1 text-[11px] font-bold text-muted-foreground", compact && "text-[10px]")}>{selected.label}</span>
           </div>
           <button
             type="button"
@@ -163,11 +168,15 @@ export function PriceListQuickAdd({
           type="button"
           onClick={addOne}
           disabled={!canAdd}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-black text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55"
+          className={cn(
+            "inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-black text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55",
+            compact && "h-9 min-w-11 rounded-xl px-3 text-xs [&>span]:hidden",
+          )}
           aria-label={`Добавить ${productName} ${variantSize} в корзину`}
         >
-          <ShoppingCart className="h-4 w-4" />
-          <span>+</span>
+          {!compact && <ShoppingCart className="h-4 w-4" />}
+          {compact && <Plus className="h-4 w-4" />}
+          {!compact && <span>+</span>}
           <span className="hidden sm:inline">В корзину</span>
         </button>
       )}

@@ -1,23 +1,21 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
-  Clock3,
   Download,
   FileText,
   Phone,
-  Search,
   ShoppingCart,
 } from "lucide-react";
 import { PriceListQuickAdd } from "@/components/store/price-list-quick-add";
+import { PriceListSearchAction } from "@/components/store/price-list-search-action";
 import {
   PRICE_LIST_UNITS,
   getPriceListData,
   type PriceListFilters,
-  type PriceListUnitPrice,
   type PriceListUnit,
+  type PriceListUnitPrice,
 } from "@/lib/price-list-data";
 import { cn, formatPrice } from "@/lib/utils";
 
@@ -70,7 +68,6 @@ function formatDateTime(date: Date) {
   return new Intl.DateTimeFormat("ru-RU", {
     day: "2-digit",
     month: "long",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
@@ -78,7 +75,7 @@ function formatDateTime(date: Date) {
 
 function unitPrice(rowUnit: PriceListUnitPrice) {
   return (
-    <span className="inline-flex items-baseline gap-1 rounded-xl border border-border/70 bg-background/72 px-2.5 py-1.5 text-xs font-bold text-foreground">
+    <span className="inline-flex items-baseline gap-1 rounded-lg border border-border/70 bg-background/70 px-2 py-1 text-[12px] font-bold text-foreground">
       {formatPrice(rowUnit.price)}
       <small className="text-[10px] font-semibold text-muted-foreground">/{rowUnit.label}</small>
     </span>
@@ -94,6 +91,13 @@ export default async function PriceListPage({ searchParams }: PageProps) {
   const data = await getPriceListData(filters);
   const activeCategory = data.categories.find((category) => category.slug === data.filters.category);
   const currentPdfHref = pdfHref(data.filters);
+  const allRowCount = data.categories.reduce((sum, category) => sum + category.rowCount, 0);
+  const allProductCount = data.categories.reduce((sum, category) => sum + category.productCount, 0);
+  const isPreviewMode = !data.filters.category && !data.filters.q;
+  const visibleGroups = isPreviewMode
+    ? data.groupedRows.map((group) => ({ ...group, rows: group.rows.slice(0, 12) }))
+    : data.groupedRows;
+  const visibleRowCount = visibleGroups.reduce((sum, group) => sum + group.rows.length, 0);
 
   const schema = {
     "@context": "https://schema.org",
@@ -108,122 +112,103 @@ export default async function PriceListPage({ searchParams }: PageProps) {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <main data-price-list-page className="min-h-screen bg-background">
-        <section className="border-b border-border/70 bg-gradient-to-b from-primary/8 via-background to-background">
-          <div className="container py-8 sm:py-10">
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
-              <div className="max-w-4xl">
-                <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.16em] text-primary">
+        <section className="border-b border-border/70 bg-background">
+          <div className="container py-4 sm:py-5">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <div className="min-w-0">
+                <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-primary">
                   <FileText className="h-3.5 w-3.5" />
-                  Живой прайс-лист
+                  Живой прайс
                 </div>
-                <h1 className="font-display text-3xl font-black leading-tight text-foreground sm:text-4xl lg:text-5xl">
+                <h1 className="font-display text-2xl font-black leading-tight text-foreground sm:text-3xl">
                   Прайс-лист ПилоРус
                 </h1>
-                <p className="mt-3 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                  Быстрый закупочный список для прорабов, оптовиков и постоянных клиентов: размеры, сорта, единицы цены и добавление в корзину прямо из строки.
+                <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Плотная таблица для закупки: размер, сорт, цена и быстрый плюс в корзину.
                 </p>
-                <div className="mt-5 flex flex-wrap gap-2 text-sm">
-                  <span className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2">
-                    <BadgeCheck className="h-4 w-4 text-primary" />
-                    {data.totalProducts} товаров
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2">
-                    <ShoppingCart className="h-4 w-4 text-primary" />
-                    {data.totalRows} позиций
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2">
-                    <Clock3 className="h-4 w-4 text-primary" />
-                    Обновлено {formatDateTime(data.latestUpdatedAt)}
-                  </span>
-                </div>
               </div>
 
-              <div className="rounded-2xl border border-primary/25 bg-card/80 p-4 shadow-sm">
-                <p className="text-sm font-bold text-foreground">Смета или закупка за минуту</p>
-                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                  Откройте нужную категорию, нажимайте плюсы, потом оформляйте заказ или скачивайте актуальный PDF.
-                </p>
-                <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-1">
-                  <a
-                    href={currentPdfHref}
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-black text-primary-foreground transition-colors hover:bg-primary/90"
-                  >
-                    <Download className="h-4 w-4" />
-                    Скачать PDF
-                  </a>
-                  <a
-                    href="tel:+74951352026"
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-border bg-background px-4 text-sm font-bold text-foreground transition-colors hover:bg-accent"
-                  >
-                    <Phone className="h-4 w-4 text-primary" />
-                    Позвонить
-                  </a>
-                </div>
+              <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+                <PriceListSearchAction className="px-2 sm:px-3" label="Поиск" />
+                <a
+                  href={currentPdfHref}
+                  data-price-list-pdf-download
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary px-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  <Download className="h-4 w-4" />
+                  <span>PDF</span>
+                </a>
+                <a
+                  href="tel:+74951352026"
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-primary/45"
+                >
+                  <Phone className="h-4 w-4 text-primary" />
+                  <span className="hidden sm:inline">Позвонить</span>
+                </a>
               </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1.5">
+                <BadgeCheck className="h-3.5 w-3.5 text-primary" />
+                {allProductCount} товаров
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1.5">
+                <ShoppingCart className="h-3.5 w-3.5 text-primary" />
+                {allRowCount} позиций
+              </span>
+              <span className="rounded-full border border-border bg-card px-2.5 py-1.5">
+                Обновлено {formatDateTime(data.latestUpdatedAt)}
+              </span>
             </div>
           </div>
         </section>
 
-        <section className="container py-6">
-          <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-            <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
-              <form action="/price-list" className="rounded-2xl border border-border bg-card p-3">
-                <input type="hidden" name="category" value={data.filters.category} />
-                {data.filters.unit !== "ALL" && <input type="hidden" name="unit" value={data.filters.unit} />}
-                <label className="mb-2 flex items-center gap-2 text-sm font-bold text-foreground">
-                  <Search className="h-4 w-4 text-primary" />
-                  Найти позицию
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    name="q"
-                    defaultValue={data.filters.q}
-                    placeholder="50x150, сорт AB, фанера..."
-                    className="h-11 min-w-0 flex-1 rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-primary"
-                  />
-                  <button className="h-11 rounded-xl bg-primary px-4 text-sm font-bold text-primary-foreground">
-                    Найти
-                  </button>
+        <section className="container py-4">
+          <div className="grid min-w-0 gap-4 lg:grid-cols-[240px_minmax(0,1fr)]">
+            <aside className="min-w-0 space-y-3 lg:sticky lg:top-24 lg:self-start">
+              <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-2">
+                <div className="mb-2 flex items-center justify-between px-1 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                  <span>Категории</span>
+                  <span>{allRowCount}</span>
                 </div>
-              </form>
-
-              <div className="rounded-2xl border border-border bg-card p-3">
-                <p className="mb-2 text-sm font-bold text-foreground">Категории</p>
-                <div className="space-y-1">
+                <div className="flex max-w-full gap-1.5 overflow-x-auto pb-1 lg:grid lg:overflow-visible lg:pb-0">
                   <Link
                     href={buildHref({ q: data.filters.q, unit: data.filters.unit })}
                     className={cn(
-                      "flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors",
-                      !data.filters.category ? "bg-primary text-primary-foreground" : "hover:bg-accent",
+                      "inline-flex min-h-9 shrink-0 items-center justify-between gap-3 rounded-lg px-3 text-sm font-semibold transition-colors lg:w-full",
+                      !data.filters.category ? "bg-primary text-primary-foreground" : "bg-background/55 hover:bg-accent",
                     )}
                   >
                     Все
-                    <span className="text-xs opacity-75">{data.rows.length}</span>
+                    <span className="text-xs opacity-75">{allRowCount}</span>
                   </Link>
                   {data.categories.map((category) => (
                     <Link
                       key={category.slug}
                       href={buildHref({ category: category.slug, q: data.filters.q, unit: data.filters.unit })}
                       className={cn(
-                        "flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
-                        data.filters.category === category.slug ? "bg-primary text-primary-foreground" : "hover:bg-accent",
+                        "inline-flex min-h-9 shrink-0 items-center justify-between gap-3 rounded-lg px-3 text-sm font-semibold transition-colors lg:w-full",
+                        data.filters.category === category.slug ? "bg-primary text-primary-foreground" : "bg-background/55 hover:bg-accent",
                       )}
                     >
-                      <span className="min-w-0 truncate">{category.name}</span>
-                      <span className="text-xs opacity-75">{category.productCount}</span>
+                      <span className="max-w-[160px] truncate">{category.name}</span>
+                      <span className="text-xs opacity-75">{category.rowCount}</span>
                     </Link>
                   ))}
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-border bg-card p-3">
-                <p className="mb-2 text-sm font-bold text-foreground">Единица цены</p>
-                <div className="grid grid-cols-2 gap-2">
+              <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-2">
+                <div className="mb-2 px-1 text-xs font-bold uppercase tracking-[0.12em] text-muted-foreground">
+                  Единица цены
+                </div>
+                <div className="grid min-w-0 grid-cols-4 gap-1.5 lg:grid-cols-2">
                   <Link
                     href={buildHref({ category: data.filters.category, q: data.filters.q })}
                     className={cn(
-                      "rounded-xl border border-border px-3 py-2 text-center text-sm font-bold transition-colors",
-                      data.filters.unit === "ALL" ? "bg-primary text-primary-foreground" : "hover:bg-accent",
+                      "rounded-lg border border-border px-2 py-2 text-center text-xs font-bold transition-colors",
+                      data.filters.unit === "ALL" ? "bg-primary text-primary-foreground" : "bg-background/55 hover:bg-accent",
                     )}
                   >
                     Все
@@ -233,8 +218,8 @@ export default async function PriceListPage({ searchParams }: PageProps) {
                       key={unit}
                       href={buildHref({ category: data.filters.category, q: data.filters.q, unit })}
                       className={cn(
-                        "rounded-xl border border-border px-3 py-2 text-center text-sm font-bold transition-colors",
-                        data.filters.unit === unit ? "bg-primary text-primary-foreground" : "hover:bg-accent",
+                        "rounded-lg border border-border px-2 py-2 text-center text-xs font-bold transition-colors",
+                        data.filters.unit === unit ? "bg-primary text-primary-foreground" : "bg-background/55 hover:bg-accent",
                       )}
                     >
                       {PRICE_LIST_UNITS[unit].label}
@@ -245,116 +230,126 @@ export default async function PriceListPage({ searchParams }: PageProps) {
             </aside>
 
             <div className="min-w-0">
-              <div className="mb-4 flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="mb-3 flex flex-col gap-2 border-b border-border pb-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                  <p className="text-sm font-bold uppercase tracking-[0.16em] text-primary">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary">
                     {activeCategory ? activeCategory.name : "Все категории"}
                   </p>
-                  <h2 className="mt-1 font-display text-2xl font-black text-foreground">
+                  <h2 className="mt-1 font-display text-xl font-black text-foreground sm:text-2xl">
                     {data.filters.q ? `Поиск: ${data.filters.q}` : "Актуальные позиции"}
                   </h2>
                 </div>
-                <Link
-                  href="/catalog"
-                  className="inline-flex items-center gap-2 text-sm font-bold text-primary hover:text-primary/80"
-                >
-                  Открыть каталог
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-
-              {data.rows.length === 0 ? (
-                <div className="rounded-2xl border border-border bg-card p-8 text-center">
-                  <p className="text-lg font-bold text-foreground">Позиции не найдены</p>
-                  <p className="mt-2 text-sm text-muted-foreground">Попробуйте убрать фильтр или написать размер короче.</p>
-                  <Link href="/price-list" className="mt-4 inline-flex text-sm font-bold text-primary hover:underline">
-                    Сбросить фильтры
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span>Показано {visibleRowCount} из {data.totalRows}</span>
+                  <Link href="/catalog" className="inline-flex items-center gap-1 font-bold text-primary hover:text-primary/80">
+                    Каталог
+                    <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </div>
+              </div>
+
+              {isPreviewMode && data.totalRows > visibleRowCount && (
+                <div className="mb-3 rounded-xl border border-primary/20 bg-primary/10 px-3 py-2 text-sm text-muted-foreground">
+                  Для скорости показываем первые позиции по категориям. Откройте нужную категорию, чтобы увидеть весь список и быстро добавить в корзину.
+                </div>
+              )}
+
+              {data.rows.length === 0 ? (
+                <div className="rounded-xl border border-border bg-card p-6 text-center">
+                  <p className="text-lg font-bold text-foreground">Позиции не найдены</p>
+                  <p className="mt-2 text-sm text-muted-foreground">Попробуйте убрать фильтр или открыть общий поиск по каталогу.</p>
+                  <div className="mt-4 flex justify-center gap-2">
+                    <PriceListSearchAction label="Открыть поиск" />
+                    <Link href="/price-list" className="inline-flex min-h-10 items-center rounded-xl border border-border px-3 text-sm font-semibold">
+                      Сбросить
+                    </Link>
+                  </div>
+                </div>
               ) : (
-                <div className="space-y-8">
-                  {data.groupedRows.map((group) => (
-                    <section key={group.category.slug} className="scroll-mt-24">
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <h3 className="font-display text-xl font-black text-foreground">{group.category.name}</h3>
-                        <span className="rounded-full border border-border px-3 py-1 text-xs font-bold text-muted-foreground">
-                          {group.rows.length} поз.
-                        </span>
-                      </div>
-                      <div className="overflow-hidden rounded-2xl border border-border bg-card">
-                        {group.rows.map((row, index) => (
-                          <div
-                            key={row.key}
-                            className={cn(
-                              "grid gap-3 border-border p-3 sm:grid-cols-[minmax(0,1fr)_220px] sm:p-4 lg:grid-cols-[minmax(0,1fr)_280px_220px]",
-                              index > 0 && "border-t",
-                            )}
+                <div className="space-y-5">
+                  {visibleGroups.map((group) => {
+                    const hiddenRows = Math.max(0, group.category.rowCount - group.rows.length);
+                    return (
+                      <section key={group.category.slug} className="scroll-mt-24">
+                        <div className="mb-2 flex items-center justify-between gap-3">
+                          <h3 className="font-display text-lg font-black text-foreground">{group.category.name}</h3>
+                          <Link
+                            href={buildHref({ category: group.category.slug, unit: data.filters.unit })}
+                            className="text-xs font-bold text-primary hover:text-primary/80"
                           >
-                            <div className="flex min-w-0 gap-3">
-                              <Link
-                                href={`/product/${row.productSlug}`}
-                                className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-border bg-background sm:h-20 sm:w-20"
-                              >
-                                {row.productImage ? (
-                                  <Image
-                                    src={row.productImage}
-                                    alt={`${row.productName} ${row.displaySize}`}
-                                    fill
-                                    sizes="80px"
-                                    className="object-cover"
-                                  />
-                                ) : (
-                                  <div className="h-full w-full bg-muted" />
-                                )}
-                              </Link>
+                            {hiddenRows > 0 ? `Все ${group.category.rowCount}` : `${group.rows.length} поз.`}
+                          </Link>
+                        </div>
+
+                        <div className="overflow-hidden rounded-xl border border-border bg-card">
+                          <div className="hidden grid-cols-[minmax(0,1.5fr)_180px_110px_120px] gap-3 border-b border-border bg-background/45 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground md:grid">
+                            <span>Позиция</span>
+                            <span className="text-right">Цена</span>
+                            <span className="text-right">Склад</span>
+                            <span className="text-right">Заказ</span>
+                          </div>
+
+                          {group.rows.map((row, index) => (
+                            <div
+                              key={row.key}
+                              data-price-list-row
+                              className={cn(
+                                "grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 border-border px-3 py-2.5 md:grid-cols-[minmax(0,1.5fr)_180px_110px_120px] md:items-center",
+                                index > 0 && "border-t",
+                              )}
+                            >
                               <div className="min-w-0">
                                 <Link
                                   href={`/product/${row.productSlug}`}
-                                  className="line-clamp-2 text-base font-black leading-snug text-foreground hover:text-primary"
+                                  className="line-clamp-1 text-sm font-bold text-foreground hover:text-primary"
                                 >
                                   {row.productName}
                                 </Link>
-                                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-                                  <span className="rounded-full bg-primary/10 px-2.5 py-1 font-bold text-primary">
+                                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
+                                  <span className="rounded-md bg-primary/10 px-2 py-0.5 font-bold text-primary">
                                     {row.displaySize}
                                   </span>
                                   {row.grade && (
-                                    <span className="rounded-full border border-border px-2.5 py-1 font-bold text-muted-foreground">
+                                    <span className="rounded-md border border-border px-2 py-0.5 font-semibold text-muted-foreground">
                                       {row.grade}
-                                    </span>
-                                  )}
-                                  {row.piecesPerCube && (
-                                    <span className="rounded-full border border-border px-2.5 py-1 text-muted-foreground">
-                                      ≈ {row.piecesPerCube} шт/м³
                                     </span>
                                   )}
                                 </div>
                               </div>
-                            </div>
 
-                            <div className="flex flex-wrap content-start gap-2 lg:justify-end">
-                              {row.availableUnits.map((entry) => (
-                                <span key={entry.unit}>{unitPrice(entry)}</span>
-                              ))}
-                            </div>
+                              <PriceListQuickAdd
+                                compact
+                                className="justify-self-end md:order-4"
+                                productId={row.productId}
+                                productSlug={row.productSlug}
+                                productName={row.productName}
+                                productImage={row.productImage}
+                                variantId={row.variantId}
+                                variantSize={row.variantSize}
+                                preferredUnit={row.preferredUnit}
+                                availableUnits={row.availableUnits}
+                                stockQty={row.stockQty}
+                                piecesPerCube={row.piecesPerCube}
+                              />
 
-                            <PriceListQuickAdd
-                              productId={row.productId}
-                              productSlug={row.productSlug}
-                              productName={row.productName}
-                              productImage={row.productImage}
-                              variantId={row.variantId}
-                              variantSize={row.variantSize}
-                              preferredUnit={row.preferredUnit}
-                              availableUnits={row.availableUnits}
-                              stockQty={row.stockQty}
-                              piecesPerCube={row.piecesPerCube}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  ))}
+                              <div className="col-span-2 flex flex-wrap gap-1.5 md:col-span-1 md:order-2 md:justify-end">
+                                {row.availableUnits.map((entry) => (
+                                  <span key={entry.unit}>{unitPrice(entry)}</span>
+                                ))}
+                              </div>
+
+                              <div className="hidden text-right text-xs text-muted-foreground md:order-3 md:block">
+                                {row.stockQty == null ? "в наличии" : `${row.stockQty.toLocaleString("ru-RU")} шт`}
+                                {row.piecesPerCube && (
+                                  <span className="mt-1 block">≈ {row.piecesPerCube} шт/м³</span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })}
                 </div>
               )}
             </div>
