@@ -313,9 +313,10 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
   const [paused, setPaused] = useState(false);
   const [storyProgress, setStoryProgress] = useState(0);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [lockPageScroll, setLockPageScroll] = useState(false);
   const viewedRef = useRef<Set<string>>(new Set());
   const floatingChromeHidden = useFloatingChromeHidden();
-  useAdminOverlayGuard(expanded);
+  useAdminOverlayGuard(lockPageScroll);
 
   const entity = useMemo(() => deriveEntity(pathname), [pathname]);
   const current = stories[index] || stories[0];
@@ -383,6 +384,22 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
     setDetailsOpen(false);
     setPaused(false);
   }, [current?.id, expanded]);
+
+  useEffect(() => {
+    if (!expanded || typeof window === "undefined") {
+      setLockPageScroll(false);
+      return;
+    }
+
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+    const syncLock = () => setLockPageScroll(mediaQuery.matches);
+    syncLock();
+    mediaQuery.addEventListener("change", syncLock);
+    return () => {
+      mediaQuery.removeEventListener("change", syncLock);
+      setLockPageScroll(false);
+    };
+  }, [expanded]);
 
   useEffect(() => {
     if (!expanded || detailsOpen || paused || !current) return;
