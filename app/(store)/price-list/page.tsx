@@ -8,6 +8,7 @@ import {
   Phone,
   ShoppingCart,
 } from "lucide-react";
+import { PriceListInvoiceAction } from "@/components/store/price-list-invoice-action";
 import { PriceListPdfDownload } from "@/components/store/price-list-pdf-download";
 import { PriceListRowActions } from "@/components/store/price-list-row-actions";
 import { PriceListSearchAction } from "@/components/store/price-list-search-action";
@@ -140,9 +141,10 @@ export default async function PriceListPage({ searchParams }: PageProps) {
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+              <div className="grid grid-cols-4 gap-2 sm:flex sm:flex-wrap sm:justify-end">
                 <PriceListSearchAction className="px-2 sm:px-3" label="Поиск" />
                 <PriceListPdfDownload href={currentPdfHref} />
+                <PriceListInvoiceAction />
                 <a
                   href="tel:+74951352026"
                   className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-primary/45"

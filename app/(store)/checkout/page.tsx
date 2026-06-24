@@ -341,6 +341,14 @@ export default function CheckoutPage() {
   const contactMethod = watch("contactMethod");
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const invoiceIntent = searchParams.get("invoice") === "1" || searchParams.get("payment") === "invoice";
+    if (!invoiceIntent) return;
+    setClientType("company");
+    setValue("paymentMethod", "invoice");
+  }, [setValue]);
+
+  useEffect(() => {
     setMounted(true);
   }, []);
 

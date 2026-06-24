@@ -44,6 +44,7 @@ type PdfKitDocument = {
   fill: (color?: string) => PdfKitDocument;
   stroke: (color?: string) => PdfKitDocument;
   text: (text: string, x?: number, y?: number, options?: Record<string, unknown>) => PdfKitDocument;
+  widthOfString: (text: string) => number;
   moveTo: (x: number, y: number) => PdfKitDocument;
   lineTo: (x: number, y: number) => PdfKitDocument;
   bufferedPageRange: () => { start: number; count: number };
@@ -74,6 +75,57 @@ function trimText(value: string, max = 60) {
   return clean.length > max ? `${clean.slice(0, max - 1)}…` : clean;
 }
 
+function normalizePdfText(value: string) {
+  return value
+    .replace(/\u00a0/g, " ")
+    .replace(/[–—]/g, "-")
+    .replace(/₽/g, "руб.");
+}
+
+function isCyrillicPdfGlyph(char: string) {
+  const code = char.codePointAt(0) ?? 0;
+  return (code >= 0x0400 && code <= 0x052f) || code === 0x2116;
+}
+
+function fontForChar(char: string, bold: boolean) {
+  if (isCyrillicPdfGlyph(char)) return bold ? "RobotoBold" : "Roboto";
+  return bold ? "Helvetica-Bold" : "Helvetica";
+}
+
+function splitFontRuns(text: string, bold: boolean) {
+  const runs: Array<{ font: string; text: string }> = [];
+  for (const char of Array.from(text)) {
+    const font = fontForChar(char, bold);
+    const last = runs[runs.length - 1];
+    if (last?.font === font) last.text += char;
+    else runs.push({ font, text: char });
+  }
+  return runs;
+}
+
+function measurePdfText(doc: PdfKitDocument, text: string, size: number, bold: boolean) {
+  let width = 0;
+  for (const run of splitFontRuns(text, bold)) {
+    doc.font(run.font).fontSize(size);
+    width += doc.widthOfString(run.text);
+  }
+  return width;
+}
+
+function fitPdfText(doc: PdfKitDocument, rawText: string, width: number, size: number, bold: boolean) {
+  const text = normalizePdfText(rawText);
+  if (measurePdfText(doc, text, size, bold) <= width) return text;
+
+  const ellipsis = "...";
+  let fitted = "";
+  for (const char of Array.from(text)) {
+    const candidate = `${fitted}${char}${ellipsis}`;
+    if (measurePdfText(doc, candidate, size, bold) > width) break;
+    fitted += char;
+  }
+  return `${fitted.trimEnd()}${ellipsis}`;
+}
+
 function drawCell(
   doc: PdfKitDocument,
   text: string,
@@ -82,16 +134,20 @@ function drawCell(
   width: number,
   options: { bold?: boolean; size?: number; color?: string; align?: "left" | "right" | "center" } = {},
 ) {
-  doc
-    .font(options.bold ? "RobotoBold" : "Roboto")
-    .fontSize(options.size ?? 8)
-    .fillColor(options.color ?? COLORS.ink)
-    .text(text, x, y, {
-      width,
-      align: options.align ?? "left",
-      lineBreak: false,
-      ellipsis: true,
-    });
+  const bold = Boolean(options.bold);
+  const size = options.size ?? 8;
+  const color = options.color ?? COLORS.ink;
+  const fittedText = fitPdfText(doc, text, width, size, bold);
+  const textWidth = measurePdfText(doc, fittedText, size, bold);
+  const align = options.align ?? "left";
+  let cursorX = x;
+  if (align === "right") cursorX = x + Math.max(0, width - textWidth);
+  if (align === "center") cursorX = x + Math.max(0, (width - textWidth) / 2);
+
+  for (const run of splitFontRuns(fittedText, bold)) {
+    doc.font(run.font).fontSize(size).fillColor(color).text(run.text, cursorX, y, { lineBreak: false });
+    cursorX += doc.widthOfString(run.text);
+  }
 }
 
 function drawHeader(doc: PdfKitDocument, data: PriceListData, pageIndex: number) {
