@@ -63,12 +63,29 @@ const styles = StyleSheet.create({
     color: "#5c514a",
     lineHeight: 1.4,
   },
-  categoryTitle: {
+  categoryBlock: {
     marginTop: 10,
+  },
+  categoryHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "6 8",
     marginBottom: 4,
+    borderRadius: 4,
+    backgroundColor: "#fff1e6",
+    borderWidth: 1,
+    borderColor: "#f0c9aa",
+  },
+  categoryTitle: {
     fontSize: 11,
     fontWeight: 700,
     color: "#5C3317",
+  },
+  categoryCount: {
+    fontSize: 8,
+    fontWeight: 700,
+    color: "#E8700A",
   },
   tableHeader: {
     flexDirection: "row",
@@ -176,9 +193,12 @@ function PriceListDocument({ data }: { data: PriceListData }) {
         </Text>
 
         {data.groupedRows.map((group) => (
-          <View key={group.category.slug}>
-            <Text style={styles.categoryTitle}>{group.category.name}</Text>
-            <View style={styles.tableHeader} fixed>
+          <View key={group.category.slug} style={styles.categoryBlock}>
+            <View style={styles.categoryHeader} wrap={false}>
+              <Text style={styles.categoryTitle}>{group.category.name}</Text>
+              <Text style={styles.categoryCount}>{group.rows.length.toLocaleString("ru-RU")} поз.</Text>
+            </View>
+            <View style={styles.tableHeader}>
               <Text style={styles.colProduct}>Товар</Text>
               <Text style={styles.colSize}>Размер</Text>
               <Text style={styles.colGrade}>Сорт</Text>

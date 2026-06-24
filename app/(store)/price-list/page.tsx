@@ -3,21 +3,21 @@ import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
+  Calculator,
   FileText,
   Phone,
   ShoppingCart,
 } from "lucide-react";
 import { PriceListPdfDownload } from "@/components/store/price-list-pdf-download";
-import { PriceListQuickAdd } from "@/components/store/price-list-quick-add";
+import { PriceListRowActions } from "@/components/store/price-list-row-actions";
 import { PriceListSearchAction } from "@/components/store/price-list-search-action";
 import {
   PRICE_LIST_UNITS,
   getPriceListData,
   type PriceListFilters,
   type PriceListUnit,
-  type PriceListUnitPrice,
 } from "@/lib/price-list-data";
-import { cn, formatPrice } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 export const revalidate = 300;
 
@@ -76,31 +76,6 @@ function formatDateTime(date: Date) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
-}
-
-function unitPrice(rowUnit: PriceListUnitPrice) {
-  return (
-    <span className="inline-flex items-baseline rounded-lg border border-border/70 bg-background/70 px-2 py-1 text-[12px] font-bold text-foreground">
-      {formatPrice(rowUnit.price)}
-    </span>
-  );
-}
-
-function unitBadges(units: PriceListUnitPrice[], preferredUnit: PriceListUnit) {
-  return units.map((entry) => (
-    <span
-      key={entry.unit}
-      className={cn(
-        "inline-flex min-h-7 items-center rounded-lg border px-2 text-[11px] font-black",
-        entry.unit === preferredUnit
-          ? "border-primary/40 bg-primary/10 text-primary"
-          : "border-border bg-background/55 text-muted-foreground",
-      )}
-      title={entry.title}
-    >
-      {entry.label}
-    </span>
-  ));
 }
 
 export default async function PriceListPage({ searchParams }: PageProps) {
@@ -257,6 +232,22 @@ export default async function PriceListPage({ searchParams }: PageProps) {
                   ))}
                 </div>
               </div>
+
+              <Link
+                href="/calculator"
+                className="group flex min-w-0 items-center gap-3 rounded-xl border border-primary/20 bg-primary/10 p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/15"
+              >
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground">
+                  <Calculator className="h-5 w-5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-black text-foreground">Калькулятор объёма</span>
+                  <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">
+                    Посчитать м³, штуки и сумму перед заказом
+                  </span>
+                </span>
+                <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" />
+              </Link>
             </aside>
 
             <div className="min-w-0">
@@ -312,7 +303,7 @@ export default async function PriceListPage({ searchParams }: PageProps) {
                         </div>
 
                         <div className="overflow-hidden rounded-xl border border-border bg-card">
-                          <div className="hidden grid-cols-[minmax(0,1.35fr)_82px_170px_90px_96px] gap-3 border-b border-border bg-background/45 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground md:grid">
+                          <div className="hidden grid-cols-[minmax(0,1.35fr)_82px_134px_90px_118px] gap-3 border-b border-border bg-background/45 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground md:grid">
                             <span>Позиция</span>
                             <span className="text-right">Ед.</span>
                             <span className="text-right">Цена</span>
@@ -325,7 +316,7 @@ export default async function PriceListPage({ searchParams }: PageProps) {
                               key={row.key}
                               data-price-list-row
                               className={cn(
-                                "grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 border-border px-3 py-2.5 md:grid-cols-[minmax(0,1.35fr)_82px_170px_90px_96px] md:items-center",
+                                "grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 border-border px-3 py-2.5 md:grid-cols-[minmax(0,1.35fr)_82px_134px_90px_118px] md:items-center",
                                 index > 0 && "border-t",
                               )}
                             >
@@ -348,10 +339,7 @@ export default async function PriceListPage({ searchParams }: PageProps) {
                                 </div>
                               </div>
 
-                              <PriceListQuickAdd
-                                compact
-                                showUnitSelector={false}
-                                className="justify-self-end md:order-5"
+                              <PriceListRowActions
                                 productId={row.productId}
                                 productSlug={row.productSlug}
                                 productName={row.productName}
@@ -363,16 +351,6 @@ export default async function PriceListPage({ searchParams }: PageProps) {
                                 stockQty={row.stockQty}
                                 piecesPerCube={row.piecesPerCube}
                               />
-
-                              <div className="col-span-2 flex flex-wrap gap-1.5 md:col-span-1 md:order-2 md:justify-end">
-                                {unitBadges(row.availableUnits, row.preferredUnit)}
-                              </div>
-
-                              <div className="col-span-2 flex flex-wrap gap-1.5 md:col-span-1 md:order-3 md:justify-end">
-                                {row.availableUnits.map((entry) => (
-                                  <span key={entry.unit}>{unitPrice(entry)}</span>
-                                ))}
-                              </div>
 
                               <div className="hidden text-right text-xs text-muted-foreground md:order-4 md:block">
                                 {row.stockQty == null ? "в наличии" : `${row.stockQty.toLocaleString("ru-RU")} шт`}

@@ -212,6 +212,11 @@ export function VariantSelector({
   const canUseCube = Boolean(getVariantUnitPrice(activeVariant, "CUBE"));
   const canUsePiece = Boolean(getVariantUnitPrice(activeVariant, "PIECE"));
   const canUseSquare = Boolean(getVariantUnitPrice(activeVariant, "SQUARE"));
+  const unitOptions = [
+    { unit: "CUBE" as const, enabled: canUseCube },
+    { unit: "SQUARE" as const, enabled: canUseSquare },
+    { unit: "PIECE" as const, enabled: canUsePiece },
+  ].filter((option) => option.enabled);
 
   const totalPrice = currentPrice ? currentPrice * quantity : 0;
   const selectedMeta = activeVariant ? getVariantOptionMeta(activeVariant.size) : null;
@@ -398,31 +403,40 @@ export function VariantSelector({
       {saleUnit === "BOTH" && (
         <div>
           <h3 className="font-medium mb-3">{"\u0415\u0434\u0438\u043d\u0438\u0446\u0430 \u0438\u0437\u043c\u0435\u0440\u0435\u043d\u0438\u044f"}</h3>
-          <div className="inline-flex rounded-xl border border-border p-1 bg-muted">
-            {[
-              { unit: "CUBE" as const, enabled: canUseCube },
-              { unit: "SQUARE" as const, enabled: canUseSquare },
-              { unit: "PIECE" as const, enabled: canUsePiece },
-            ].map(({ unit, enabled }) => (
-              <button
-                key={unit}
-                onClick={() => {
-                  setUnitType(unit);
-                  setQuantity(normalizeQuantityForUnit(1, unit, activeVariant));
-                }}
-                disabled={!enabled}
-                className={cn(
-                  "px-4 py-2.5 sm:py-2 rounded-xl border text-sm font-medium transition-colors",
-                  unitType === unit
-                    ? "border-primary/35 bg-primary/10 text-primary"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
-                  !enabled && "pointer-events-none opacity-40"
-                )}
-              >
-                {getUnitLabel(unit)}
-              </button>
-            ))}
-          </div>
+          {unitOptions.length > 1 ? (
+            <div className="inline-flex rounded-xl border border-border p-1 bg-muted">
+              {unitOptions.map(({ unit }) => (
+                <button
+                  key={unit}
+                  type="button"
+                  onClick={() => {
+                    setUnitType(unit);
+                    setQuantity(normalizeQuantityForUnit(1, unit, activeVariant));
+                  }}
+                  data-product-unit-option={unit}
+                  className={cn(
+                    "px-4 py-2.5 sm:py-2 rounded-xl border text-sm font-medium transition-colors",
+                    unitType === unit
+                      ? "border-primary/35 bg-primary/10 text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {getUnitLabel(unit)}
+                </button>
+              ))}
+            </div>
+          ) : unitOptions[0] ? (
+            <div className="inline-flex items-center gap-2 rounded-xl border border-primary/25 bg-primary/10 px-4 py-2.5 text-sm font-bold text-primary">
+              {getUnitLabel(unitOptions[0].unit)}
+              <span className="text-xs font-medium text-muted-foreground">
+                {getUnitTitle(unitOptions[0].unit)}
+              </span>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+              Цена для выбранного варианта уточняется
+            </div>
+          )}
         </div>
       )}
 

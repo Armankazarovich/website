@@ -28,6 +28,8 @@ type PriceListQuickAddProps = {
   compact?: boolean;
   className?: string;
   showUnitSelector?: boolean;
+  selectedUnit?: UnitType;
+  onSelectedUnitChange?: (unit: UnitType) => void;
 };
 
 function formatQty(value: number) {
@@ -50,13 +52,27 @@ export function PriceListQuickAdd({
   compact = false,
   className,
   showUnitSelector = true,
+  selectedUnit: controlledSelectedUnit,
+  onSelectedUnitChange,
 }: PriceListQuickAddProps) {
   const { addItem, updateQuantity, hydrateCart, items } = useCartStore();
-  const [selectedUnit, setSelectedUnit] = useState<UnitType>(preferredUnit);
+  const [internalSelectedUnit, setInternalSelectedUnit] = useState<UnitType>(preferredUnit);
+  const selectedUnit = controlledSelectedUnit ?? internalSelectedUnit;
 
   useEffect(() => {
     hydrateCart();
   }, [hydrateCart]);
+
+  useEffect(() => {
+    if (!controlledSelectedUnit) {
+      setInternalSelectedUnit(preferredUnit);
+    }
+  }, [controlledSelectedUnit, preferredUnit]);
+
+  const selectUnit = (unit: UnitType) => {
+    setInternalSelectedUnit(unit);
+    onSelectedUnitChange?.(unit);
+  };
 
   const selected = useMemo(
     () => availableUnits.find((entry) => entry.unit === selectedUnit) ?? availableUnits[0],
@@ -122,7 +138,8 @@ export function PriceListQuickAdd({
               type="button"
               title={`${entry.title}: ${formatPrice(entry.price)}`}
               aria-pressed={selected.unit === entry.unit}
-              onClick={() => setSelectedUnit(entry.unit)}
+              onClick={() => selectUnit(entry.unit)}
+              data-price-list-quick-unit={`${variantId}-${entry.unit}`}
               className={cn(
                 "flex-1 rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition-colors sm:flex-none",
                 compact && "px-2 py-1 text-[10px]",
@@ -159,6 +176,7 @@ export function PriceListQuickAdd({
             type="button"
             onClick={addOne}
             disabled={!canAdd}
+            data-price-list-add-button={`${variantId}-${selected.unit}`}
             className="flex items-center justify-center bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-45"
             aria-label="Добавить ещё"
           >
@@ -170,6 +188,7 @@ export function PriceListQuickAdd({
           type="button"
           onClick={addOne}
           disabled={!canAdd}
+          data-price-list-add-button={`${variantId}-${selected.unit}`}
           className={cn(
             "inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-primary px-4 text-sm font-black text-primary-foreground transition-all hover:bg-primary/90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-55",
             compact && "h-9 min-w-11 rounded-xl px-3 text-xs [&>span]:hidden",
