@@ -27,6 +27,7 @@ type PriceListQuickAddProps = {
   piecesPerCube: number | null;
   compact?: boolean;
   className?: string;
+  showUnitSelector?: boolean;
 };
 
 function formatQty(value: number) {
@@ -48,6 +49,7 @@ export function PriceListQuickAdd({
   piecesPerCube,
   compact = false,
   className,
+  showUnitSelector = true,
 }: PriceListQuickAddProps) {
   const { addItem, updateQuantity, hydrateCart, items } = useCartStore();
   const [selectedUnit, setSelectedUnit] = useState<UnitType>(preferredUnit);
@@ -112,7 +114,7 @@ export function PriceListQuickAdd({
 
   return (
     <div className={cn("flex min-w-0 flex-col items-stretch gap-2 sm:items-end", compact && "items-end gap-1", className)}>
-      {availableUnits.length > 1 ? (
+      {showUnitSelector && availableUnits.length > 1 ? (
         <div className={cn("inline-flex w-full overflow-hidden rounded-xl border border-border bg-background/70 p-0.5 sm:w-auto", compact && "w-auto rounded-lg")}>
           {availableUnits.map((entry) => (
             <button
@@ -133,11 +135,11 @@ export function PriceListQuickAdd({
             </button>
           ))}
         </div>
-      ) : (
+      ) : showUnitSelector ? (
         <span className={cn("self-start rounded-xl border border-border bg-muted/35 px-3 py-1.5 text-[11px] font-bold text-muted-foreground sm:self-end", compact && "self-end rounded-lg px-2 py-1 text-[10px]")}>
           {selected.label}
         </span>
-      )}
+      ) : null}
 
       {cartQty > 0 ? (
         <div className={cn("grid h-11 grid-cols-[44px_minmax(56px,1fr)_44px] overflow-hidden rounded-2xl border border-primary/35 bg-primary/10", compact && "h-9 grid-cols-[34px_minmax(46px,1fr)_34px] rounded-xl")}>

@@ -3,11 +3,11 @@ import Link from "next/link";
 import {
   ArrowRight,
   BadgeCheck,
-  Download,
   FileText,
   Phone,
   ShoppingCart,
 } from "lucide-react";
+import { PriceListPdfDownload } from "@/components/store/price-list-pdf-download";
 import { PriceListQuickAdd } from "@/components/store/price-list-quick-add";
 import { PriceListSearchAction } from "@/components/store/price-list-search-action";
 import {
@@ -26,8 +26,12 @@ type PageProps = {
     category?: string;
     q?: string;
     unit?: string;
+    page?: string;
   };
 };
+
+const PRICE_LIST_OVERVIEW_ROWS_PER_GROUP = 4;
+const PRICE_LIST_PAGE_SIZE = 40;
 
 export const metadata: Metadata = {
   title: "Прайс-лист пиломатериалов — актуальные цены ПилоРус",
@@ -46,11 +50,12 @@ function normalizeUnit(value: string | undefined): PriceListUnit | "ALL" {
   return value === "CUBE" || value === "SQUARE" || value === "PIECE" ? value : "ALL";
 }
 
-function buildHref(filters: Partial<PriceListFilters>) {
+function buildHref(filters: Partial<PriceListFilters> & { page?: number }) {
   const params = new URLSearchParams();
   if (filters.category) params.set("category", filters.category);
   if (filters.q) params.set("q", filters.q);
   if (filters.unit && filters.unit !== "ALL") params.set("unit", filters.unit);
+  if (filters.page && filters.page > 1) params.set("page", String(filters.page));
   const query = params.toString();
   return `/price-list${query ? `?${query}` : ""}`;
 }
@@ -75,11 +80,27 @@ function formatDateTime(date: Date) {
 
 function unitPrice(rowUnit: PriceListUnitPrice) {
   return (
-    <span className="inline-flex items-baseline gap-1 rounded-lg border border-border/70 bg-background/70 px-2 py-1 text-[12px] font-bold text-foreground">
+    <span className="inline-flex items-baseline rounded-lg border border-border/70 bg-background/70 px-2 py-1 text-[12px] font-bold text-foreground">
       {formatPrice(rowUnit.price)}
-      <small className="text-[10px] font-semibold text-muted-foreground">/{rowUnit.label}</small>
     </span>
   );
+}
+
+function unitBadges(units: PriceListUnitPrice[], preferredUnit: PriceListUnit) {
+  return units.map((entry) => (
+    <span
+      key={entry.unit}
+      className={cn(
+        "inline-flex min-h-7 items-center rounded-lg border px-2 text-[11px] font-black",
+        entry.unit === preferredUnit
+          ? "border-primary/40 bg-primary/10 text-primary"
+          : "border-border bg-background/55 text-muted-foreground",
+      )}
+      title={entry.title}
+    >
+      {entry.label}
+    </span>
+  ));
 }
 
 export default async function PriceListPage({ searchParams }: PageProps) {
@@ -94,9 +115,25 @@ export default async function PriceListPage({ searchParams }: PageProps) {
   const allRowCount = data.categories.reduce((sum, category) => sum + category.rowCount, 0);
   const allProductCount = data.categories.reduce((sum, category) => sum + category.productCount, 0);
   const isPreviewMode = !data.filters.category && !data.filters.q;
+  const requestedPage = Math.max(1, Number(searchParams.page) || 1);
+  const totalPages = isPreviewMode ? 1 : Math.max(1, Math.ceil(data.totalRows / PRICE_LIST_PAGE_SIZE));
+  const currentPage = Math.min(requestedPage, totalPages);
+  let rowsToSkip = (currentPage - 1) * PRICE_LIST_PAGE_SIZE;
+  let rowsToTake = PRICE_LIST_PAGE_SIZE;
   const visibleGroups = isPreviewMode
-    ? data.groupedRows.map((group) => ({ ...group, rows: group.rows.slice(0, 12) }))
-    : data.groupedRows;
+    ? data.groupedRows.map((group) => ({ ...group, rows: group.rows.slice(0, PRICE_LIST_OVERVIEW_ROWS_PER_GROUP) }))
+    : data.groupedRows
+        .map((group) => {
+          if (rowsToSkip >= group.rows.length) {
+            rowsToSkip -= group.rows.length;
+            return { ...group, rows: [] };
+          }
+          const rows = group.rows.slice(rowsToSkip, rowsToSkip + rowsToTake);
+          rowsToTake -= rows.length;
+          rowsToSkip = 0;
+          return { ...group, rows };
+        })
+        .filter((group) => group.rows.length > 0);
   const visibleRowCount = visibleGroups.reduce((sum, group) => sum + group.rows.length, 0);
 
   const schema = {
@@ -130,14 +167,7 @@ export default async function PriceListPage({ searchParams }: PageProps) {
 
               <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:justify-end">
                 <PriceListSearchAction className="px-2 sm:px-3" label="Поиск" />
-                <a
-                  href={currentPdfHref}
-                  data-price-list-pdf-download
-                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary px-3 text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
-                >
-                  <Download className="h-4 w-4" />
-                  <span>PDF</span>
-                </a>
+                <PriceListPdfDownload href={currentPdfHref} />
                 <a
                   href="tel:+74951352026"
                   className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 text-sm font-semibold text-foreground transition-colors hover:border-primary/45"
@@ -282,8 +312,9 @@ export default async function PriceListPage({ searchParams }: PageProps) {
                         </div>
 
                         <div className="overflow-hidden rounded-xl border border-border bg-card">
-                          <div className="hidden grid-cols-[minmax(0,1.5fr)_180px_110px_120px] gap-3 border-b border-border bg-background/45 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground md:grid">
+                          <div className="hidden grid-cols-[minmax(0,1.35fr)_82px_170px_90px_96px] gap-3 border-b border-border bg-background/45 px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-muted-foreground md:grid">
                             <span>Позиция</span>
+                            <span className="text-right">Ед.</span>
                             <span className="text-right">Цена</span>
                             <span className="text-right">Склад</span>
                             <span className="text-right">Заказ</span>
@@ -294,7 +325,7 @@ export default async function PriceListPage({ searchParams }: PageProps) {
                               key={row.key}
                               data-price-list-row
                               className={cn(
-                                "grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 border-border px-3 py-2.5 md:grid-cols-[minmax(0,1.5fr)_180px_110px_120px] md:items-center",
+                                "grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 border-border px-3 py-2.5 md:grid-cols-[minmax(0,1.35fr)_82px_170px_90px_96px] md:items-center",
                                 index > 0 && "border-t",
                               )}
                             >
@@ -319,7 +350,8 @@ export default async function PriceListPage({ searchParams }: PageProps) {
 
                               <PriceListQuickAdd
                                 compact
-                                className="justify-self-end md:order-4"
+                                showUnitSelector={false}
+                                className="justify-self-end md:order-5"
                                 productId={row.productId}
                                 productSlug={row.productSlug}
                                 productName={row.productName}
@@ -333,12 +365,16 @@ export default async function PriceListPage({ searchParams }: PageProps) {
                               />
 
                               <div className="col-span-2 flex flex-wrap gap-1.5 md:col-span-1 md:order-2 md:justify-end">
+                                {unitBadges(row.availableUnits, row.preferredUnit)}
+                              </div>
+
+                              <div className="col-span-2 flex flex-wrap gap-1.5 md:col-span-1 md:order-3 md:justify-end">
                                 {row.availableUnits.map((entry) => (
                                   <span key={entry.unit}>{unitPrice(entry)}</span>
                                 ))}
                               </div>
 
-                              <div className="hidden text-right text-xs text-muted-foreground md:order-3 md:block">
+                              <div className="hidden text-right text-xs text-muted-foreground md:order-4 md:block">
                                 {row.stockQty == null ? "в наличии" : `${row.stockQty.toLocaleString("ru-RU")} шт`}
                                 {row.piecesPerCube && (
                                   <span className="mt-1 block">≈ {row.piecesPerCube} шт/м³</span>
@@ -350,6 +386,41 @@ export default async function PriceListPage({ searchParams }: PageProps) {
                       </section>
                     );
                   })}
+                  {!isPreviewMode && totalPages > 1 && (
+                    <nav className="flex flex-wrap items-center justify-center gap-2 rounded-xl border border-border bg-card p-2 text-sm">
+                      <Link
+                        href={buildHref({
+                          category: data.filters.category,
+                          q: data.filters.q,
+                          unit: data.filters.unit,
+                          page: Math.max(1, currentPage - 1),
+                        })}
+                        className={cn(
+                          "inline-flex min-h-10 items-center rounded-lg border border-border px-3 font-semibold transition-colors hover:border-primary/45",
+                          currentPage <= 1 && "pointer-events-none opacity-45",
+                        )}
+                      >
+                        Назад
+                      </Link>
+                      <span className="px-2 text-xs font-bold text-muted-foreground">
+                        {currentPage} / {totalPages}
+                      </span>
+                      <Link
+                        href={buildHref({
+                          category: data.filters.category,
+                          q: data.filters.q,
+                          unit: data.filters.unit,
+                          page: Math.min(totalPages, currentPage + 1),
+                        })}
+                        className={cn(
+                          "inline-flex min-h-10 items-center rounded-lg border border-border px-3 font-semibold transition-colors hover:border-primary/45",
+                          currentPage >= totalPages && "pointer-events-none opacity-45",
+                        )}
+                      >
+                        Вперёд
+                      </Link>
+                    </nav>
+                  )}
                 </div>
               )}
             </div>

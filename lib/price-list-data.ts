@@ -214,7 +214,10 @@ export async function getPriceListData(filters: PriceListFilters = {}): Promise<
     .flatMap((product) =>
       product.variants.flatMap((variant) => {
         const availableUnits = availableUnitPrices(product, variant);
-        const unit = preferredUnit(product.saleUnit, availableUnits);
+        const unit =
+          normalized.unit !== "ALL" && availableUnits.some((entry) => entry.unit === normalized.unit)
+            ? normalized.unit
+            : preferredUnit(product.saleUnit, availableUnits);
         if (!unit) return [];
         const meta = getVariantOptionMeta(variant.size);
         const minPrice = Math.min(...availableUnits.map((entry) => entry.price));
