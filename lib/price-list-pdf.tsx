@@ -150,32 +150,54 @@ function drawCell(
   }
 }
 
+function drawTextBlock(
+  doc: PdfKitDocument,
+  text: string,
+  x: number,
+  y: number,
+  width: number,
+  options: { bold?: boolean; size?: number; color?: string; align?: "left" | "right" | "center"; lineGap?: number } = {},
+) {
+  const size = options.size ?? 8;
+  const lineHeight = size + (options.lineGap ?? 1) + 2;
+  const lines = text.split("\n");
+  lines.forEach((line, index) => {
+    drawCell(doc, line, x, y + index * lineHeight, width, options);
+  });
+  return y + lines.length * lineHeight;
+}
+
 function drawHeader(doc: PdfKitDocument, data: PriceListData, pageIndex: number) {
   const margin = 24;
   const width = doc.page.width - margin * 2;
   const compact = pageIndex > 0;
   const headerHeight = compact ? 54 : 78;
 
-  doc.fillColor(COLORS.ink);
-  doc.font("RobotoBold").fontSize(compact ? 14 : 18).text("ПилоРус", margin, margin);
-  doc.font("Roboto").fontSize(8).fillColor(COLORS.muted).text(
+  drawCell(doc, "ПилоРус", margin, margin, 180, { bold: true, size: compact ? 14 : 18 });
+  drawTextBlock(
+    doc,
     `Пиломатериалы от производителя\nХимки, ул. Заводская 2А, стр.28\nТел.: ${DEFAULT_SETTINGS.phone} · pilo-rus.ru`,
     margin,
     margin + (compact ? 18 : 24),
-    { lineGap: 1 },
+    260,
+    { size: 8, color: COLORS.muted, lineGap: 1 },
   );
 
-  doc.font("RobotoBold").fontSize(compact ? 16 : 20).fillColor(COLORS.brand).text(
+  drawCell(
+    doc,
     "ПРАЙС-ЛИСТ",
     margin,
     margin,
-    { width, align: "right" },
+    width,
+    { bold: true, size: compact ? 16 : 20, color: COLORS.brand, align: "right" },
   );
-  doc.font("Roboto").fontSize(8).fillColor(COLORS.muted).text(
+  drawTextBlock(
+    doc,
     `Сформирован: ${formatDate(data.generatedAt)}\nПозиций: ${data.totalRows.toLocaleString("ru-RU")} · товаров: ${data.totalProducts.toLocaleString("ru-RU")}`,
     margin,
     margin + 24,
-    { width, align: "right", lineGap: 1 },
+    width,
+    { size: 8, color: COLORS.muted, align: "right", lineGap: 1 },
   );
 
   doc
