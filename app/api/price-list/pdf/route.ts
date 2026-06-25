@@ -20,6 +20,13 @@ const globalPdfCache = globalThis as typeof globalThis & {
 const pdfCache = globalPdfCache.__pilorusPriceListPdfCache ?? new Map<string, PdfCacheEntry>();
 globalPdfCache.__pilorusPriceListPdfCache = pdfCache;
 
+const PDF_HEADERS = {
+  "Content-Type": "application/pdf",
+  "Cache-Control": "no-store, max-age=0, must-revalidate",
+  Pragma: "no-cache",
+  Expires: "0",
+};
+
 function normalizeUnit(value: string | null): PriceListUnit | "ALL" {
   return value === "CUBE" || value === "SQUARE" || value === "PIECE" ? value : "ALL";
 }
@@ -33,9 +40,8 @@ export async function GET(req: Request) {
   if (cached && now - cached.createdAt < PDF_CACHE_TTL_MS) {
     return new NextResponse(new Uint8Array(cached.buffer), {
       headers: {
-        "Content-Type": "application/pdf",
+        ...PDF_HEADERS,
         "Content-Disposition": `attachment; filename="pilorus-price-list-${cached.stamp}.pdf"`,
-        "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=1800",
         "X-Price-List-Cache": "HIT",
       },
     });
@@ -52,9 +58,8 @@ export async function GET(req: Request) {
 
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
-      "Content-Type": "application/pdf",
+      ...PDF_HEADERS,
       "Content-Disposition": `attachment; filename="pilorus-price-list-${stamp}.pdf"`,
-      "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=1800",
       "X-Price-List-Cache": "MISS",
     },
   });
