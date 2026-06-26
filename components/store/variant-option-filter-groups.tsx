@@ -13,10 +13,11 @@ type VariantOptionFilterGroup = {
 interface VariantOptionFilterGroupsProps {
   groups: VariantOptionFilterGroup[];
   onSelect: (key: VariantOptionKey, value: string | null) => void;
+  isOptionDisabled?: (key: VariantOptionKey, value: string) => boolean;
 }
 
-export function VariantOptionFilterGroups({ groups, onSelect }: VariantOptionFilterGroupsProps) {
-  const visibleGroups = groups.filter((group) => group.values.length > 1);
+export function VariantOptionFilterGroups({ groups, onSelect, isOptionDisabled }: VariantOptionFilterGroupsProps) {
+  const visibleGroups = groups.filter((group) => group.values.length > 1 || Boolean(group.selected));
   if (visibleGroups.length === 0) return null;
 
   return (
@@ -40,16 +41,20 @@ export function VariantOptionFilterGroups({ groups, onSelect }: VariantOptionFil
           <div className="flex flex-wrap gap-2">
             {group.values.map((value) => {
               const active = group.selected === value;
+              const disabled = !active && Boolean(isOptionDisabled?.(group.keyName, value));
               return (
                 <button
                   key={value}
                   type="button"
+                  disabled={disabled}
+                  aria-disabled={disabled}
                   onClick={() => onSelect(group.keyName, active ? null : value)}
                   className={cn(
                     "min-h-9 rounded-xl border px-3 py-1.5 text-sm font-semibold transition-colors",
                     active
                       ? "border-primary/45 bg-primary/10 text-primary"
                       : "border-border bg-background/70 text-foreground hover:border-primary/45 hover:bg-accent",
+                    disabled && "cursor-not-allowed opacity-35 hover:border-border hover:bg-background/70",
                   )}
                 >
                   {value}

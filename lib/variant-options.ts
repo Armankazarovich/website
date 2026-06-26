@@ -9,7 +9,7 @@ export type VariantOptionMeta = {
 
 export type VariantOptionKey = "grade" | "section" | "length";
 
-const MULTIPLY_MARK = /[xXхХ×]/g;
+const MULTIPLY_MARK_BETWEEN_NUMBERS = /(?<=\d)\s*[xXхХ×]\s*(?=\d)/g;
 const DIMENSION_RE =
   /(\d+(?:[.,]\d+)?)\s*[xXхХ×]\s*(\d+(?:[.,]\d+)?)(?:\s*[xXхХ×]\s*(\d+(?:[.,]\d+)?))?/;
 
@@ -19,10 +19,10 @@ function normalizeSpaces(value: string) {
 
 function normalizeSizeMarks(value: string) {
   return normalizeSpaces(value)
-    .replace(MULTIPLY_MARK, "×")
+    .replace(MULTIPLY_MARK_BETWEEN_NUMBERS, "×")
     .replace(/\s*×\s*/g, "×")
-    .replace(/\s+мм\b/gi, " мм")
-    .replace(/\s+м\b/gi, " м");
+    .replace(/\s+мм(?![a-zа-яё])/gi, " мм")
+    .replace(/\s+м(?![a-zа-яё])/gi, " м");
 }
 
 function numberText(value: string) {
@@ -40,6 +40,20 @@ function toNumber(value: string | undefined) {
   return Number.isFinite(number) ? number : null;
 }
 
+function normalizeGradeToken(value: string) {
+  const token = normalizeSpaces(value).replace(/\s*[-–]\s*/g, "-");
+  const mapped = token
+    .replace(/[Аа]/g, "A")
+    .replace(/[Вв]/g, "B")
+    .replace(/[Сс]/g, "C")
+    .toUpperCase();
+
+  if (/^(?:[ABC0-9]+|[ABC0-9]+-[ABC0-9]+)$/.test(mapped)) return mapped;
+  if (/^экстра$/i.test(token)) return "Экстра";
+  if (/^прима$/i.test(token)) return "Прима";
+  return token;
+}
+
 function normalizeGrade(value: string) {
   const text = normalizeSpaces(value)
     .replace(/\s*,\s*/g, ", ")
@@ -47,8 +61,22 @@ function normalizeGrade(value: string) {
     .replace(/^сорт\b/i, "сорт")
     .replace(/\bсорт$/i, "сорт");
 
+  const sourcePrefix = text.match(/^(.+?),\s*сорт\s+([^,]+)$/i);
+  if (sourcePrefix) return `сорт ${normalizeGradeToken(sourcePrefix[2])}, ${normalizeSpaces(sourcePrefix[1])}`;
+
   const reverse = text.match(/^([A-Za-zА-Яа-яЁё0-9]+(?:-[A-Za-zА-Яа-яЁё0-9]+)?)\s+сорт$/i);
-  if (reverse) return `сорт ${reverse[1]}`;
+  if (reverse) return `сорт ${normalizeGradeToken(reverse[1])}`;
+
+  const direct = text.match(/^сорт\s+([^,]+)(.*)$/i);
+  if (direct) {
+    const tail = normalizeSpaces(direct[2] || "").replace(/^,\s*/, ", ");
+    return `сорт ${normalizeGradeToken(direct[1])}${tail}`;
+  }
+
+  const named = normalizeGradeToken(text);
+  if (named === "Экстра" || named === "Прима" || /^(?:[ABC0-9]+|[ABC0-9]+-[ABC0-9]+)$/.test(named)) {
+    return `сорт ${named}`;
+  }
 
   return text;
 }
@@ -68,7 +96,7 @@ function extractGrade(size: string) {
   const reverseMatch = text.match(/([A-Za-zА-Яа-яЁё0-9]+(?:\s*[-–]\s*[A-Za-zА-Яа-яЁё0-9]+)?)\s+сорт/i);
   if (reverseMatch) return normalizeGrade(`${reverseMatch[1]} сорт`);
 
-  const namedMatch = text.match(/\b(экстра|прима)\b/i);
+  const namedMatch = text.match(/(?:^|[\s,])(экстра|прима)(?=$|[\s,])/i);
   return namedMatch ? normalizeGrade(namedMatch[1]) : null;
 }
 
@@ -81,6 +109,12 @@ function cleanSizeLabel(size: string, grade: string | null) {
   if (grade) {
     text = normalizeSpaces(text.replace(grade, ""));
   }
+
+  text = normalizeSpaces(
+    text
+      .replace(/(?:Архангельский\s+лес,\s*)?сорт\s*[A-Za-zА-Яа-яЁё0-9]+(?:\s*[-–]\s*[A-Za-zА-Яа-яЁё0-9]+)?/i, "")
+      .replace(/(?:^|[\s,])(экстра|прима)(?=$|[\s,])/i, " "),
+  );
 
   return normalizeSpaces(text.replace(/\s*,\s*$/g, "")) || normalizeSizeMarks(size);
 }
@@ -100,7 +134,7 @@ function extractSection(size: string) {
 
 function extractLength(size: string) {
   const text = normalizeSizeMarks(size);
-  const range = text.match(/(\d+(?:[.,]\d+)?)\s*[-–]\s*(\d+(?:[.,]\d+)?)\s*м\b/i);
+  const range = text.match(/(\d+(?:[.,]\d+)?)\s*[-–]\s*(\d+(?:[.,]\d+)?)\s*м(?![a-zа-яё])/i);
   if (range) return `${numberText(range[1])}–${numberText(range[2])} м`;
 
   const match = text.match(DIMENSION_RE);
@@ -111,7 +145,7 @@ function extractLength(size: string) {
     return `${(third / 1000).toLocaleString("ru-RU", { maximumFractionDigits: 2 })} м`;
   }
 
-  if (/\d+\s*[xXхХ×]\s*\d+\s*[xXхХ×]\s*\d+(?:[.,]\d+)?\s*м\b/i.test(text)) {
+  if (/\d+\s*[xXхХ×]\s*\d+\s*[xXхХ×]\s*\d+(?:[.,]\d+)?\s*м(?![a-zа-яё])/i.test(text)) {
     return `${numberText(match?.[3] || "")} м`;
   }
 

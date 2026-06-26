@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getPurchasableQuantityLimit } from "@/lib/product-availability";
 import { getPublicVariantsFilter } from "@/lib/product-seo";
 import { getVariantUnitPrice } from "@/lib/product-units";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 
 // Принимает компактный список вариантов и возвращает полные данные из БД
 // Формат items: [{ v: variantId, q: quantity, u: "CUBE"|"PIECE" }]
@@ -27,6 +28,7 @@ export async function POST(req: Request) {
         id: { in: variantIds },
         ...getPublicVariantsFilter(),
         product: {
+          tenantId: DEFAULT_TENANT_ID,
           active: true,
           images: { isEmpty: false },
         },

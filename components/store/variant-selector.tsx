@@ -135,9 +135,22 @@ function variantMatchesFilters(row: VariantRow, filters: VariantFilters) {
   );
 }
 
+function variantMatchesOptionDependencies(row: VariantRow, filters: VariantFilters, key: VariantOptionKey) {
+  if (key === "grade") return true;
+  if (key === "section") return !filters.grade || row.meta.grade === filters.grade;
+  return (
+    (!filters.grade || row.meta.grade === filters.grade) &&
+    (!filters.section || row.meta.section === filters.section)
+  );
+}
+
+function isSelectableRow(row: VariantRow, saleUnit: VariantSelectorProps["saleUnit"]) {
+  return isProductVariantPurchasable(row.variant) && Boolean(getPreferredUnit(row.variant, saleUnit));
+}
+
 function pickBestRow(rows: VariantRow[], saleUnit: VariantSelectorProps["saleUnit"]) {
   return (
-    rows.find((row) => isProductVariantPurchasable(row.variant) && getPreferredUnit(row.variant, saleUnit)) ||
+    rows.find((row) => isSelectableRow(row, saleUnit)) ||
     rows[0] ||
     null
   );
@@ -245,8 +258,22 @@ export function VariantSelector({
       [key]: value,
     };
 
-    let candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
-    const best = pickBestRow(candidates, saleUnit);
+    const candidates = variantRows.filter((row) => variantMatchesFilters(row, nextFilters));
+    let best = pickBestRow(candidates, saleUnit);
+
+    if (!best && value) {
+      const fallbackRows = variantRows.filter((row) => row.meta[key] === value);
+      best = pickBestRow(fallbackRows, saleUnit);
+      if (best) {
+        nextFilters = {
+          grade: best.meta.grade,
+          section: best.meta.section,
+          length: best.meta.length,
+          [key]: value,
+        };
+      }
+    }
+
     if (best) {
       setSelectedVariant(best.variant);
     } else {
@@ -254,6 +281,18 @@ export function VariantSelector({
     }
     setFilters(nextFilters);
   };
+
+  const isOptionDisabled = (key: VariantOptionKey, value: string) => {
+    return !variantRows.some(
+      (row) => row.meta[key] === value && variantMatchesOptionDependencies(row, selectedFilters, key) && isSelectableRow(row, saleUnit),
+    );
+  };
+
+  useEffect(() => {
+    if (activeVariant || visibleRows.length === 0) return;
+    const best = pickBestRow(visibleRows, saleUnit);
+    if (best) setSelectedVariant(best.variant);
+  }, [activeVariant, visibleRows, saleUnit]);
 
   // Calculate equivalent in other unit
   const equivalentInfo = () => {
@@ -345,6 +384,7 @@ export function VariantSelector({
             { keyName: "length", label: "Длина", values: lengthOptions, selected: selectedLength },
           ]}
           onSelect={applyFilter}
+          isOptionDisabled={isOptionDisabled}
         />
         {variants.length > 10 && (
           <label className="relative mb-3 mt-3 block">

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getPublicProductsFilter, getPublicVariantsFilter } from "@/lib/product-seo";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 
 export async function GET(
   _req: NextRequest,
@@ -7,8 +9,15 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const variant = await prisma.productVariant.findUnique({
-    where: { id },
+  const variant = await prisma.productVariant.findFirst({
+    where: {
+      id,
+      ...getPublicVariantsFilter(),
+      product: {
+        tenantId: DEFAULT_TENANT_ID,
+        ...getPublicProductsFilter(),
+      },
+    },
     include: {
       product: {
         select: { id: true, name: true, slug: true, images: true },

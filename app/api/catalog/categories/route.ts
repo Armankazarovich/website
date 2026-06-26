@@ -2,10 +2,11 @@ export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { DEFAULT_TENANT_ID } from "@/lib/tenant-context";
 
 export async function GET() {
   const categories = await prisma.category.findMany({
-    where: { showInMenu: true, parentId: null },
+    where: { tenantId: DEFAULT_TENANT_ID, showInMenu: true, parentId: null },
     orderBy: { sortOrder: "asc" },
     select: {
       id: true,
@@ -13,7 +14,7 @@ export async function GET() {
       slug: true,
       image: true,
       children: {
-        where: { showInMenu: true },
+        where: { tenantId: DEFAULT_TENANT_ID, showInMenu: true },
         orderBy: { sortOrder: "asc" },
         select: { id: true, name: true, slug: true, image: true },
       },
