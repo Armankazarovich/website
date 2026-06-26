@@ -1658,7 +1658,22 @@ button, a, [role="button"], input, select, textarea {
     0 1px 0 hsl(0 0% 100% / 0.92) inset,
     0 -1px 0 hsl(28 20% 72% / 0.18) inset,
     0 22px 44px -38px hsl(24 18% 12% / 0.25);
-  transform: translateZ(0);
+}
+
+@supports (content-visibility: auto) {
+  .store-product-card {
+    content-visibility: auto;
+    contain-intrinsic-size: 420px;
+  }
+
+  .store-product-card-list {
+    contain-intrinsic-size: 220px;
+  }
+
+  [data-price-list-row] {
+    content-visibility: auto;
+    contain-intrinsic-size: 76px;
+  }
 }
 
 @media (min-width: 640px) {

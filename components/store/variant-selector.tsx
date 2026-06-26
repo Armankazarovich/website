@@ -282,8 +282,8 @@ export function VariantSelector({
     setFilters(nextFilters);
   };
 
-  const isOptionDisabled = (key: VariantOptionKey, value: string) => {
-    return !variantRows.some(
+  const isOptionVisible = (key: VariantOptionKey, value: string) => {
+    return variantRows.some(
       (row) => row.meta[key] === value && variantMatchesOptionDependencies(row, selectedFilters, key) && isSelectableRow(row, saleUnit),
     );
   };
@@ -384,7 +384,7 @@ export function VariantSelector({
             { keyName: "length", label: "Длина", values: lengthOptions, selected: selectedLength },
           ]}
           onSelect={applyFilter}
-          isOptionDisabled={isOptionDisabled}
+          isOptionVisible={isOptionVisible}
         />
         {variants.length > 10 && (
           <label className="relative mb-3 mt-3 block">

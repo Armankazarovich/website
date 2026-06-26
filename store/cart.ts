@@ -134,6 +134,8 @@ export const useCartStore = create<CartStore>()((set, get) => ({
   setHasHydrated: (hasHydrated) => set({ hasHydrated }),
 
   hydrateCart: () => {
+    if (get().hasHydrated) return;
+
     const currentItems = normalizeCartItems(get().items);
     if (currentItems.length > 0) {
       writeCartItemsToStorage(currentItems);

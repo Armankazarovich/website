@@ -143,10 +143,12 @@ function StoryMedia({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
   const [previewVideoEnabled, setPreviewVideoEnabled] = useState(false);
+  const [previewPausedByScroll, setPreviewPausedByScroll] = useState(false);
   const src = storyVisual(story);
   const hasInlineVideo = Boolean(isVideoStory(story) && story.mediaUrl && canInlineVideo(story.mediaUrl));
   const showVideo = Boolean((expanded || previewVideoEnabled) && hasInlineVideo);
   const videoActive = expanded || previewVideoEnabled;
+  const videoShouldPlay = videoActive && !(previewVideoEnabled && !expanded && previewPausedByScroll);
   const setVideoNode = useCallback((node: HTMLVideoElement | null) => {
     videoRef.current = node;
     setPreviewHost(node);
@@ -217,14 +219,35 @@ function StoryMedia({
   }, [allowPreviewVideo, expanded, hasInlineVideo, previewVisible, story.mediaUrl]);
 
   useEffect(() => {
+    setPreviewPausedByScroll(false);
+    if (!previewVideoEnabled || expanded || typeof window === "undefined") return;
+
+    let timer: number | null = null;
+    const pauseDuringScroll = () => {
+      setPreviewPausedByScroll(true);
+      if (timer !== null) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        timer = null;
+        setPreviewPausedByScroll(false);
+      }, 220);
+    };
+
+    window.addEventListener("scroll", pauseDuringScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", pauseDuringScroll);
+      if (timer !== null) window.clearTimeout(timer);
+    };
+  }, [expanded, previewVideoEnabled]);
+
+  useEffect(() => {
     const video = videoRef.current;
     if (!video || !videoActive) return;
-    if (expanded && paused) {
+    if ((expanded && paused) || !videoShouldPlay) {
       video.pause();
       return;
     }
     video.play().catch(() => null);
-  }, [expanded, paused, previewVideoEnabled, story.mediaUrl, videoActive]);
+  }, [expanded, paused, previewVideoEnabled, previewPausedByScroll, story.mediaUrl, videoActive, videoShouldPlay]);
 
   if (showVideo) {
     return (
@@ -237,7 +260,7 @@ function StoryMedia({
           playsInline
           muted={!expanded || !soundEnabled}
           loop={!expanded}
-          autoPlay={videoActive}
+          autoPlay={videoShouldPlay}
           controls={false}
           preload="metadata"
           onClick={() => {
