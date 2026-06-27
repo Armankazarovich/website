@@ -3,14 +3,7 @@
 import { useEffect } from "react";
 
 const LOCAL_SW_RESET_KEY = "aray-local-sw-disabled-v1";
-const BACKGROUND_REFRESH_TAG = "aray-background-refresh";
-const SW_CONTROLLER_RELOAD_KEY = "aray-sw-controller-reload-v2";
-
-type SyncRegistration = ServiceWorkerRegistration & {
-  sync?: {
-    register: (tag: string) => Promise<void>;
-  };
-};
+const PASSIVE_SW_CACHE_RESET_KEY = "aray-pilorus-passive-sw-cache-reset-20260627";
 
 function isLocalDevHost() {
   if (typeof window === "undefined") return false;
@@ -51,36 +44,69 @@ async function disableLocalServiceWorkerCache() {
   } catch {}
 }
 
-function currentWarmUrls() {
-  if (typeof window === "undefined") return [];
-  return [
-    `${window.location.pathname}${window.location.search}`,
-    "/",
-    "/catalog",
-    "/cart",
-    "/compare",
-    "/wishlist",
-  ];
-}
+function postCacheClearMessage(worker: ServiceWorker | null | undefined) {
+  if (!worker) return Promise.resolve(false);
 
-function postWarmRoutesMessage(registration: ServiceWorkerRegistration) {
-  const worker = registration.active || navigator.serviceWorker.controller;
-  if (!worker) return;
-
-  try {
+  return new Promise<boolean>((resolve) => {
     const channel = new MessageChannel();
-    worker.postMessage({ type: "WARM_ARAY_ROUTES", urls: currentWarmUrls() }, [channel.port2]);
+    const timeout = window.setTimeout(() => resolve(false), 900);
+    channel.port1.onmessage = () => {
+      window.clearTimeout(timeout);
+      resolve(true);
+    };
+
+    try {
+      worker.postMessage({ type: "CLEAR_ARAY_CACHES", includeAllOriginCaches: false }, [channel.port2]);
+    } catch {
+      window.clearTimeout(timeout);
+      resolve(false);
+    }
+  });
+}
+
+async function clearOldRuntimeCachesOnce(registration: ServiceWorkerRegistration) {
+  try {
+    if (window.localStorage.getItem(PASSIVE_SW_CACHE_RESET_KEY) === "done") return;
+  } catch {}
+
+  try {
+    const worker = registration.active || registration.waiting || registration.installing || navigator.serviceWorker.controller;
+    await postCacheClearMessage(worker);
+  } catch {}
+
+  try {
+    if ("caches" in window) {
+      const keys = await window.caches.keys();
+      await Promise.all(
+        keys
+          .filter((key) => key.startsWith("aray-") || key.startsWith("workbox-"))
+          .map((key) => window.caches.delete(key))
+      );
+    }
+  } catch {}
+
+  try {
+    window.localStorage.setItem(PASSIVE_SW_CACHE_RESET_KEY, "done");
   } catch {}
 }
 
-async function warmArayRoutes(registration: ServiceWorkerRegistration) {
-  if (typeof navigator !== "undefined" && !navigator.onLine) return;
+async function registerPassiveServiceWorker() {
+  const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  reg.update().catch(() => {});
 
-  try {
-    await (registration as SyncRegistration).sync?.register(BACKGROUND_REFRESH_TAG);
-  } catch {}
+  navigator.serviceWorker.ready
+    .then((readyReg) => clearOldRuntimeCachesOnce(readyReg))
+    .catch(() => clearOldRuntimeCachesOnce(reg));
 
-  postWarmRoutesMessage(registration);
+  reg.addEventListener("updatefound", () => {
+    const newWorker = reg.installing;
+    if (!newWorker) return;
+    newWorker.addEventListener("statechange", () => {
+      if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+        newWorker.postMessage({ type: "SKIP_WAITING" });
+      }
+    });
+  });
 }
 
 export function SwRegister() {
@@ -91,80 +117,17 @@ export function SwRegister() {
       return;
     }
 
-    let removeRefreshListeners: (() => void) | null = null;
-
-    // Чуть откладываем — не блокируем первый рендер
+    // Чуть откладываем — не мешаем первому экрану и кликам.
     const timer = setTimeout(async () => {
       try {
-        const reg = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
-
-        // Проверяем обновление при каждом открытии
-        reg.update().catch(() => {});
-        warmArayRoutes(reg).catch(() => {});
-
-        const refreshRoutes = () => {
-          navigator.serviceWorker.ready
-            .then((readyReg) => {
-              readyReg.update().catch(() => {});
-              return warmArayRoutes(readyReg);
-            })
-            .catch(() => {});
-        };
-
-        const refreshWhenVisible = () => {
-          if (document.visibilityState === "visible") refreshRoutes();
-        };
-
-        window.addEventListener("online", refreshRoutes);
-        document.addEventListener("visibilitychange", refreshWhenVisible);
-        removeRefreshListeners = () => {
-          window.removeEventListener("online", refreshRoutes);
-          document.removeEventListener("visibilitychange", refreshWhenVisible);
-        };
-
-        const reloadAfterControllerChange = () => {
-          refreshRoutes();
-
-          try {
-            if (!window.sessionStorage.getItem(SW_CONTROLLER_RELOAD_KEY)) {
-              window.sessionStorage.setItem(SW_CONTROLLER_RELOAD_KEY, "1");
-              window.setTimeout(() => {
-                window.location.reload();
-              }, 350);
-            }
-          } catch {}
-        };
-
-        navigator.serviceWorker.addEventListener("controllerchange", reloadAfterControllerChange);
-        const previousRemove = removeRefreshListeners;
-        removeRefreshListeners = () => {
-          previousRemove?.();
-          navigator.serviceWorker.removeEventListener("controllerchange", reloadAfterControllerChange);
-        };
-
-        // Если нашёлся новый SW — активируем сразу
-        reg.addEventListener("updatefound", () => {
-          const newWorker = reg.installing;
-          if (!newWorker) return;
-          newWorker.addEventListener("statechange", () => {
-            if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-              newWorker.postMessage({ type: "SKIP_WAITING" });
-            }
-          });
-        });
-
-        // НЕ делаем reload при controllerchange — это вызывает мерцание.
-        // Новый SW уже взял управление (SKIP_WAITING выше).
-        // HTML страницы используют NetworkFirst стратегию → всегда свежие.
-        // Следующий переход/открытие уже через новый SW.
+        await registerPassiveServiceWorker();
       } catch {
         // Тихо — dev-режим, HTTP, блокировщики и т.д.
       }
-    }, 800);
+    }, 1500);
 
     return () => {
       clearTimeout(timer);
-      removeRefreshListeners?.();
     };
   }, []);
 
