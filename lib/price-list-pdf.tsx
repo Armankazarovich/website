@@ -22,8 +22,8 @@ const COLUMNS = [
   { key: "product", label: "Товар", width: 224, align: "left" as const },
   { key: "size", label: "Размер", width: 118, align: "left" as const },
   { key: "grade", label: "Сорт", width: 74, align: "left" as const },
-  { key: "cube", label: "Цена / м³", width: 92, align: "right" as const },
-  { key: "square", label: "Цена / м²", width: 92, align: "right" as const },
+  { key: "cube", label: "Цена / м3", width: 92, align: "right" as const },
+  { key: "square", label: "Цена / м2", width: 92, align: "right" as const },
   { key: "piece", label: "Цена / шт", width: 92, align: "right" as const },
   { key: "stock", label: "Склад", width: 62, align: "right" as const },
 ];
@@ -77,19 +77,18 @@ function trimText(value: string, max = 60) {
 
 function normalizePdfText(value: string) {
   return value
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
     .replace(/\u00a0/g, " ")
+    .replace(/\u202f/g, " ")
+    .replace(/[×✕]/g, "x")
+    .replace(/м³/g, "м3")
+    .replace(/м²/g, "м2")
     .replace(/[–—]/g, "-")
     .replace(/₽/g, "руб.");
 }
 
-function isCyrillicPdfGlyph(char: string) {
-  const code = char.codePointAt(0) ?? 0;
-  return (code >= 0x0400 && code <= 0x052f) || code === 0x2116;
-}
-
-function fontForChar(char: string, bold: boolean) {
-  if (isCyrillicPdfGlyph(char)) return bold ? "RobotoBold" : "Roboto";
-  return bold ? "Helvetica-Bold" : "Helvetica";
+function fontForChar(_char: string, bold: boolean) {
+  return bold ? "RobotoBold" : "Roboto";
 }
 
 function splitFontRuns(text: string, bold: boolean) {
@@ -215,7 +214,7 @@ function drawIntro(doc: PdfKitDocument, y: number) {
   const pillY = y;
   const pills = [
     "Цены из живого каталога",
-    "м³ / м² / шт без смешения единиц",
+    "м3 / м2 / шт без смешения единиц",
     "Для сметы, закупки и печати",
   ];
   let x = margin;

@@ -70,6 +70,7 @@ type PilmosCatalogSnapshot = {
       pricePerPiece?: number | null;
       pricePerSquareMeter?: number | null;
       piecesPerCube?: number | null;
+      unit?: "CUBE" | "PIECE" | "SQUARE" | "BOTH";
       inStock: boolean;
       stockQty?: number | null;
       sortOrder: number;
@@ -169,6 +170,7 @@ function normalizePilmosSnapshotVariant(
   const pricePerCube = Number(variant.pricePerCube || 0);
   const pricePerSquareMeter = Number(variant.pricePerSquareMeter || 0);
   const piecesPerCube = variant.piecesPerCube ?? piecesPerCubeFromSize(variant.size);
+  const sourceUnit = variant.unit;
 
   if (isKnownSquareMeterVariant(productSlug, variant)) {
     const squarePrice =
@@ -184,6 +186,8 @@ function normalizePilmosSnapshotVariant(
       piecesPerCube: null,
     };
   }
+
+  if (sourceUnit === "PIECE") return variant;
 
   if (
     TIMBER_PRICE_CATEGORY_SLUGS.has(categorySlug) &&
@@ -225,6 +229,26 @@ function saleUnitFromSnapshotVariants(variants: PilmosSnapshotVariant[]): "CUBE"
   if (hasCube) return "CUBE";
   if (hasSquare) return "SQUARE";
   return "PIECE";
+}
+
+function variantCatalogKey(variant: {
+  size: string;
+  pricePerCube?: unknown;
+  pricePerPiece?: unknown;
+  pricePerSquareMeter?: unknown;
+  piecesPerCube?: unknown;
+}) {
+  const value = (price: unknown) => {
+    const numeric = Number(price);
+    return Number.isFinite(numeric) && numeric > 0 ? String(Math.round(numeric)) : "";
+  };
+  return [
+    variant.size.trim(),
+    value(variant.pricePerCube),
+    value(variant.pricePerPiece),
+    value(variant.pricePerSquareMeter),
+    variant.piecesPerCube ?? "",
+  ].join("|");
 }
 
 async function applyPilmosCatalogSnapshot() {
@@ -303,6 +327,7 @@ async function applyPilmosCatalogSnapshot() {
     });
     const variantBySize = new Map(existingVariants.map((variant) => [variant.size, variant]));
     const desiredSizes = new Set(normalizedVariants.map((variant) => variant.size));
+    const desiredVariantKeys = new Set(normalizedVariants.map(variantCatalogKey));
 
     for (const variant of normalizedVariants) {
       const variantData = {
@@ -333,6 +358,69 @@ async function applyPilmosCatalogSnapshot() {
     }
 
     if (desiredSizes.size > 0) {
+      const currentVariants = await prisma.productVariant.findMany({
+        where: { productId: savedProduct.id },
+        select: {
+          id: true,
+          size: true,
+          pricePerCube: true,
+          pricePerPiece: true,
+          pricePerSquareMeter: true,
+          piecesPerCube: true,
+          sortOrder: true,
+          _count: { select: { orderItems: true } },
+        },
+      });
+      const staleVariants = currentVariants.filter((variant) => !desiredVariantKeys.has(variantCatalogKey(variant)));
+      if (staleVariants.length) {
+        const archived = await prisma.productVariant.updateMany({
+          where: { id: { in: staleVariants.map((variant) => variant.id) } },
+          data: { inStock: false, stockQty: 0 },
+        });
+        variantsArchived += archived.count;
+        const removableIds = staleVariants
+          .filter((variant) => variant._count.orderItems === 0)
+          .map((variant) => variant.id);
+        if (removableIds.length) {
+          const deleted = await prisma.productVariant.deleteMany({
+            where: { id: { in: removableIds } },
+          });
+          variantsDeleted += deleted.count;
+        }
+      }
+
+      const duplicateGroups = new Map<string, typeof currentVariants>();
+      for (const variant of currentVariants) {
+        const key = variantCatalogKey(variant);
+        if (!desiredVariantKeys.has(key)) continue;
+        const group = duplicateGroups.get(key) || [];
+        group.push(variant);
+        duplicateGroups.set(key, group);
+      }
+      const duplicateIds = [...duplicateGroups.values()]
+        .filter((group) => group.length > 1)
+        .flatMap((group) =>
+          group
+            .sort((a, b) => b._count.orderItems - a._count.orderItems || a.sortOrder - b.sortOrder)
+            .slice(1),
+        );
+      if (duplicateIds.length) {
+        const archived = await prisma.productVariant.updateMany({
+          where: { id: { in: duplicateIds.map((variant) => variant.id) } },
+          data: { inStock: false, stockQty: 0 },
+        });
+        variantsArchived += archived.count;
+        const removableIds = duplicateIds
+          .filter((variant) => variant._count.orderItems === 0)
+          .map((variant) => variant.id);
+        if (removableIds.length) {
+          const deleted = await prisma.productVariant.deleteMany({
+            where: { id: { in: removableIds } },
+          });
+          variantsDeleted += deleted.count;
+        }
+      }
+
       const obsoleteWhere = {
         productId: savedProduct.id,
         size: { notIn: Array.from(desiredSizes) },
@@ -1335,10 +1423,6 @@ async function main() {
   try {
     const sellerPricePolicy20260612: Record<string, { factor: number; leadTimeDays: number; deliveryText: string }> = {
       pilorus: { factor: 1, leadTimeDays: 1, deliveryText: "Самовывоз и доставка по Москве и Московской области" },
-      derevotrade: { factor: 0.98, leadTimeDays: 2, deliveryText: "Предварительная розничная цена, требуется проверка продавца" },
-      pilmos: { factor: 1.02, leadTimeDays: 2, deliveryText: "Предварительная розничная цена, требуется проверка продавца" },
-      "derevo-lider": { factor: 0.99, leadTimeDays: 3, deliveryText: "Предварительная розничная цена, требуется проверка продавца" },
-      faneragroup: { factor: 1.04, leadTimeDays: 2, deliveryText: "Предварительная розничная цена, требуется проверка продавца" },
     };
 
     const sellers = await prisma.supplier.findMany({
@@ -1352,6 +1436,7 @@ async function main() {
           tenantId: DEFAULT_TENANT_ID,
           active: true,
         },
+        inStock: true,
         OR: [
           { pricePerCube: { not: null, gt: 0 } },
           { pricePerPiece: { not: null, gt: 0 } },
@@ -1417,38 +1502,26 @@ async function main() {
       }
     }
 
-    const candidateCreateRows = sellers
-      .filter((seller) => seller.slug !== "pilorus")
-      .flatMap((seller) => {
-        const policy = sellerPricePolicy20260612[seller.slug];
-        if (!policy) return [];
-        return variants.map((variant) => ({
-          tenantId: DEFAULT_TENANT_ID,
-          supplierId: seller.id,
-          variantId: variant.id,
-          pricePerCube: normalizePrice(variant.pricePerCube, policy.factor),
-          pricePerPiece: normalizePrice(variant.pricePerPiece, policy.factor),
-          pricePerSquareMeter: normalizePrice(variant.pricePerSquareMeter, policy.factor),
-          stockQty: variant.stockQty,
-          leadTimeDays: policy.leadTimeDays,
-          city: seller.city,
-          deliveryText: policy.deliveryText,
-          notes: `Кандидат продавца: стартовая цена ${Math.round(policy.factor * 100)}% от розницы. Перед публикацией нужен scan/preview.`,
-          preferred: false,
-          active: true,
-        }));
-      });
-
-    let createdCandidateOffers = 0;
-    for (let i = 0; i < candidateCreateRows.length; i += 1000) {
-      const result = await prisma.supplierOffer.createMany({
-        data: candidateCreateRows.slice(i, i + 1000),
-        skipDuplicates: true,
-      });
-      createdCandidateOffers += result.count;
-    }
+    const removedExtraOffers = pilorusSeller
+      ? await prisma.supplierOffer.deleteMany({
+          where: { tenantId: DEFAULT_TENANT_ID, supplierId: { not: pilorusSeller.id } },
+        })
+      : { count: 0 };
+    const removedStaleOffers = await prisma.$executeRaw`
+      DELETE FROM "SupplierOffer" offer
+      WHERE offer."tenantId" = ${DEFAULT_TENANT_ID}
+        AND NOT EXISTS (
+          SELECT 1
+          FROM "ProductVariant" variant
+          JOIN "Product" product ON product.id = variant."productId"
+          WHERE variant.id = offer."variantId"
+            AND product."tenantId" = ${DEFAULT_TENANT_ID}
+            AND product.active = true
+            AND variant."inStock" = true
+        )
+    `;
     console.log(
-      `[data-migrate] PiloRus marketplace offers synced: ${variants.length} variants for seller N1, ${createdCandidateOffers} candidate offers created`,
+      `[data-migrate] PiloRus offers synced: ${variants.length} variants, ${removedExtraOffers.count} external offers removed, ${removedStaleOffers} stale offers removed`,
     );
   } catch (e: any) {
     console.log("[data-migrate] PiloRus marketplace offers seed skipped:", e.message);

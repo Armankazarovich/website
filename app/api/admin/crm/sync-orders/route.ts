@@ -29,12 +29,12 @@ export async function POST(req: NextRequest) {
   }
   const tenantId = getCurrentTenantId();
 
-  // Загружаем все заказы которых ещё нет в CRM (по convertedOrderId)
-  const existingLeadOrderIds = await prisma.lead.findMany({
+  // Загружаем все связанные CRM-лиды и обновляем их вместе с импортом новых заказов.
+  const existingLeads = await prisma.lead.findMany({
     where: { tenantId, convertedOrderId: { not: null } },
-    select: { convertedOrderId: true },
+    select: { id: true, convertedOrderId: true },
   });
-  const alreadySyncedIds = new Set(existingLeadOrderIds.map(l => l.convertedOrderId));
+  const leadByOrderId = new Map(existingLeads.map((lead) => [lead.convertedOrderId, lead.id]));
 
   const orders = await prisma.order.findMany({
     where: { tenantId, deletedAt: null },
@@ -42,34 +42,42 @@ export async function POST(req: NextRequest) {
     orderBy: { createdAt: "desc" },
   });
 
-  const toImport = orders.filter(o => !alreadySyncedIds.has(o.id));
-
-  if (toImport.length === 0) {
-    return NextResponse.json({ imported: 0, message: "Все заказы уже в CRM" });
-  }
-
   let imported = 0;
-  for (const order of toImport) {
+  let updated = 0;
+  for (const order of orders) {
     const stage = ORDER_STATUS_TO_LEAD_STAGE[order.status] || "NEW";
     const itemsSummary = order.items
       .slice(0, 3)
       .map(i => `${i.productName} ${i.variantSize}`)
       .join(", ");
+    const leadData = {
+      name: order.guestName || "Клиент",
+      phone: order.guestPhone || null,
+      email: order.guestEmail || null,
+      source: "WEBSITE" as const,
+      stage: stage as any,
+      value: Number(order.totalAmount),
+      comment: itemsSummary ? `Заказ #${order.orderNumber}: ${itemsSummary}` : `Заказ #${order.orderNumber}`,
+      tags: ["Заказ", `#${order.orderNumber}`],
+      convertedOrderId: order.id,
+      convertedAt: ["DELIVERED", "COMPLETED"].includes(order.status) ? order.updatedAt : null,
+      createdAt: order.createdAt,
+    };
+
+    const existingLeadId = leadByOrderId.get(order.id);
+    if (existingLeadId) {
+      await prisma.lead.update({
+        where: { id: existingLeadId },
+        data: leadData,
+      });
+      updated++;
+      continue;
+    }
 
     await prisma.lead.create({
       data: {
         tenantId,
-        name: order.guestName || "Клиент",
-        phone: order.guestPhone || null,
-        email: order.guestEmail || null,
-        source: "WEBSITE",
-        stage: stage as any,
-        value: Number(order.totalAmount),
-        comment: itemsSummary ? `Заказ #${order.orderNumber}: ${itemsSummary}` : `Заказ #${order.orderNumber}`,
-        tags: ["Заказ", `#${order.orderNumber}`],
-        convertedOrderId: order.id,
-        convertedAt: ["DELIVERED", "COMPLETED"].includes(order.status) ? order.updatedAt : null,
-        createdAt: order.createdAt,
+        ...leadData,
       },
     });
     imported++;
@@ -77,8 +85,9 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     imported,
+    updated,
     total: orders.length,
-    message: `Импортировано ${imported} заказов в CRM`,
+    message: `CRM синхронизирована: новых ${imported}, обновлено ${updated}`,
   });
 }
 

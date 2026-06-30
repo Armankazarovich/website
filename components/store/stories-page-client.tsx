@@ -58,7 +58,7 @@ type Story = {
 };
 
 const PHOTO_STORY_MS = 6500;
-const STORY_VIDEO_FALLBACK_POSTER = "/images/production/hero-main.webp";
+const STORY_VIDEO_FALLBACK_POSTER = "";
 
 function isVideo(type: StoreStoryKind) {
   return type === "VIDEO" || type === "LIVE";

@@ -40,20 +40,9 @@ export async function GET() {
   };
 
   // ── 4. Telegram бот ───────────────────────────────────────────────────────
-  if (process.env.TELEGRAM_BOT_TOKEN) {
-    try {
-      const res = await fetch(
-        `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getMe`,
-        { signal: AbortSignal.timeout(5000) }
-      );
-      const data = await res.json();
-      checks.telegram = { ok: data.ok === true, details: data.result?.username || "ошибка" };
-    } catch (e: any) {
-      checks.telegram = { ok: false, error: "таймаут или недоступен" };
-    }
-  } else {
-    checks.telegram = { ok: false, error: "TELEGRAM_BOT_TOKEN не настроен" };
-  }
+  checks.telegram = process.env.TELEGRAM_BOT_TOKEN
+    ? { ok: true, details: "token configured" }
+    : { ok: false, error: "TELEGRAM_BOT_TOKEN не настроен" };
 
   // ── 5. SMTP (проверяем наличие переменных, не отправляем) ──────────────────
   checks.email = {

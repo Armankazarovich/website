@@ -69,6 +69,7 @@ export function PushSubscription() {
     if (!("Notification" in window)) return;
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     if (Notification.permission === "denied") return;
+    if (Notification.permission === "default") return;
 
     async function init() {
       if (Notification.permission === "denied") return;
@@ -93,7 +94,18 @@ export function PushSubscription() {
       // Гости с permission === "default" подписываются через PWA баннер
     }
 
-    init();
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    };
+
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      const idleId = idleWindow.requestIdleCallback(() => void init(), { timeout: 5000 });
+      return () => idleWindow.cancelIdleCallback?.(idleId);
+    }
+
+    const timer = window.setTimeout(() => void init(), 2500);
+    return () => window.clearTimeout(timer);
   }, [session?.user?.id]); // перезапуск при логине/логауте
 
   return <PushPromptBanner />;

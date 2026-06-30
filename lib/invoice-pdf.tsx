@@ -26,9 +26,26 @@ Font.register({
 const LOGO = path.join(process.cwd(), "public", "logo.png");
 
 function orderUnitLabel(unitType: string) {
+  if (unitType === "CUBE") return "м3";
+  if (unitType === "SQUARE") return "м2";
+  if (unitType === "PIECE") return "шт";
   return unitType === "CUBE" || unitType === "PIECE" || unitType === "SQUARE"
     ? getUnitLabel(unitType as ProductUnitType)
-    : unitType;
+    : normalizePdfText(unitType);
+}
+
+function normalizePdfText(value?: string | null) {
+  return String(value ?? "")
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[\u00a0\u202f]/g, " ")
+    .replace(/[×✕]/g, "x")
+    .replace(/\s+,/g, ",")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function formatMoney(value: number) {
+  return `${Math.round(value).toLocaleString("ru-RU")} руб.`;
 }
 
 const styles = StyleSheet.create({
@@ -117,6 +134,8 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
     month: "long",
     year: "numeric",
   });
+  const deliveryCost = Number(order.deliveryCost ?? 0);
+  const grandTotal = Number(order.totalAmount);
 
   return (
     <Document title={`Счёт №${order.orderNumber} — ПилоРус`}>
@@ -145,11 +164,11 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Клиент</Text>
           <View style={styles.customerBlock}>
-            <Text style={styles.customerName}>{order.guestName || "Клиент"}</Text>
+            <Text style={styles.customerName}>{normalizePdfText(order.guestName) || "Клиент"}</Text>
             <Text style={styles.customerInfo}>
-              {order.guestPhone ? "Телефон: " + order.guestPhone + "\n" : ""}
-              {order.guestEmail ? "Email: " + order.guestEmail + "\n" : ""}
-              {order.deliveryAddress ? "Адрес доставки: " + order.deliveryAddress : ""}
+              {order.guestPhone ? "Телефон: " + normalizePdfText(order.guestPhone) + "\n" : ""}
+              {order.guestEmail ? "Email: " + normalizePdfText(order.guestEmail) + "\n" : ""}
+              {order.deliveryAddress ? "Адрес доставки: " + normalizePdfText(order.deliveryAddress) : ""}
             </Text>
           </View>
         </View>
@@ -158,12 +177,12 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
         <View style={styles.metaRow}>
           <Text style={styles.metaItem}>
             <Text style={styles.metaLabel}>Оплата: </Text>
-            {order.paymentMethod || "—"}
+            {normalizePdfText(order.paymentMethod) || "—"}
           </Text>
           {order.comment ? (
             <Text style={styles.metaItem}>
               <Text style={styles.metaLabel}>Комментарий: </Text>
-              {order.comment}
+              {normalizePdfText(order.comment)}
             </Text>
           ) : null}
         </View>
@@ -185,21 +204,21 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
               const unit = orderUnitLabel(item.unitType);
               return (
                 <View key={i} style={[styles.tableRow, i % 2 === 1 ? styles.tableRowAlt : {}]}>
-                  <Text style={styles.colName}>{item.productName}</Text>
-                  <Text style={styles.colSize}>{item.variantSize}</Text>
+                  <Text style={styles.colName}>{normalizePdfText(item.productName)}</Text>
+                  <Text style={styles.colSize}>{normalizePdfText(item.variantSize)}</Text>
                   <Text style={styles.colQty}>{qty} {unit}</Text>
-                  <Text style={styles.colPrice}>{price.toLocaleString("ru-RU")} руб.</Text>
-                  <Text style={styles.colTotal}>{(qty * price).toLocaleString("ru-RU")} руб.</Text>
+                  <Text style={styles.colPrice}>{formatMoney(price)}</Text>
+                  <Text style={styles.colTotal}>{formatMoney(qty * price)}</Text>
                 </View>
               );
             })}
-            {order.deliveryCost && Number(order.deliveryCost) > 0 ? (
+            {deliveryCost > 0 ? (
               <View style={[styles.tableRow, { backgroundColor: "#f0f4ff" }]}>
                 <Text style={styles.colName}>Доставка</Text>
                 <Text style={styles.colSize}>—</Text>
                 <Text style={styles.colQty}>—</Text>
                 <Text style={styles.colPrice}>—</Text>
-                <Text style={styles.colTotal}>{Number(order.deliveryCost).toLocaleString("ru-RU")} руб.</Text>
+                <Text style={styles.colTotal}>{formatMoney(deliveryCost)}</Text>
               </View>
             ) : null}
           </View>
@@ -207,7 +226,7 @@ function InvoiceDocument({ order }: { order: InvoiceOrder }) {
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>ИТОГО:</Text>
             <Text style={styles.totalAmount}>
-              {Number(order.totalAmount).toLocaleString("ru-RU")} руб.
+              {formatMoney(grandTotal)}
             </Text>
           </View>
         </View>

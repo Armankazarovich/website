@@ -156,6 +156,34 @@ function pickBestRow(rows: VariantRow[], saleUnit: VariantSelectorProps["saleUni
   );
 }
 
+function filtersFromMeta(meta: VariantOptionMeta): VariantFilters {
+  return {
+    grade: meta.grade,
+    section: meta.section,
+    length: meta.length,
+  };
+}
+
+function recoverVisibleRow(
+  rows: VariantRow[],
+  filters: VariantFilters,
+  saleUnit: VariantSelectorProps["saleUnit"],
+) {
+  const activeFilters = (Object.entries(filters) as Array<[VariantOptionKey, string | null]>)
+    .filter((entry): entry is [VariantOptionKey, string] => Boolean(entry[1]));
+  if (activeFilters.length === 0) return pickBestRow(rows, saleUnit);
+
+  const scored = rows
+    .map((row) => {
+      const score = activeFilters.reduce((sum, [key, value]) => sum + (row.meta[key] === value ? 1 : 0), 0);
+      return { row, score, selectable: isSelectableRow(row, saleUnit) ? 1 : 0 };
+    })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score || b.selectable - a.selectable);
+
+  return scored[0]?.row ?? pickBestRow(rows, saleUnit);
+}
+
 export function VariantSelector({
   productId, productName, productSlug, productImage, saleUnit, variants, phoneLink,
 }: VariantSelectorProps) {
@@ -265,12 +293,7 @@ export function VariantSelector({
       const fallbackRows = variantRows.filter((row) => row.meta[key] === value);
       best = pickBestRow(fallbackRows, saleUnit);
       if (best) {
-        nextFilters = {
-          grade: best.meta.grade,
-          section: best.meta.section,
-          length: best.meta.length,
-          [key]: value,
-        };
+        nextFilters = filtersFromMeta(best.meta);
       }
     }
 
@@ -293,6 +316,14 @@ export function VariantSelector({
     const best = pickBestRow(visibleRows, saleUnit);
     if (best) setSelectedVariant(best.variant);
   }, [activeVariant, visibleRows, saleUnit]);
+
+  useEffect(() => {
+    if (activeVariant || variantQuery.trim() || visibleRows.length > 0) return;
+    const best = recoverVisibleRow(variantRows, selectedFilters, saleUnit);
+    if (!best) return;
+    setSelectedVariant(best.variant);
+    setFilters(filtersFromMeta(best.meta));
+  }, [activeVariant, visibleRows.length, variantQuery, variantRows, saleUnit, selectedGrade, selectedSection, selectedLength]);
 
   // Calculate equivalent in other unit
   const equivalentInfo = () => {

@@ -60,7 +60,7 @@ const checkoutSchema = z.object({
   paymentMethod: z.enum(["cash", "invoice"]),
   comment: z.string().optional(),
   promoCode: z.string().optional(),
-  contactMethod: z.enum(["phone", "whatsapp", "telegram", "sms"]).optional(),
+  contactMethod: z.enum(["phone", "whatsapp", "telegram", "max", "sms"]).optional(),
   contactExtra: z.string().optional(),
   // Company fields (optional, validated manually)
   orgName: z.string().optional(),
@@ -517,6 +517,7 @@ export default function CheckoutPage() {
           phone: "Телефон",
           whatsapp: "WhatsApp",
           telegram: "Telegram",
+          max: "MAX",
           sms: "SMS",
         };
         const contactLine = `Способ связи: ${labels[data.contactMethod]}${data.contactExtra ? ` — ${data.contactExtra}` : ""}`;
@@ -1298,6 +1299,27 @@ export default function CheckoutPage() {
                     ),
                   },
                   {
+                    value: "max",
+                    label: "MAX",
+                    icon: (
+                      <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                        <path
+                          d="M5 6.5A3.5 3.5 0 018.5 3h7A3.5 3.5 0 0119 6.5v5A3.5 3.5 0 0115.5 15H12l-4.5 4v-4A3.5 3.5 0 014 11.5v-5z"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d="M8 8.5h8M8 11.5h5"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    ),
+                  },
+                  {
                     value: "sms",
                     label: "SMS",
                     icon: (
@@ -1338,12 +1360,14 @@ export default function CheckoutPage() {
                 );
               })}
             </div>
-            {(contactMethod === "telegram" || contactMethod === "whatsapp") && (
+            {(contactMethod === "telegram" || contactMethod === "whatsapp" || contactMethod === "max") && (
               <div>
                 <Label htmlFor="contactExtra">
                   {contactMethod === "telegram"
                     ? "Ваш Telegram (@username)"
-                    : "Номер WhatsApp"}
+                    : contactMethod === "max"
+                      ? "Ваш MAX или телефон"
+                      : "Номер WhatsApp"}
                 </Label>
                 <Input
                   id="contactExtra"

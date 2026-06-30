@@ -96,6 +96,13 @@ const ScrollToTop = dynamic(
     })),
   { ssr: false },
 );
+const PublicIssueReport = dynamic(
+  () =>
+    import("@/components/store/public-issue-report").then((m) => ({
+      default: m.PublicIssueReport,
+    })),
+  { ssr: false },
+);
 
 export default async function StoreLayout({
   children,
@@ -154,6 +161,7 @@ export default async function StoreLayout({
         <SearchDrawer />
         <CartDrawer />
         <ScrollToTop />
+        <PublicIssueReport />
       </div>
     </StoreSettingsProvider>
   );

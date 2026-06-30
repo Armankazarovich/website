@@ -202,9 +202,29 @@ export function Header({ categories = [], phones = DEFAULT_PHONES, workingHours,
   useEffect(() => {
     useCartStore.getState().hydrateCart();
     setMounted(true);
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handler);
-    return () => window.removeEventListener("scroll", handler);
+
+    let lastScrolled = window.scrollY > 20;
+    let frame = 0;
+    setScrolled(lastScrolled);
+
+    const update = () => {
+      frame = 0;
+      const nextScrolled = window.scrollY > 20;
+      if (nextScrolled === lastScrolled) return;
+      lastScrolled = nextScrolled;
+      setScrolled(nextScrolled);
+    };
+
+    const handler = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", handler, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handler);
+      if (frame) window.cancelAnimationFrame(frame);
+    };
   }, []);
 
   useEffect(() => {

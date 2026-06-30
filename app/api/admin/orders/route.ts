@@ -201,7 +201,7 @@ export async function POST(req: NextRequest) {
     const orderDeliveryCost = Number((order as any).deliveryCost ?? 0);
 
     // Telegram — сохраняем message_id для авто-удаления при финальных статусах
-    const telegramMessageId = await sendTelegramOrderNotification({
+    sendTelegramOrderNotification({
       id: order.id,
       tenantId,
       orderNumber: order.orderNumber,
@@ -216,10 +216,12 @@ export async function POST(req: NextRequest) {
       sourceUserId: session.user.id,
       notificationSource: "admin-order",
       items: orderItems,
-    });
-    if (telegramMessageId) {
-      await prisma.order.update({ where: { id: order.id }, data: { telegramMessageId } });
-    }
+    })
+      .then((telegramMessageId) => {
+        if (!telegramMessageId) return null;
+        return prisma.order.update({ where: { id: order.id }, data: { telegramMessageId } });
+      })
+      .catch(console.error);
 
     // Push сотрудникам
     sendPushToStaff({

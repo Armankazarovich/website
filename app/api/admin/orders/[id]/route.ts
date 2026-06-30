@@ -319,7 +319,18 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   }
 
   // Telegram + email при редактировании (без смены статуса)
-  const isOrderEdit = !status && (guestName !== undefined || guestPhone !== undefined || removeItemIds?.length || addItems?.length || totalAmount !== undefined || deliveryCost !== undefined);
+  const isOrderEdit = !status && (
+    guestName !== undefined ||
+    guestPhone !== undefined ||
+    guestEmail !== undefined ||
+    deliveryAddress !== undefined ||
+    comment !== undefined ||
+    paymentMethod !== undefined ||
+    removeItemIds?.length ||
+    addItems?.length ||
+    totalAmount !== undefined ||
+    deliveryCost !== undefined
+  );
   if (isOrderEdit) {
     enqueueTerminalOrderLifecycle({
       id: order.id,
@@ -343,6 +354,60 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }).catch(console.error);
 
     // Отправить обновлённый счёт клиенту если есть email
+    const editParts = [
+      deliveryAddress !== undefined ? "доставка" : "",
+      deliveryCost !== undefined ? "стоимость доставки" : "",
+      paymentMethod !== undefined ? "оплата" : "",
+      comment !== undefined ? "комментарий" : "",
+      removeItemIds?.length || addItems?.length ? "состав заказа" : "",
+      totalAmount !== undefined ? "сумма" : "",
+    ].filter(Boolean);
+    const editSummary = editParts.length > 0 ? editParts.join(", ") : "данные заказа";
+
+    sendPushToStaff({
+      title: `Заказ #${order.orderNumber} обновлён`,
+      body: `${order.guestName || "Клиент"}: ${editSummary}`,
+      url: `/admin/orders/${order.id}`,
+      icon: "/icons/icon-192x192.png",
+    }, {
+      tenantId,
+      source: "ORDER",
+      sourceUserId: actorId,
+      recipientRole: "STAFF",
+      entityType: "ORDER",
+      entityId: order.id,
+      entityLabel: `Order #${order.orderNumber}`,
+      entityHref: `/admin/orders/${order.id}`,
+      metadata: {
+        eventKey: "order.updated.staff",
+        orderNumber: order.orderNumber,
+        fields: editParts,
+      },
+    }).catch(console.error);
+
+    if (order.userId) {
+      sendPushToUser(order.userId, {
+        title: `Заказ #${order.orderNumber} обновлён`,
+        body: "Менеджер обновил детали заказа. Проверьте актуальную сумму и доставку.",
+        url: `/track?order=${order.orderNumber}&phone=${encodeURIComponent(order.guestPhone || "")}`,
+        icon: "/icons/icon-192x192.png",
+      }, {
+        tenantId,
+        source: "ORDER",
+        sourceUserId: actorId,
+        recipientLabel: order.guestName || order.guestEmail || order.guestPhone || null,
+        entityType: "ORDER",
+        entityId: order.id,
+        entityLabel: `Order #${order.orderNumber}`,
+        entityHref: `/admin/orders/${order.id}`,
+        metadata: {
+          eventKey: "order.updated.customer",
+          orderNumber: order.orderNumber,
+          fields: editParts,
+        },
+      }).catch(console.error);
+    }
+
     const orderItems = (order as any).items?.map((item: any) => ({
       productName: item.productName,
       variantSize: item.variantSize,

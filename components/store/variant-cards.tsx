@@ -64,6 +64,31 @@ function variantMatchesFilters(row: VariantRow, filters: VariantFilters) {
   );
 }
 
+function variantMatchesOptionDependencies(row: VariantRow, filters: VariantFilters, key: VariantOptionKey) {
+  if (key === "grade") return true;
+  if (key === "section") return !filters.grade || row.meta.grade === filters.grade;
+  return (
+    (!filters.grade || row.meta.grade === filters.grade) &&
+    (!filters.section || row.meta.section === filters.section)
+  );
+}
+
+function filtersFromMeta(meta: VariantOptionMeta): VariantFilters {
+  return {
+    grade: meta.grade,
+    section: meta.section,
+    length: meta.length,
+  };
+}
+
+function isSelectableVariant(row: VariantRow, saleUnit: string) {
+  return isProductVariantPurchasable(row.variant) && Boolean(getVariantPurchaseOption(row.variant, saleUnit));
+}
+
+function pickBestRow(rows: VariantRow[], saleUnit: string) {
+  return rows.find((row) => isSelectableVariant(row, saleUnit)) || rows[0] || null;
+}
+
 export function VariantCards({
   productId,
   productName,
@@ -111,7 +136,25 @@ export function VariantCards({
       [key]: value,
     };
 
+    if (variantRows.some((row) => variantMatchesFilters(row, nextFilters))) {
+      setFilters(nextFilters);
+      return;
+    }
+
+    if (value) {
+      const best = pickBestRow(variantRows.filter((row) => row.meta[key] === value), saleUnit);
+      if (best) {
+        nextFilters = filtersFromMeta(best.meta);
+      }
+    }
+
     setFilters(nextFilters);
+  };
+
+  const isOptionVisible = (key: VariantOptionKey, value: string) => {
+    return variantRows.some(
+      (row) => row.meta[key] === value && variantMatchesOptionDependencies(row, selectedFilters, key) && isSelectableVariant(row, saleUnit),
+    );
   };
 
   const handleAdd = (e: React.MouseEvent<HTMLDivElement>, v: Variant) => {
@@ -149,6 +192,7 @@ export function VariantCards({
           { keyName: "length", label: "Длина", values: lengthOptions, selected: selectedLength },
         ]}
         onSelect={applyFilter}
+        isOptionVisible={isOptionVisible}
       />
       {variants.length > 12 && (
         <label className="relative block">

@@ -36,9 +36,19 @@ export function Analytics({ yandexMetrikaId, googleAnalyticsId }: AnalyticsProps
                 url: location.href
               });
 
+              var scheduleMetrikaGoal = function(send) {
+                if (typeof window.requestIdleCallback === "function") {
+                  window.requestIdleCallback(send, { timeout: 1500 });
+                  return;
+                }
+                setTimeout(send, 0);
+              };
+
               window.arayMetrikaGoal = function(goal, params) {
                 if (!goal || typeof ym !== "function") return;
-                ym(${metrikaId}, "reachGoal", goal, params || {});
+                scheduleMetrikaGoal(function() {
+                  ym(${metrikaId}, "reachGoal", goal, params || {});
+                });
               };
               (window.arayMetrikaGoalQueue || []).forEach(function(item) {
                 window.arayMetrikaGoal(item.goal, item.params || {});

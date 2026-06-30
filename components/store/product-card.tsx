@@ -206,7 +206,8 @@ function pickDefaultCardVariant(variants: Variant[], saleUnit: ProductCardProps[
 export function ProductCard({
   id, slug, name, category, shortDescription, description, images, saleUnit, variants, cardTags, viewMode = "grid", featured,
 }: ProductCardProps) {
-  const { addItem, updateQuantity, items } = useCartStore();
+  const addItem = useCartStore((state) => state.addItem);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
   const { toast } = useToast();
   const { cardStyle } = useStoreSettings();
   const [imgError, setImgError] = useState(false);
@@ -314,9 +315,25 @@ export function ProductCard({
 
   // Live quantity from cart store
   const cartItemId = selectedVariant ? `${selectedVariant.id}-${effectiveUnit}` : null;
-  const cartQty = portalReady && cartItemId ? (items.find((i) => i.id === cartItemId)?.quantity ?? 0) : 0;
+  const cartQuantitySnapshot = useCartStore(
+    React.useCallback((state) => {
+      if (!selectedVariant) return "0|0|0";
+      const read = (unitType: UnitType) =>
+        state.items.find((item) => item.id === `${selectedVariant.id}-${unitType}`)?.quantity ?? 0;
+      return `${read("CUBE")}|${read("SQUARE")}|${read("PIECE")}`;
+    }, [selectedVariant?.id]),
+  );
+  const [cubeCartQty = 0, squareCartQty = 0, pieceCartQty = 0] = cartQuantitySnapshot
+    .split("|")
+    .map((value) => Number(value) || 0);
+  const cartQuantityByUnit: Record<UnitType, number> = {
+    CUBE: cubeCartQty,
+    SQUARE: squareCartQty,
+    PIECE: pieceCartQty,
+  };
+  const cartQty = portalReady && cartItemId ? cartQuantityByUnit[effectiveUnit] : 0;
   const getCartQtyForUnit = (unitType: UnitType) =>
-    portalReady && selectedVariant ? (items.find((item) => item.id === `${selectedVariant.id}-${unitType}`)?.quantity ?? 0) : 0;
+    portalReady && selectedVariant ? cartQuantityByUnit[unitType] : 0;
   const getStockLimitForUnit = (unitType: UnitType) => getPurchasableQuantityLimit(selectedVariant, unitType);
   const getRemainingQuantity = (unitType: UnitType) => {
     const limit = getStockLimitForUnit(unitType);

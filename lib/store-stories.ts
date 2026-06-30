@@ -178,7 +178,7 @@ export async function getPublicStoreStories({
     where: { tenantId, ...scheduleWhere(now) },
     select: storySelect(),
     orderBy,
-    take: Math.max(safeTake, 80),
+    take: relatedType && relatedId ? Math.max(safeTake, 80) : safeTake,
   });
 
   const relatedStoriesPromise = relatedType && relatedId

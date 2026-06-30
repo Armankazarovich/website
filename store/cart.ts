@@ -122,6 +122,27 @@ function writeCartItemsToStorage(items: CartItem[]) {
   }
 }
 
+function queueCartMetrikaGoal(detail: {
+  goal: string;
+  params: Record<string, string | number>;
+}) {
+  if (typeof window === "undefined") return;
+
+  const send = () => {
+    window.dispatchEvent(new CustomEvent("aray:metrika-goal", { detail }));
+  };
+  const idleWindow = window as Window & {
+    requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+  };
+
+  if (typeof idleWindow.requestIdleCallback === "function") {
+    idleWindow.requestIdleCallback(send, { timeout: 1200 });
+    return;
+  }
+
+  window.setTimeout(send, 0);
+}
+
 function getInitialCartItems(): CartItem[] {
   return typeof window === "undefined" ? [] : readCartItemsFromStorage();
 }
@@ -159,22 +180,6 @@ export const useCartStore = create<CartStore>()((set, get) => ({
     const itemQuantity = normalizeQuantity(item.quantity, maxQuantity);
     if (itemQuantity <= 0) return;
 
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent("aray:metrika-goal", {
-          detail: {
-            goal: "aray_cart_add",
-            params: {
-              product: item.productName,
-              variantId: item.variantId,
-              quantity: itemQuantity,
-              unit: item.unitType,
-            },
-          },
-        }),
-      );
-    }
-
     const nextItems = existing
       ? currentItems.map((i) =>
           i.id === id
@@ -191,6 +196,15 @@ export const useCartStore = create<CartStore>()((set, get) => ({
 
     set({ items: nextItems });
     writeCartItemsToStorage(nextItems);
+    queueCartMetrikaGoal({
+      goal: "aray_cart_add",
+      params: {
+        product: item.productName,
+        variantId: item.variantId,
+        quantity: itemQuantity,
+        unit: item.unitType,
+      },
+    });
   },
 
   removeItem: (id) => {

@@ -175,8 +175,10 @@ export function PwaInstall() {
 
   const handleInstall = async () => {
     writePreferredPwaStart(context.id, context.startUrl);
+    const currentPrompt = installPrompt ?? getStoredPwaInstallPrompt();
+    if (currentPrompt && currentPrompt !== installPrompt) setInstallPrompt(currentPrompt);
 
-    if (!installPrompt || platform === "ios-safari" || platform === "ios-other") {
+    if (!currentPrompt || platform === "ios-safari" || platform === "ios-other") {
       setShowSteps(true);
       setInstallState("idle");
       return;
@@ -185,8 +187,8 @@ export function PwaInstall() {
     setInstallState("installing");
 
     try {
-      await installPrompt.prompt();
-      const result = await installPrompt.userChoice;
+      await currentPrompt.prompt();
+      const result = await currentPrompt.userChoice;
       clearStoredPwaInstallPrompt();
       setInstallPrompt(null);
 

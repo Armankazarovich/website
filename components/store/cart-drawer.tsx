@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -31,16 +31,22 @@ function CartImage({ src, alt }: { src: string; alt: string }) {
 }
 
 export function CartDrawer() {
-  const { cartOpen, setCartOpen, items, removeItem, updateQuantity, totalPrice, totalItems } = useCartStore();
+  const cartOpen = useCartStore((state) => state.cartOpen);
+  const setCartOpen = useCartStore((state) => state.setCartOpen);
+  const items = useCartStore((state) => state.items);
+  const removeItem = useCartStore((state) => state.removeItem);
+  const updateQuantity = useCartStore((state) => state.updateQuantity);
   const [mounted, setMounted] = useState(false);
   useAdminOverlayGuard(cartOpen);
 
   useEffect(() => { setMounted(true); }, []);
 
-  if (!mounted) return null;
+  const total = useMemo(() => items.reduce((sum, item) => sum + item.price * item.quantity, 0), [items]);
+  const count = items.length;
+  const drawerItems = useMemo(() => items.slice(0, 12), [items]);
+  const hiddenCount = Math.max(0, items.length - drawerItems.length);
 
-  const total = totalPrice();
-  const count = totalItems();
+  if (!mounted) return null;
 
   return (
     <PopupPortal>
@@ -109,8 +115,8 @@ export function CartDrawer() {
                 </div>
               ) : (
                 <div className="divide-y divide-border/50">
-                  {items.map(item => (
-                    <div key={item.id} className="flex gap-3 px-4 py-4">
+                  {drawerItems.map(item => (
+                    <div key={item.id} className="flex gap-3 px-4 py-3">
                       {/* Image */}
                       <Link
                         href={`/product/${item.productSlug}`}
@@ -169,6 +175,11 @@ export function CartDrawer() {
                       </div>
                     </div>
                   ))}
+                  {hiddenCount > 0 && (
+                    <div className="px-4 py-3 text-center text-xs text-muted-foreground">
+                      Еще {hiddenCount} позиций в подробной корзине
+                    </div>
+                  )}
                 </div>
               )}
             </div>

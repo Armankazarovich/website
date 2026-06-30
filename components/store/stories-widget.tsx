@@ -44,7 +44,7 @@ const PHOTO_STORY_MS = 6500;
 const STORIES_WIDGET_HIDDEN_KEY = "pilorus:stories-widget-hidden";
 const STORY_PREVIEW_VIDEO_DELAY_MS = 1800;
 const STORY_PREVIEW_VIDEO_MAX_BYTES = 12 * 1024 * 1024;
-const STORY_VIDEO_FALLBACK_POSTER = "/images/production/hero-main.webp";
+const STORY_VIDEO_FALLBACK_POSTER = "";
 
 function deriveEntity(pathname: string) {
   const productMatch = pathname.match(/^\/product\/([^/?#]+)/);
@@ -342,6 +342,7 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
   useAdminOverlayGuard(lockPageScroll);
 
   const entity = useMemo(() => deriveEntity(pathname), [pathname]);
+  const isCatalogPath = pathname === "/catalog" || pathname.startsWith("/catalog/");
   const current = stories[index] || stories[0];
   const total = stories.length;
 
@@ -536,7 +537,7 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
           onClick={openStory}
           className="group relative h-[214px] w-full overflow-hidden rounded-2xl border border-primary/28 bg-card shadow-2xl shadow-black/25 transition-colors hover:border-primary/58"
         >
-          <StoryMedia story={current} expanded={false} allowPreviewVideo />
+          <StoryMedia story={current} expanded={false} allowPreviewVideo={!isCatalogPath} />
           <span className="absolute inset-0 bg-background/68" />
           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-1 text-[10px] font-semibold text-foreground">
             {current.type === "LIVE" ? <Radio className="h-3 w-3" /> : <CirclePlay className="h-3 w-3" />}
@@ -583,7 +584,7 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
           aria-label="Открыть сторис"
           title={current.title}
         >
-          <StoryMedia story={current} expanded={false} allowPreviewVideo />
+          <StoryMedia story={current} expanded={false} allowPreviewVideo={!isCatalogPath} />
           <span className="absolute inset-0 bg-background/35" />
           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/95 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-foreground">
             {current.type === "LIVE" ? <Radio className="h-2.5 w-2.5 text-primary" /> : <CirclePlay className="h-2.5 w-2.5 text-primary" />}

@@ -6,7 +6,8 @@ const path = require("path");
 const DEFAULT_CSV = "C:/Users/StormPC/Downloads/wc-product-export-11-6-2026-1781182114661.csv";
 const DEFAULT_OUT = "prisma/catalog/pilmos-catalog-2026-06-14.json";
 const DEFAULT_REPORT = "tmp/pilmos-catalog-snapshot-report.json";
-const PRICE_FACTOR = 0.99;
+const PRICE_FACTOR = 1;
+const PRICE_DELTA_RUB = 10;
 
 const C = {
   ID: 0,
@@ -191,9 +192,7 @@ function getPrice(row) {
 }
 
 function priceForPiloRus(sourcePrice) {
-  const discounted = sourcePrice * PRICE_FACTOR;
-  if (discounted >= 1000) return Math.max(1, Math.round(discounted / 10) * 10);
-  return Math.max(1, Math.round(discounted));
+  return Math.max(1, Math.round(sourcePrice) - PRICE_DELTA_RUB);
 }
 
 function splitImages(value) {
@@ -981,6 +980,7 @@ function main() {
     generatedAt: new Date().toISOString(),
     sourceCsv: csvPath,
     sourcePriceFactor: PRICE_FACTOR,
+    sourcePriceDeltaRub: PRICE_DELTA_RUB,
     ...stats,
     snapshotProducts: products.length,
     snapshotVariants: products.reduce((sum, product) => sum + product.variants.length, 0),
@@ -1005,8 +1005,9 @@ function main() {
     generatedAt: report.generatedAt,
     source: "Pilmos WooCommerce CSV",
     sourceCsv: csvPath,
-    sourcePricePolicy: "PiloRus price = Pilmos CSV price * 0.99, rounded",
+    sourcePricePolicy: `PiloRus price = Pilmos CSV price - ${PRICE_DELTA_RUB} RUB`,
     priceFactor: PRICE_FACTOR,
+    priceDeltaRub: PRICE_DELTA_RUB,
     categories,
     products,
   };

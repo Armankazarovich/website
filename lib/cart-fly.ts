@@ -1,15 +1,23 @@
 "use client";
 
 export function flyToCart(fromElement: HTMLElement, _imageUrl?: string | null) {
-  flyToTarget(fromElement, "[data-cart-icon]", "cart", _imageUrl);
+  try {
+    flyToTarget(fromElement, "[data-cart-icon]", "cart", _imageUrl);
+  } catch (error) {
+    console.warn("[cart-fly] cart animation skipped", error);
+  }
 }
 
 export function flyToCompare(fromElement: HTMLElement) {
-  flyToTarget(fromElement, "[data-compare-icon]", "compare");
+  try {
+    flyToTarget(fromElement, "[data-compare-icon]", "compare");
+  } catch (error) {
+    console.warn("[cart-fly] compare animation skipped", error);
+  }
 }
 
 function flyToTarget(fromElement: HTMLElement, targetSelector: string, icon: "cart" | "compare", imageUrl?: string | null) {
-  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+  if (shouldSkipMotion()) return;
 
   const targetIcon = Array.from(document.querySelectorAll(targetSelector))
     .map((node) => node as HTMLElement)
@@ -51,6 +59,8 @@ function flyToTarget(fromElement: HTMLElement, targetSelector: string, icon: "ca
     border-radius: 50%;
     left: ${startX}px;
     top: ${startY}px;
+    transform: translate3d(0, 0, 0) scale(1);
+    will-change: transform, opacity;
     background: ${brandColor};
     box-shadow: 0 4px 20px ${brandColor}99, 0 0 0 0 ${brandColor}4D;
     display: flex;
@@ -93,9 +103,7 @@ function flyToTarget(fromElement: HTMLElement, targetSelector: string, icon: "ca
     const scale = 1 - 0.6 * eased;
     const opacity = t > 0.8 ? 1 - (t - 0.8) / 0.2 : 1;
 
-    el.style.left = `${x}px`;
-    el.style.top = `${y}px`;
-    el.style.transform = `scale(${scale})`;
+    el.style.transform = `translate3d(${x - startX}px, ${y - startY}px, 0) scale(${scale})`;
     el.style.opacity = `${opacity}`;
 
     if (t < 1) {
@@ -117,6 +125,17 @@ function flyToTarget(fromElement: HTMLElement, targetSelector: string, icon: "ca
   }
 
   requestAnimationFrame(animate);
+}
+
+function shouldSkipMotion() {
+  if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return true;
+  if (window.matchMedia?.("(max-width: 640px)").matches) return true;
+
+  const connection = (navigator as Navigator & {
+    connection?: { saveData?: boolean; effectiveType?: string };
+  }).connection;
+  if (connection?.saveData) return true;
+  return typeof connection?.effectiveType === "string" && /(^|-)2g|3g/i.test(connection.effectiveType);
 }
 
 function sanitizeImageUrl(value?: string | null) {

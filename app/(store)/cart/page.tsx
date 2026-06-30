@@ -310,6 +310,7 @@ export default function CartPage() {
   const clearCart = useCartStore((state) => state.clearCart);
   const hasHydrated = useCartStore((state) => state.hasHydrated);
   const [storageFallbackItems, setStorageFallbackItems] = useState<CartItem[]>([]);
+  const [fallbackActive, setFallbackActive] = useState(true);
   const [cartEffectReady, setCartEffectReady] = useState(false);
 
   useEffect(() => {
@@ -323,7 +324,36 @@ export default function CartPage() {
     }
   }, []);
 
-  const visibleItems = items.length > 0 ? items : storageFallbackItems;
+  useEffect(() => {
+    if (items.length > 0) setFallbackActive(false);
+  }, [items.length]);
+
+  const handleUpdateQuantity = useCallback((id: string, quantity: number) => {
+    if (quantity <= 0) {
+      setFallbackActive(false);
+      setStorageFallbackItems((prev) => prev.filter((item) => item.id !== id));
+    } else {
+      setStorageFallbackItems((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, quantity } : item)),
+      );
+    }
+    updateQuantity(id, quantity);
+  }, [updateQuantity]);
+
+  const handleRemoveItem = useCallback((id: string) => {
+    setFallbackActive(false);
+    setStorageFallbackItems((prev) => prev.filter((item) => item.id !== id));
+    removeItem(id);
+  }, [removeItem]);
+
+  const handleClearCart = useCallback(() => {
+    setFallbackActive(false);
+    setStorageFallbackItems([]);
+    clearCart();
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, [clearCart]);
+
+  const visibleItems = items.length > 0 ? items : (fallbackActive ? storageFallbackItems : []);
   const visibleTotalPrice = visibleItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   if (!hasHydrated) {
@@ -456,7 +486,7 @@ export default function CartPage() {
                     <button
                       aria-label="Уменьшить количество"
                       onClick={() =>
-                        updateQuantity(
+                        handleUpdateQuantity(
                           item.id,
                           parseFloat((item.quantity - quantityStepForUnit(item.unitType)).toFixed(1))
                           )
@@ -472,7 +502,7 @@ export default function CartPage() {
                     <button
                       aria-label="Увеличить количество"
                       onClick={() =>
-                        updateQuantity(
+                        handleUpdateQuantity(
                           item.id,
                           parseFloat((item.quantity + quantityStepForUnit(item.unitType)).toFixed(1))
                           )
@@ -493,7 +523,7 @@ export default function CartPage() {
                       variant="ghost"
                       size="icon"
                       className="text-muted-foreground hover:text-destructive shrink-0"
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => handleRemoveItem(item.id)}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -504,7 +534,7 @@ export default function CartPage() {
           ))}
 
           <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
-            <Button variant="ghost" onClick={() => { clearCart(); window.scrollTo({ top: 0, behavior: "smooth" }); }} className="text-muted-foreground">
+            <Button variant="ghost" onClick={handleClearCart} className="text-muted-foreground">
               <Trash2 className="w-4 h-4 mr-2" />
               Очистить корзину
             </Button>
