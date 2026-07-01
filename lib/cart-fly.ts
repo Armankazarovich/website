@@ -129,7 +129,6 @@ function flyToTarget(fromElement: HTMLElement, targetSelector: string, icon: "ca
 
 function shouldSkipMotion() {
   if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return true;
-  if (window.matchMedia?.("(max-width: 640px)").matches) return true;
 
   const connection = (navigator as Navigator & {
     connection?: { saveData?: boolean; effectiveType?: string };

@@ -9,6 +9,8 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 const prisma = new PrismaClient();
 const DEFAULT_TENANT_ID = "pilorus";
+const ALLOW_LEGACY_CATALOG_MUTATIONS = process.env.PILORUS_ALLOW_LEGACY_CATALOG_MUTATIONS === "1";
+const ALLOW_PILMOS_CATALOG_SNAPSHOT = process.env.PILORUS_APPLY_CATALOG_SNAPSHOT === "1";
 
 async function upsertSetting(key: string, value: string) {
   await prisma.siteSettings.upsert({
@@ -18,6 +20,18 @@ async function upsertSetting(key: string, value: string) {
   });
 }
 
+async function ensureSetting(key: string, value: string) {
+  const existing = await prisma.siteSettings.findUnique({
+    where: { tenantId_key: { tenantId: DEFAULT_TENANT_ID, key } },
+    select: { id: true },
+  });
+  if (existing) return false;
+  await prisma.siteSettings.create({
+    data: { tenantId: DEFAULT_TENANT_ID, key, value },
+  });
+  return true;
+}
+
 async function upsertTenantLaunchSettings(patch: Record<string, string>) {
   const tenant = await prisma.tenant.findUnique({ where: { slug: DEFAULT_TENANT_ID } });
   if (!tenant) return;
@@ -25,16 +39,19 @@ async function upsertTenantLaunchSettings(patch: Record<string, string>) {
     tenant.settings && typeof tenant.settings === "object" && !Array.isArray(tenant.settings)
       ? (tenant.settings as Record<string, unknown>)
       : {};
+  const nextSettings = { ...currentSettings };
+  for (const [key, value] of Object.entries(patch)) {
+    if (nextSettings[key] === undefined || nextSettings[key] === null || nextSettings[key] === "") {
+      nextSettings[key] = value;
+    }
+  }
 
   await prisma.tenant.update({
     where: { slug: DEFAULT_TENANT_ID },
     data: {
       domain: "pilo-rus.ru",
       logoUrl: "/logo.png",
-      settings: {
-        ...currentSettings,
-        ...patch,
-      } as Prisma.InputJsonObject,
+      settings: nextSettings as Prisma.InputJsonObject,
     },
   });
 }
@@ -254,6 +271,12 @@ function variantCatalogKey(variant: {
 async function applyPilmosCatalogSnapshot() {
   const snapshot = readPilmosCatalogSnapshot();
   if (!snapshot) return;
+  if (!ALLOW_PILMOS_CATALOG_SNAPSHOT) {
+    console.log(
+      "[data-migrate] Pilmos catalog snapshot skipped: live manager edits are protected. Set PILORUS_APPLY_CATALOG_SNAPSHOT=1 to re-import intentionally.",
+    );
+    return;
+  }
   const snapshotSlugs = new Set(snapshot.products.map((product) => product.slug));
 
   const categoryBySlug = new Map<string, { id: string; slug: string }>();
@@ -699,17 +722,17 @@ async function main() {
   console.log("[data-migrate] Запуск миграций данных...");
 
   // 2026-06-13: PiloRus launch analytics and Direct base settings.
-  await upsertSetting("yandex_metrika_id", "109821205");
-  await upsertSetting("site_url", "https://pilo-rus.ru");
-  await upsertSetting("public_site_url", "https://pilo-rus.ru");
-  await upsertSetting("direct_public_url", "https://pilo-rus.ru");
-  await upsertSetting("yandex_direct_public_url", "https://pilo-rus.ru");
-  await upsertSetting("direct_region_ids", "1");
-  await upsertSetting("yandex_direct_region_ids", "1");
-  await upsertSetting("logo_url", "/logo.png");
-  await upsertSetting("site_logo_url", "/logo.png");
-  await upsertSetting("pwa_logo_url", "/logo.png");
-  await upsertSetting("yandex_verification", "f585429020ab990b");
+  await ensureSetting("yandex_metrika_id", "109821205");
+  await ensureSetting("site_url", "https://pilo-rus.ru");
+  await ensureSetting("public_site_url", "https://pilo-rus.ru");
+  await ensureSetting("direct_public_url", "https://pilo-rus.ru");
+  await ensureSetting("yandex_direct_public_url", "https://pilo-rus.ru");
+  await ensureSetting("direct_region_ids", "1");
+  await ensureSetting("yandex_direct_region_ids", "1");
+  await ensureSetting("logo_url", "/logo.png");
+  await ensureSetting("site_logo_url", "/logo.png");
+  await ensureSetting("pwa_logo_url", "/logo.png");
+  await ensureSetting("yandex_verification", "f585429020ab990b");
   await upsertTenantLaunchSettings({
     site_url: "https://pilo-rus.ru",
     public_site_url: "https://pilo-rus.ru",
@@ -1029,6 +1052,11 @@ async function main() {
 
   // ── 2026-04-24 / 2026-05-12: правки ПилоРус из презентации менеджеров ────
   try {
+    if (!ALLOW_LEGACY_CATALOG_MUTATIONS) {
+      console.log(
+        "[data-migrate] Legacy catalog/product corrections skipped: live manager edits are protected. Set PILORUS_ALLOW_LEGACY_CATALOG_MUTATIONS=1 to run intentionally.",
+      );
+    } else {
     let updatedCategories = 0;
     for (const [slug, data] of Object.entries(CATEGORY_SEO_20260424)) {
       const cat = await prisma.category.findUnique({ where: { tenantId_slug: { tenantId: DEFAULT_TENANT_ID, slug } } });
@@ -1187,6 +1215,7 @@ async function main() {
     console.log(
       `[data-migrate] ✓ Размеры 6 м нормализованы (${normalizedSizes} вариантов, ${normalizedDescriptions} описаний) — шаг 2026-05-13`,
     );
+    }
   } catch (e: any) {
     console.log("[data-migrate] ⚠ Правки ПилоРус из презентации пропущены:", e.message);
   }
@@ -1262,10 +1291,11 @@ async function main() {
       social_max: "https://max.ru/u/f9LHodD0cOKoOlL7NxRWbK5mRoS_CdJ9K0qX5LbbbFJXOW-acq-et78kUxo",
     };
 
+    let createdSettings = 0;
     for (const [key, value] of Object.entries(pilorusLegalSettings20260611)) {
-      await upsertSetting(key, value);
+      if (await ensureSetting(key, value)) createdSettings++;
     }
-    console.log("[data-migrate] PiloRus contacts and legal requisites updated (2026-06-11)");
+    console.log(`[data-migrate] PiloRus contacts/legal defaults ensured (${createdSettings} created, existing manager edits kept)`);
   } catch (e: any) {
     console.log("[data-migrate] PiloRus contacts/legal settings update skipped:", e.message);
   }

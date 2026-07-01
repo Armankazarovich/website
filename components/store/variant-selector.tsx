@@ -261,6 +261,7 @@ export function VariantSelector({
 
   const totalPrice = currentPrice ? currentPrice * quantity : 0;
   const selectedMeta = activeVariant ? getVariantOptionMeta(activeVariant.size) : null;
+  const hasSingleVariant = variants.length <= 1;
 
   const setFilters = (filters: VariantFilters) => {
     setSelectedGrade(filters.grade);
@@ -389,8 +390,8 @@ export function VariantSelector({
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
             <h3 className="font-medium">
-              Выберите вариант
-              {selectedMeta && (
+              {hasSingleVariant ? "Размер" : "Выберите вариант"}
+              {selectedMeta && !hasSingleVariant && (
                 <span className="ml-2 inline-flex max-w-full flex-wrap items-center gap-1 align-middle text-sm font-normal text-muted-foreground">
                   <span>{selectedMeta.cleanSize}</span>
                   {selectedMeta.grade && (
@@ -408,16 +409,18 @@ export function VariantSelector({
             )}
           </div>
         </div>
-        <VariantOptionFilterGroups
-          groups={[
-            { keyName: "grade", label: "Сорт", values: gradeOptions, selected: selectedGrade },
-            { keyName: "section", label: "Сечение", values: sectionOptions, selected: selectedSection },
-            { keyName: "length", label: "Длина", values: lengthOptions, selected: selectedLength },
-          ]}
-          onSelect={applyFilter}
-          isOptionVisible={isOptionVisible}
-        />
-        {variants.length > 10 && (
+        {!hasSingleVariant && (
+          <VariantOptionFilterGroups
+            groups={[
+              { keyName: "grade", label: "Сорт", values: gradeOptions, selected: selectedGrade },
+              { keyName: "section", label: "Сечение", values: sectionOptions, selected: selectedSection },
+              { keyName: "length", label: "Длина", values: lengthOptions, selected: selectedLength },
+            ]}
+            onSelect={applyFilter}
+            isOptionVisible={isOptionVisible}
+          />
+        )}
+        {!hasSingleVariant && variants.length > 10 && (
           <label className="relative mb-3 mt-3 block">
             <span className="sr-only">Найти вариант</span>
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -431,12 +434,39 @@ export function VariantSelector({
         )}
         <div
           className={cn(
-            variants.length > 10
+            hasSingleVariant
+              ? "block"
+              : variants.length > 10
               ? "grid grid-cols-2 gap-2 overflow-visible sm:max-h-64 sm:grid-cols-3 sm:overflow-y-auto sm:pr-1"
               : "flex flex-wrap gap-2",
           )}
         >
-          {visibleRows.map(({ variant: v, meta }) => {
+          {hasSingleVariant && selectedMeta && activeVariant ? (
+            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-lg font-display font-bold text-primary">{selectedMeta.cleanSize}</span>
+                {selectedMeta.grade && (
+                  <span className="rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                    {selectedMeta.grade}
+                  </span>
+                )}
+              </div>
+              {(selectedMeta.section || selectedMeta.length) && (
+                <div className="mt-3 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground">
+                  {selectedMeta.section && (
+                    <span className="rounded-full border border-border bg-background/70 px-2.5 py-1">
+                      Сечение {selectedMeta.section}
+                    </span>
+                  )}
+                  {selectedMeta.length && (
+                    <span className="rounded-full border border-border bg-background/70 px-2.5 py-1">
+                      Длина {selectedMeta.length}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : visibleRows.map(({ variant: v, meta }) => {
             const hasSaleUnit = Boolean(getPreferredUnit(v, saleUnit));
             const disabled = !isProductVariantPurchasable(v) || !hasSaleUnit;
 
@@ -462,7 +492,7 @@ export function VariantSelector({
             </button>
           );
           })}
-          {visibleRows.length === 0 && (
+          {!hasSingleVariant && visibleRows.length === 0 && (
             <p className="col-span-full rounded-xl border border-border bg-muted/30 px-3 py-4 text-center text-sm text-muted-foreground">
               Вариант не найден
             </p>

@@ -9,8 +9,15 @@ export function CookieConsent() {
   useEffect(() => {
     const accepted = localStorage.getItem("cookies-accepted");
     if (!accepted) {
-      const t = setTimeout(() => setVisible(true), 1500);
-      return () => clearTimeout(t);
+      const t = setTimeout(() => {
+        if (!localStorage.getItem("cookies-accepted")) setVisible(true);
+      }, 1500);
+      const hide = () => setVisible(false);
+      window.addEventListener("cookies-accepted", hide);
+      return () => {
+        clearTimeout(t);
+        window.removeEventListener("cookies-accepted", hide);
+      };
     }
   }, []);
 
