@@ -1,13 +1,15 @@
 "use client";
 
-import { type CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
+import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
+  ArrowUpDown,
   ArrowLeft,
   Check,
   CheckCircle2,
+  Columns3,
   ExternalLink,
   Eye,
   EyeOff,
@@ -32,6 +34,7 @@ type ApiVariant = {
   piecesPerCube: number | null;
   stockQty?: number | null;
   lowStockThreshold?: number | null;
+  sortOrder?: number | null;
   inStock: boolean;
 };
 
@@ -42,6 +45,10 @@ type ApiProduct = {
   categoryId: string;
   saleUnit: SaleUnit;
   active: boolean;
+  featured?: boolean;
+  shortDescription?: string | null;
+  description?: string | null;
+  cardTags?: string[] | null;
   category?: { id?: string; name?: string | null } | null;
   variants?: ApiVariant[];
 };
@@ -56,6 +63,10 @@ type Row = {
   productName: string;
   productSlug: string;
   productActive: boolean;
+  productFeatured: boolean;
+  productShortDescription: string;
+  productDescription: string;
+  productTags: string;
   categoryId: string;
   categoryName: string;
   saleUnit: SaleUnit;
@@ -67,10 +78,19 @@ type Row = {
   piecesPerCube: number | null;
   stockQty: number | null;
   lowStockThreshold: number;
+  variantSortOrder: number;
   inStock: boolean;
 };
 
 type DraftField =
+  | "productName"
+  | "productSlug"
+  | "categoryId"
+  | "saleUnit"
+  | "productTags"
+  | "productFeatured"
+  | "shortDescription"
+  | "description"
   | "size"
   | "pricePerCube"
   | "pricePerSquareMeter"
@@ -78,6 +98,7 @@ type DraftField =
   | "piecesPerCube"
   | "stockQty"
   | "lowStockThreshold"
+  | "variantSortOrder"
   | "inStock"
   | "productActive";
 
@@ -85,8 +106,44 @@ type Draft = Partial<Record<DraftField, string>>;
 
 type BulkMode = "set" | "clear" | "increasePercent" | "decreasePercent" | "increaseAmount" | "decreaseAmount" | "replaceText";
 type BulkScope = "selected" | "visible" | "filtered";
+type BulkKind = "text" | "number" | "boolean" | "category" | "saleUnit";
+type SortKey =
+  | "categoryName"
+  | "productName"
+  | "size"
+  | "pricePerCube"
+  | "pricePerSquareMeter"
+  | "pricePerPiece"
+  | "variantSortOrder"
+  | "stockQty";
+type SortDirection = "asc" | "desc";
+type ColumnKey =
+  | "select"
+  | "product"
+  | "category"
+  | "seo"
+  | "tags"
+  | "saleUnit"
+  | "featured"
+  | "size"
+  | "pricePerCube"
+  | "pricePerSquareMeter"
+  | "pricePerPiece"
+  | "piecesPerCube"
+  | "stockQty"
+  | "variantSortOrder"
+  | "status"
+  | "action";
 
 const EDITABLE_FIELDS: DraftField[] = [
+  "productName",
+  "productSlug",
+  "categoryId",
+  "saleUnit",
+  "productTags",
+  "productFeatured",
+  "shortDescription",
+  "description",
   "size",
   "pricePerCube",
   "pricePerSquareMeter",
@@ -94,6 +151,7 @@ const EDITABLE_FIELDS: DraftField[] = [
   "piecesPerCube",
   "stockQty",
   "lowStockThreshold",
+  "variantSortOrder",
   "inStock",
   "productActive",
 ];
@@ -106,20 +164,64 @@ const VARIANT_FIELDS = new Set<DraftField>([
   "piecesPerCube",
   "stockQty",
   "lowStockThreshold",
+  "variantSortOrder",
   "inStock",
 ]);
 
-const BULK_FIELDS: { value: DraftField; label: string; kind: "text" | "number" | "boolean" }[] = [
+const BULK_FIELDS: { value: DraftField; label: string; kind: BulkKind }[] = [
+  { value: "productName", label: "Название", kind: "text" },
+  { value: "productSlug", label: "SEO slug", kind: "text" },
+  { value: "categoryId", label: "Категория", kind: "category" },
+  { value: "saleUnit", label: "Ед. продажи", kind: "saleUnit" },
+  { value: "productTags", label: "Теги/фильтры", kind: "text" },
+  { value: "shortDescription", label: "SEO кратко", kind: "text" },
+  { value: "description", label: "Описание", kind: "text" },
   { value: "pricePerCube", label: "Цена м³", kind: "number" },
   { value: "pricePerSquareMeter", label: "Цена м²", kind: "number" },
   { value: "pricePerPiece", label: "Цена шт", kind: "number" },
   { value: "piecesPerCube", label: "Шт/м³", kind: "number" },
   { value: "stockQty", label: "Остаток", kind: "number" },
+  { value: "variantSortOrder", label: "Порядок", kind: "number" },
   { value: "size", label: "Размер", kind: "text" },
   { value: "inStock", label: "Наличие", kind: "boolean" },
+  { value: "productFeatured", label: "Рекомендуемый", kind: "boolean" },
   { value: "productActive", label: "Показ на сайте", kind: "boolean" },
 ];
 
+const COLUMN_DEFS: { key: ColumnKey; label: string; always?: boolean }[] = [
+  { key: "select", label: "Выбор", always: true },
+  { key: "product", label: "Товар", always: true },
+  { key: "category", label: "Категория" },
+  { key: "seo", label: "SEO" },
+  { key: "tags", label: "Теги" },
+  { key: "saleUnit", label: "Ед." },
+  { key: "featured", label: "Хит" },
+  { key: "size", label: "Размер", always: true },
+  { key: "pricePerCube", label: "м³" },
+  { key: "pricePerSquareMeter", label: "м²" },
+  { key: "pricePerPiece", label: "шт" },
+  { key: "piecesPerCube", label: "шт/м³" },
+  { key: "stockQty", label: "Остаток" },
+  { key: "variantSortOrder", label: "Порядок" },
+  { key: "status", label: "Статус", always: true },
+  { key: "action", label: "Действие", always: true },
+];
+
+const DEFAULT_VISIBLE_COLUMNS = new Set<ColumnKey>([
+  "select",
+  "product",
+  "category",
+  "size",
+  "pricePerCube",
+  "pricePerSquareMeter",
+  "pricePerPiece",
+  "piecesPerCube",
+  "stockQty",
+  "status",
+  "action",
+]);
+
+const COLUMN_STORAGE_KEY = "pilorus-admin-products-table-columns-v2";
 const PAGE_SIZE = 80;
 
 function toInputValue(value: unknown) {
@@ -157,6 +259,10 @@ function flattenProducts(products: ApiProduct[]): Row[] {
       productName: product.name,
       productSlug: product.slug,
       productActive: product.active,
+      productFeatured: Boolean(product.featured),
+      productShortDescription: product.shortDescription || "",
+      productDescription: product.description || "",
+      productTags: (product.cardTags ?? []).join(", "),
       categoryId: product.categoryId,
       categoryName: product.category?.name || "Без категории",
       saleUnit: product.saleUnit,
@@ -168,6 +274,7 @@ function flattenProducts(products: ApiProduct[]): Row[] {
       piecesPerCube: variant.piecesPerCube ?? null,
       stockQty: variant.stockQty ?? null,
       lowStockThreshold: variant.lowStockThreshold ?? 0,
+      variantSortOrder: variant.sortOrder ?? 0,
       inStock: variant.inStock,
     }))
   );
@@ -178,6 +285,14 @@ function draftForRow(row: Row, drafts: Record<string, Draft>) {
 }
 
 function originalValue(row: Row, field: DraftField) {
+  if (field === "productName") return row.productName;
+  if (field === "productSlug") return row.productSlug;
+  if (field === "categoryId") return row.categoryId;
+  if (field === "saleUnit") return row.saleUnit;
+  if (field === "productTags") return row.productTags;
+  if (field === "productFeatured") return row.productFeatured ? "true" : "false";
+  if (field === "shortDescription") return row.productShortDescription;
+  if (field === "description") return row.productDescription;
   if (field === "size") return row.size;
   if (field === "inStock") return row.inStock ? "true" : "false";
   if (field === "productActive") return row.productActive ? "true" : "false";
@@ -196,21 +311,31 @@ function buildPatchPayload(row: Row, drafts: Record<string, Draft>) {
   const draft = draftForRow(row, drafts);
   const payload: Record<string, unknown> = { variantId: row.variantId };
   for (const field of EDITABLE_FIELDS) {
-    if (!VARIANT_FIELDS.has(field)) continue;
     if (!(field in draft)) continue;
     const nextValue = normalizeComparable(draft[field]);
     if (nextValue === normalizeComparable(originalValue(row, field))) continue;
-    payload[field] = field === "size" ? nextValue : field === "inStock" ? nextValue === "true" : nextValue === "" ? null : nextValue;
+    if (field === "size" || field === "productName" || field === "productSlug" || field === "shortDescription" || field === "description") {
+      payload[field] = nextValue;
+    } else if (field === "productTags") {
+      payload.cardTags = nextValue;
+    } else if (field === "productFeatured") {
+      payload.featured = nextValue === "true";
+    } else if (field === "productActive") {
+      payload.productActive = nextValue === "true";
+    } else if (field === "inStock") {
+      payload.inStock = nextValue === "true";
+    } else if (field === "categoryId" || field === "saleUnit") {
+      payload[field] = nextValue;
+    } else if (field === "variantSortOrder") {
+      payload.variantSortOrder = nextValue === "" ? null : nextValue;
+    } else if (VARIANT_FIELDS.has(field)) {
+      payload[field] = nextValue === "" ? null : nextValue;
+    }
   }
   return payload;
 }
 
-function productActiveChanged(row: Row, drafts: Record<string, Draft>) {
-  const draft = draftForRow(row, drafts);
-  return "productActive" in draft && normalizeComparable(draft.productActive) !== normalizeComparable(originalValue(row, "productActive"));
-}
-
-function effectiveBoolean(row: Row, drafts: Record<string, Draft>, field: "inStock" | "productActive") {
+function effectiveBoolean(row: Row, drafts: Record<string, Draft>, field: "inStock" | "productActive" | "productFeatured") {
   return rowInputValue(row, drafts, field) === "true";
 }
 
@@ -219,22 +344,48 @@ function rowInputValue(row: Row, drafts: Record<string, Draft>, field: DraftFiel
   return field in draft ? draft[field] ?? "" : originalValue(row, field);
 }
 
-function updateRowsAfterVariantSave(rows: Row[], variantId: string, variant: Partial<ApiVariant>) {
-  return rows.map((row) =>
-    row.variantId === variantId
+function applySavedProduct(products: ApiProduct[], updatedProduct?: Partial<ApiProduct> | null) {
+  if (!updatedProduct?.id) return products;
+  return products.map((product) =>
+    product.id === updatedProduct.id
       ? {
-          ...row,
-          size: variant.size ?? row.size,
-          pricePerCube: variant.pricePerCube ?? null,
-          pricePerSquareMeter: variant.pricePerSquareMeter ?? null,
-          pricePerPiece: variant.pricePerPiece ?? null,
-          piecesPerCube: variant.piecesPerCube ?? null,
-          stockQty: variant.stockQty ?? null,
-          lowStockThreshold: variant.lowStockThreshold ?? 0,
-          inStock: variant.inStock ?? row.inStock,
+          ...product,
+          ...updatedProduct,
+          category: updatedProduct.category ?? product.category,
         }
-      : row
+      : product
   );
+}
+
+function getColumnWidth(column: ColumnKey) {
+  const widths: Record<ColumnKey, string> = {
+    select: "w-[52px]",
+    product: "w-[300px]",
+    category: "w-[190px]",
+    seo: "w-[260px]",
+    tags: "w-[180px]",
+    saleUnit: "w-[130px]",
+    featured: "w-[110px]",
+    size: "w-[170px]",
+    pricePerCube: "w-[120px]",
+    pricePerSquareMeter: "w-[120px]",
+    pricePerPiece: "w-[120px]",
+    piecesPerCube: "w-[110px]",
+    stockQty: "w-[100px]",
+    variantSortOrder: "w-[105px]",
+    status: "w-[120px]",
+    action: "w-[150px]",
+  };
+  return widths[column];
+}
+
+function sortValue(row: Row, key: SortKey) {
+  const value = row[key];
+  if (key.startsWith("price") || key === "stockQty" || key === "variantSortOrder") {
+    const numeric = Number(value ?? 0);
+    return Number.isFinite(numeric) ? numeric : 0;
+  }
+  return String(value ?? "");
 }
 
 function CellInput({
@@ -255,6 +406,51 @@ function CellInput({
       aria-label={ariaLabel}
       className={`h-10 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20 ${className}`}
     />
+  );
+}
+
+function CellTextarea({
+  value,
+  onChange,
+  ariaLabel,
+  rows = 2,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  ariaLabel: string;
+  rows?: number;
+}) {
+  return (
+    <textarea
+      value={value}
+      rows={rows}
+      onChange={(event) => onChange(event.target.value)}
+      aria-label={ariaLabel}
+      className="min-h-10 w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+    />
+  );
+}
+
+function CellSelect({
+  value,
+  onChange,
+  ariaLabel,
+  children,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  ariaLabel: string;
+  children: ReactNode;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      aria-label={ariaLabel}
+      className="h-10 w-full rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+    >
+      {children}
+    </select>
   );
 }
 
@@ -280,6 +476,11 @@ export function ProductsTableEditor() {
   const [bulkMode, setBulkMode] = useState<BulkMode>("set");
   const [bulkValue, setBulkValue] = useState("");
   const [bulkReplaceValue, setBulkReplaceValue] = useState("");
+  const [showColumns, setShowColumns] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<Set<ColumnKey>>(() => new Set(DEFAULT_VISIBLE_COLUMNS));
+  const [sortKey, setSortKey] = useState<SortKey>("categoryName");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+  const [featuredFilter, setFeaturedFilter] = useState<"ALL" | "FEATURED" | "PLAIN">("ALL");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -313,9 +514,31 @@ export function ProductsTableEditor() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(COLUMN_STORAGE_KEY);
+      if (!saved) return;
+      const keys = JSON.parse(saved) as ColumnKey[];
+      const allowed = new Set(COLUMN_DEFS.map((column) => column.key));
+      const next = new Set<ColumnKey>(keys.filter((key) => allowed.has(key)));
+      COLUMN_DEFS.filter((column) => column.always).forEach((column) => next.add(column.key));
+      if (next.size > 0) setVisibleColumns(next);
+    } catch {
+      // Column preferences are cosmetic; ignore broken local storage.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(COLUMN_STORAGE_KEY, JSON.stringify(Array.from(visibleColumns)));
+    } catch {
+      // Nothing critical: table still works with default columns.
+    }
+  }, [visibleColumns]);
+
   useAdminPageHeader({
-    title: "Таблица цен",
-    subtitle: "Быстрая правка вариантов, цен и наличия",
+    title: "Массовый редактор",
+    subtitle: "Товары, категории, SEO, варианты, цены и наличие",
     badge: "Прайс",
     backHref: "/admin/products",
     backLabel: "Товары",
@@ -358,11 +581,15 @@ export function ProductsTableEditor() {
         if (status === "HIDDEN" && row.productActive) return false;
         if (status === "NO_PRICE" && hasPositivePrice(row)) return false;
         if (status === "OUT" && row.inStock) return false;
+        if (featuredFilter === "FEATURED" && !row.productFeatured) return false;
+        if (featuredFilter === "PLAIN" && row.productFeatured) return false;
         if (!normalizedQuery) return true;
         return [
           row.productName,
           row.productSlug,
           row.categoryName,
+          row.productTags,
+          row.productShortDescription,
           row.size,
           saleUnitLabel(row.saleUnit),
         ]
@@ -370,14 +597,21 @@ export function ProductsTableEditor() {
           .toLocaleLowerCase("ru-RU")
           .includes(normalizedQuery);
       })
-      .sort((a, b) =>
-        `${a.categoryName} ${a.productName} ${a.size}`.localeCompare(
+      .sort((a, b) => {
+        const aValue = sortValue(a, sortKey);
+        const bValue = sortValue(b, sortKey);
+        const result =
+          typeof aValue === "number" && typeof bValue === "number"
+            ? aValue - bValue
+            : String(aValue).localeCompare(String(bValue), "ru", { numeric: true });
+        if (result !== 0) return sortDirection === "asc" ? result : -result;
+        return `${a.categoryName} ${a.productName} ${a.size}`.localeCompare(
           `${b.categoryName} ${b.productName} ${b.size}`,
           "ru",
           { numeric: true }
-        )
-      );
-  }, [categoryId, query, rows, status, unit]);
+        );
+      });
+  }, [categoryId, featuredFilter, query, rows, sortDirection, sortKey, status, unit]);
 
   const totalPages = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
   const visibleRows = filteredRows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -392,7 +626,7 @@ export function ProductsTableEditor() {
   const bulkTargetRows = bulkScope === "selected" ? selectedRows : bulkScope === "visible" ? visibleRows : filteredRows;
   const availableBulkModes = useMemo<BulkMode[]>(
     () =>
-      activeBulkField.kind === "boolean"
+      activeBulkField.kind === "boolean" || activeBulkField.kind === "category" || activeBulkField.kind === "saleUnit"
         ? ["set"]
         : activeBulkField.kind === "text"
           ? ["set", "replaceText"]
@@ -402,7 +636,7 @@ export function ProductsTableEditor() {
 
   useEffect(() => {
     setPage(1);
-  }, [categoryId, query, status, unit]);
+  }, [categoryId, featuredFilter, query, status, unit]);
 
   useEffect(() => {
     if (!availableBulkModes.includes(bulkMode)) {
@@ -421,9 +655,18 @@ export function ProductsTableEditor() {
   }
 
   function changeBulkField(field: DraftField) {
+    const nextField = BULK_FIELDS.find((item) => item.value === field);
     setBulkField(field);
     setBulkMode("set");
-    setBulkValue(field === "inStock" || field === "productActive" ? "true" : "");
+    setBulkValue(
+      field === "inStock" || field === "productActive" || field === "productFeatured"
+        ? "true"
+        : nextField?.kind === "saleUnit"
+          ? "BOTH"
+          : nextField?.kind === "category"
+            ? categories[0]?.id ?? ""
+            : ""
+    );
     setBulkReplaceValue("");
   }
 
@@ -478,6 +721,9 @@ export function ProductsTableEditor() {
 
     if (activeBulkField.kind === "boolean") {
       return bulkValue === "false" ? "false" : "true";
+    }
+    if (activeBulkField.kind === "category" || activeBulkField.kind === "saleUnit") {
+      return bulkValue.trim();
     }
 
     if (bulkMode === "replaceText") {
@@ -540,8 +786,7 @@ export function ProductsTableEditor() {
 
   async function saveRow(row: Row) {
     const payload = buildPatchPayload(row, drafts);
-    const shouldUpdateProductActive = productActiveChanged(row, drafts);
-    if (Object.keys(payload).length <= 1 && !shouldUpdateProductActive) {
+    if (Object.keys(payload).length <= 1) {
       resetRow(row);
       return;
     }
@@ -558,69 +803,13 @@ export function ProductsTableEditor() {
         if (!res.ok || data?.ok === false) {
           throw new Error(data?.error || "Не удалось сохранить строку");
         }
-        if (data.variant) {
-          setProducts((current) =>
-            current.map((product) => ({
-              ...product,
-              variants: (product.variants ?? []).map((variant) =>
-                variant.id === row.variantId ? { ...variant, ...data.variant } : variant
-              ),
-            }))
-          );
-        } else {
-          setProducts((current) =>
-            current.map((product) => ({
-              ...product,
-              variants: updateRowsAfterVariantSave(
-                (product.variants ?? []).map((variant) => ({
-                  productId: product.id,
-                  productName: product.name,
-                  productSlug: product.slug,
-                  productActive: product.active,
-                  categoryId: product.categoryId,
-                  categoryName: product.category?.name || "Без категории",
-                  saleUnit: product.saleUnit,
-                  variantId: variant.id,
-                  size: variant.size || "",
-                  pricePerCube: variant.pricePerCube,
-                  pricePerSquareMeter: variant.pricePerSquareMeter,
-                  pricePerPiece: variant.pricePerPiece,
-                  piecesPerCube: variant.piecesPerCube ?? null,
-                  stockQty: variant.stockQty ?? null,
-                  lowStockThreshold: variant.lowStockThreshold ?? 0,
-                  inStock: variant.inStock,
-                })),
-                row.variantId,
-                payload
-              ).map((updatedRow) => ({
-                id: updatedRow.variantId,
-                size: updatedRow.size,
-                pricePerCube: updatedRow.pricePerCube,
-                pricePerSquareMeter: updatedRow.pricePerSquareMeter,
-                pricePerPiece: updatedRow.pricePerPiece,
-                piecesPerCube: updatedRow.piecesPerCube,
-                stockQty: updatedRow.stockQty,
-                lowStockThreshold: updatedRow.lowStockThreshold,
-                inStock: updatedRow.inStock,
-              })),
-            }))
-          );
-        }
-      }
-
-      if (shouldUpdateProductActive) {
-        const nextActive = rowInputValue(row, drafts, "productActive") === "true";
-        const res = await fetch("/api/admin/products/quick-edit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "toggle_active", productId: row.productId, active: nextActive }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || data?.ok === false) {
-          throw new Error(data?.error || "Не удалось изменить активность товара");
-        }
         setProducts((current) =>
-          current.map((product) => (product.id === row.productId ? { ...product, active: nextActive } : product))
+          applySavedProduct(current, data.product).map((product) => ({
+            ...product,
+            variants: (product.variants ?? []).map((variant) =>
+              variant.id === row.variantId && data.variant ? { ...variant, ...data.variant } : variant
+            ),
+          }))
         );
       }
       resetRow(row);
@@ -674,8 +863,49 @@ export function ProductsTableEditor() {
     updateDraft(row.variantId, "inStock", effectiveBoolean(row, drafts, "inStock") ? "false" : "true");
   }
 
+  function toggleFeatured(row: Row) {
+    updateDraft(row.variantId, "productFeatured", effectiveBoolean(row, drafts, "productFeatured") ? "false" : "true");
+  }
+
   function rowInput(row: Row, field: DraftField) {
     return rowInputValue(row, drafts, field);
+  }
+
+  function columnVisible(column: ColumnKey) {
+    return visibleColumns.has(column);
+  }
+
+  function toggleColumn(column: ColumnKey) {
+    const definition = COLUMN_DEFS.find((item) => item.key === column);
+    if (definition?.always) return;
+    setVisibleColumns((current) => {
+      const next = new Set(current);
+      if (next.has(column)) next.delete(column);
+      else next.add(column);
+      return next;
+    });
+  }
+
+  function changeSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortKey(key);
+    setSortDirection("asc");
+  }
+
+  function renderSortButton(label: string, key: SortKey) {
+    return (
+      <button
+        type="button"
+        onClick={() => changeSort(key)}
+        className="inline-flex items-center gap-1 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+      >
+        {label}
+        <ArrowUpDown className={`h-3.5 w-3.5 ${sortKey === key ? "text-primary" : ""}`} />
+      </button>
+    );
   }
 
   const statNoPrice = rows.filter((row) => !hasPositivePrice(row)).length;
@@ -740,7 +970,7 @@ export function ProductsTableEditor() {
             <span className="rounded-full border border-border px-3 py-1">{statHidden.toLocaleString("ru-RU")} скрыто/нет в наличии</span>
           </div>
           <p className="mt-3 text-sm text-muted-foreground">
-            Меняйте цены и размеры прямо в строке. На сайт попадает только сохранённая правка.
+            Меняйте товар, категорию, SEO, размеры и цены прямо в строке. На сайт попадает только сохранённая правка.
           </p>
         </div>
 
@@ -772,13 +1002,13 @@ export function ProductsTableEditor() {
       </div>
 
       <div className="sticky top-[72px] z-20 mb-4 rounded-2xl border border-border bg-card/95 p-3 backdrop-blur">
-        <div className="grid gap-2 lg:grid-cols-[minmax(240px,1fr)_180px_140px_170px_auto]">
+        <div className="grid gap-2 xl:grid-cols-[minmax(240px,1fr)_180px_140px_170px_150px_170px_auto]">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Поиск: товар, размер, категория..."
+              placeholder="Поиск: товар, размер, категория, SEO, теги..."
               className="h-11 w-full rounded-xl border border-border bg-background pl-10 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </label>
@@ -815,11 +1045,86 @@ export function ProductsTableEditor() {
             <option value="OUT">Нет в наличии</option>
             <option value="NO_PRICE">Без цены</option>
           </select>
+          <select
+            value={featuredFilter}
+            onChange={(event) => setFeaturedFilter(event.target.value as typeof featuredFilter)}
+            className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold outline-none focus:border-primary"
+          >
+            <option value="ALL">Все витрины</option>
+            <option value="FEATURED">Рекомендуемые</option>
+            <option value="PLAIN">Обычные</option>
+          </select>
+          <select
+            value={`${sortKey}:${sortDirection}`}
+            onChange={(event) => {
+              const [nextKey, nextDirection] = event.target.value.split(":") as [SortKey, SortDirection];
+              setSortKey(nextKey);
+              setSortDirection(nextDirection);
+            }}
+            className="h-11 rounded-xl border border-border bg-background px-3 text-sm font-semibold outline-none focus:border-primary"
+          >
+            <option value="categoryName:asc">Категория А-Я</option>
+            <option value="productName:asc">Товар А-Я</option>
+            <option value="size:asc">Размер ↑</option>
+            <option value="pricePerCube:asc">м³ дешевле</option>
+            <option value="pricePerCube:desc">м³ дороже</option>
+            <option value="pricePerSquareMeter:asc">м² дешевле</option>
+            <option value="pricePerPiece:asc">шт дешевле</option>
+            <option value="variantSortOrder:asc">Порядок ↑</option>
+          </select>
           <div className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-border px-3 text-sm font-semibold text-muted-foreground">
             <Filter className="h-4 w-4" />
             {filteredRows.length.toLocaleString("ru-RU")} строк
           </div>
         </div>
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowColumns((current) => !current)}
+            className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-border px-3 text-xs font-semibold hover:bg-accent"
+          >
+            <Columns3 className="h-4 w-4 text-primary" />
+            Колонки
+          </button>
+          <button
+            type="button"
+            onClick={() => setVisibleColumns(new Set(DEFAULT_VISIBLE_COLUMNS))}
+            className="inline-flex min-h-9 items-center rounded-xl border border-border px-3 text-xs font-semibold hover:bg-accent"
+          >
+            Минимум
+          </button>
+          <button
+            type="button"
+            onClick={() => setVisibleColumns(new Set(COLUMN_DEFS.map((column) => column.key)))}
+            className="inline-flex min-h-9 items-center rounded-xl border border-border px-3 text-xs font-semibold hover:bg-accent"
+          >
+            Все поля
+          </button>
+          <span className="text-xs text-muted-foreground">
+            Видно колонок: {visibleColumns.size} · сортировка {sortDirection === "asc" ? "по возрастанию" : "по убыванию"}
+          </span>
+        </div>
+        {showColumns && (
+          <div className="mt-3 grid gap-2 rounded-xl border border-border bg-background/70 p-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+            {COLUMN_DEFS.map((column) => (
+              <label
+                key={column.key}
+                className={`flex min-h-9 items-center gap-2 rounded-xl border px-3 text-xs font-semibold ${
+                  visibleColumns.has(column.key) ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                } ${column.always ? "opacity-70" : "cursor-pointer hover:bg-accent"}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={visibleColumns.has(column.key)}
+                  disabled={column.always}
+                  onChange={() => toggleColumn(column.key)}
+                  className="h-3.5 w-3.5 rounded border-border accent-primary"
+                />
+                {column.label}
+              </label>
+            ))}
+          </div>
+        )}
         {message && (
           <div className="mt-3 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
             {message}
@@ -916,7 +1221,31 @@ export function ProductsTableEditor() {
                 {availableBulkModes.includes("replaceText") && <option value="replaceText">Заменить текст</option>}
               </select>
 
-              {activeBulkField.kind === "boolean" ? (
+              {activeBulkField.kind === "category" ? (
+                <select
+                  value={bulkValue}
+                  onChange={(event) => setBulkValue(event.target.value)}
+                  className="h-10 rounded-xl border border-border bg-background px-3 text-xs font-semibold outline-none focus:border-primary"
+                >
+                  <option value="">Выберите категорию</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              ) : activeBulkField.kind === "saleUnit" ? (
+                <select
+                  value={bulkValue || "BOTH"}
+                  onChange={(event) => setBulkValue(event.target.value)}
+                  className="h-10 rounded-xl border border-border bg-background px-3 text-xs font-semibold outline-none focus:border-primary"
+                >
+                  <option value="BOTH">Смешанная</option>
+                  <option value="CUBE">м³</option>
+                  <option value="SQUARE">м²</option>
+                  <option value="PIECE">шт</option>
+                </select>
+              ) : activeBulkField.kind === "boolean" ? (
                 <select
                   value={bulkValue || "true"}
                   onChange={(event) => setBulkValue(event.target.value)}
@@ -926,6 +1255,11 @@ export function ProductsTableEditor() {
                     <>
                       <option value="true">В наличии</option>
                       <option value="false">Нет в наличии</option>
+                    </>
+                  ) : bulkField === "productFeatured" ? (
+                    <>
+                      <option value="true">Рекомендуемый</option>
+                      <option value="false">Обычный</option>
                     </>
                   ) : (
                     <>
@@ -978,27 +1312,35 @@ export function ProductsTableEditor() {
       </section>
 
       <div className="hidden overflow-x-auto rounded-2xl border border-border bg-card md:block">
-        <table className="w-full min-w-[1360px] border-collapse text-sm">
+        <table className="w-full min-w-[1500px] border-collapse text-sm">
           <thead className="sticky top-[154px] z-10 bg-muted/80 text-xs uppercase tracking-wide text-muted-foreground backdrop-blur">
             <tr>
-              <th className="w-[52px] px-4 py-3 text-left">
-                <input
-                  type="checkbox"
-                  checked={allVisibleSelected}
-                  onChange={toggleVisibleSelection}
-                  aria-label="Выбрать строки на странице"
-                  className="h-4 w-4 rounded border-border accent-primary"
-                />
-              </th>
-              <th className="w-[300px] px-4 py-3 text-left">Товар</th>
-              <th className="w-[170px] px-3 py-3 text-left">Размер</th>
-              <th className="w-[120px] px-3 py-3 text-left">м³</th>
-              <th className="w-[120px] px-3 py-3 text-left">м²</th>
-              <th className="w-[120px] px-3 py-3 text-left">шт</th>
-              <th className="w-[110px] px-3 py-3 text-left">шт/м³</th>
-              <th className="w-[100px] px-3 py-3 text-left">остаток</th>
-              <th className="w-[120px] px-3 py-3 text-left">статус</th>
-              <th className="w-[150px] px-3 py-3 text-right">действие</th>
+              {columnVisible("select") && (
+                <th className={`${getColumnWidth("select")} px-4 py-3 text-left`}>
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleVisibleSelection}
+                    aria-label="Выбрать строки на странице"
+                    className="h-4 w-4 rounded border-border accent-primary"
+                  />
+                </th>
+              )}
+              {columnVisible("product") && <th className={`${getColumnWidth("product")} px-4 py-3 text-left`}>{renderSortButton("Товар", "productName")}</th>}
+              {columnVisible("category") && <th className={`${getColumnWidth("category")} px-3 py-3 text-left`}>{renderSortButton("Категория", "categoryName")}</th>}
+              {columnVisible("seo") && <th className={`${getColumnWidth("seo")} px-3 py-3 text-left`}>SEO</th>}
+              {columnVisible("tags") && <th className={`${getColumnWidth("tags")} px-3 py-3 text-left`}>Теги / фильтры</th>}
+              {columnVisible("saleUnit") && <th className={`${getColumnWidth("saleUnit")} px-3 py-3 text-left`}>Ед.</th>}
+              {columnVisible("featured") && <th className={`${getColumnWidth("featured")} px-3 py-3 text-left`}>Витрина</th>}
+              {columnVisible("size") && <th className={`${getColumnWidth("size")} px-3 py-3 text-left`}>{renderSortButton("Размер", "size")}</th>}
+              {columnVisible("pricePerCube") && <th className={`${getColumnWidth("pricePerCube")} px-3 py-3 text-left`}>{renderSortButton("м³", "pricePerCube")}</th>}
+              {columnVisible("pricePerSquareMeter") && <th className={`${getColumnWidth("pricePerSquareMeter")} px-3 py-3 text-left`}>{renderSortButton("м²", "pricePerSquareMeter")}</th>}
+              {columnVisible("pricePerPiece") && <th className={`${getColumnWidth("pricePerPiece")} px-3 py-3 text-left`}>{renderSortButton("шт", "pricePerPiece")}</th>}
+              {columnVisible("piecesPerCube") && <th className={`${getColumnWidth("piecesPerCube")} px-3 py-3 text-left`}>шт/м³</th>}
+              {columnVisible("stockQty") && <th className={`${getColumnWidth("stockQty")} px-3 py-3 text-left`}>{renderSortButton("Остаток", "stockQty")}</th>}
+              {columnVisible("variantSortOrder") && <th className={`${getColumnWidth("variantSortOrder")} px-3 py-3 text-left`}>{renderSortButton("Порядок", "variantSortOrder")}</th>}
+              {columnVisible("status") && <th className={`${getColumnWidth("status")} px-3 py-3 text-left`}>Статус</th>}
+              {columnVisible("action") && <th className={`${getColumnWidth("action")} px-3 py-3 text-right`}>Действие</th>}
             </tr>
           </thead>
           <tbody>
@@ -1008,131 +1350,245 @@ export function ProductsTableEditor() {
               const isSelected = selectedIds.has(row.variantId);
               const productIsActive = effectiveBoolean(row, drafts, "productActive");
               const stockIsActive = effectiveBoolean(row, drafts, "inStock");
+              const featuredIsActive = effectiveBoolean(row, drafts, "productFeatured");
               return (
                 <tr key={row.variantId} className={`border-t border-border/70 ${dirty ? "bg-primary/5" : isSelected ? "bg-primary/[0.025]" : ""}`}>
-                  <td className="px-4 py-3 align-top">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelected(row.variantId)}
-                      aria-label={`Выбрать ${row.productName}`}
-                      className="mt-2 h-4 w-4 rounded border-border accent-primary"
-                    />
-                  </td>
-                  <td className="px-4 py-3 align-top">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-foreground">{row.productName}</p>
-                        <p className="mt-1 truncate text-xs text-muted-foreground">{row.categoryName} · {saleUnitLabel(row.saleUnit)}</p>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
-                          <Link href={`/admin/products/${row.productId}`} className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-semibold hover:bg-accent">
-                            Править
-                          </Link>
-                          <Link href={`/product/${row.productSlug}`} target="_blank" className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-xs font-semibold hover:bg-accent">
-                            На сайте <ExternalLink className="h-3 w-3" />
-                          </Link>
+                  {columnVisible("select") && (
+                    <td className="px-4 py-3 align-top">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelected(row.variantId)}
+                        aria-label={`Выбрать ${row.productName}`}
+                        className="mt-2 h-4 w-4 rounded border-border accent-primary"
+                      />
+                    </td>
+                  )}
+                  {columnVisible("product") && (
+                    <td className="px-4 py-3 align-top">
+                      <div className="flex items-start gap-3">
+                        <div className="min-w-0 flex-1">
+                          <CellInput
+                            value={rowInput(row, "productName")}
+                            onChange={(value) => updateDraft(row.variantId, "productName", value)}
+                            ariaLabel={`Название ${row.productName}`}
+                            className="font-semibold"
+                          />
+                          <p className="mt-1 truncate text-xs text-muted-foreground">{row.categoryName} · {saleUnitLabel(row.saleUnit)}</p>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            <Link href={`/admin/products/${row.productId}`} className="inline-flex items-center gap-1 rounded-xl border border-border px-2 py-1 text-xs font-semibold hover:bg-accent">
+                              Править
+                            </Link>
+                            <Link href={`/product/${row.productSlug}`} target="_blank" className="inline-flex items-center gap-1 rounded-xl border border-border px-2 py-1 text-xs font-semibold hover:bg-accent">
+                              На сайте <ExternalLink className="h-3 w-3" />
+                            </Link>
+                          </div>
                         </div>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => toggleProduct(row)}
-                        disabled={Boolean(saving)}
-                        className={`inline-flex shrink-0 items-center gap-1 rounded-lg border px-2 py-1 text-xs font-semibold ${
-                          productIsActive
-                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
-                            : "border-muted-foreground/25 bg-muted/50 text-muted-foreground"
-                        }`}
-                      >
-                        {productIsActive ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-                        {productIsActive ? "активен" : "скрыт"}
-                      </button>
-                    </div>
-                  </td>
-                  <td className="px-3 py-3 align-top">
-                    <CellInput
-                      value={rowInput(row, "size")}
-                      onChange={(value) => updateDraft(row.variantId, "size", value)}
-                      ariaLabel={`Размер ${row.productName}`}
-                    />
-                  </td>
-                  <td className="px-3 py-3 align-top">
-                    <CellInput
-                      value={rowInput(row, "pricePerCube")}
-                      onChange={(value) => updateDraft(row.variantId, "pricePerCube", value)}
-                      ariaLabel="Цена за м³"
-                    />
-                  </td>
-                  <td className="px-3 py-3 align-top">
-                    <CellInput
-                      value={rowInput(row, "pricePerSquareMeter")}
-                      onChange={(value) => updateDraft(row.variantId, "pricePerSquareMeter", value)}
-                      ariaLabel="Цена за м²"
-                    />
-                  </td>
-                  <td className="px-3 py-3 align-top">
-                    <CellInput
-                      value={rowInput(row, "pricePerPiece")}
-                      onChange={(value) => updateDraft(row.variantId, "pricePerPiece", value)}
-                      ariaLabel="Цена за штуку"
-                    />
-                  </td>
-                  <td className="px-3 py-3 align-top">
-                    <CellInput
-                      value={rowInput(row, "piecesPerCube")}
-                      onChange={(value) => updateDraft(row.variantId, "piecesPerCube", value)}
-                      ariaLabel="Штук в кубе"
-                    />
-                  </td>
-                  <td className="px-3 py-3 align-top">
-                    <CellInput
-                      value={rowInput(row, "stockQty")}
-                      onChange={(value) => updateDraft(row.variantId, "stockQty", value)}
-                      ariaLabel="Остаток"
-                    />
-                  </td>
-                  <td className="px-3 py-3 align-top">
-                    <button
-                      type="button"
-                      onClick={() => toggleStock(row)}
-                      disabled={Boolean(saving)}
-                      className={`inline-flex min-h-10 w-full items-center justify-center rounded-xl border px-3 text-xs font-semibold ${
-                        stockIsActive
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
-                          : "border-destructive/30 bg-destructive/10 text-destructive"
-                      }`}
-                    >
-                      {stockIsActive ? "в наличии" : "нет"}
-                    </button>
-                  </td>
-                  <td className="px-3 py-3 text-right align-top">
-                    <div className="flex justify-end gap-2">
-                      {dirty && (
                         <button
                           type="button"
-                          onClick={() => resetRow(row)}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border hover:bg-accent"
-                          aria-label="Сбросить строку"
+                          onClick={() => toggleProduct(row)}
+                          disabled={Boolean(saving)}
+                          className={`inline-flex shrink-0 items-center gap-1 rounded-xl border px-2 py-1 text-xs font-semibold ${
+                            productIsActive
+                              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+                              : "border-muted-foreground/25 bg-muted/50 text-muted-foreground"
+                          }`}
                         >
-                          <RotateCcw className="h-4 w-4" />
+                          {productIsActive ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+                          {productIsActive ? "активен" : "скрыт"}
                         </button>
-                      )}
+                      </div>
+                    </td>
+                  )}
+                  {columnVisible("category") && (
+                    <td className="px-3 py-3 align-top">
+                      <CellSelect
+                        value={rowInput(row, "categoryId")}
+                        onChange={(value) => updateDraft(row.variantId, "categoryId", value)}
+                        ariaLabel={`Категория ${row.productName}`}
+                      >
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </CellSelect>
+                    </td>
+                  )}
+                  {columnVisible("seo") && (
+                    <td className="px-3 py-3 align-top">
+                      <div className="grid gap-2">
+                        <CellInput
+                          value={rowInput(row, "productSlug")}
+                          onChange={(value) => updateDraft(row.variantId, "productSlug", value)}
+                          ariaLabel="SEO slug"
+                        />
+                        <CellTextarea
+                          value={rowInput(row, "shortDescription")}
+                          onChange={(value) => updateDraft(row.variantId, "shortDescription", value)}
+                          ariaLabel="SEO краткое описание"
+                          rows={2}
+                        />
+                        <CellTextarea
+                          value={rowInput(row, "description")}
+                          onChange={(value) => updateDraft(row.variantId, "description", value)}
+                          ariaLabel="Описание товара"
+                          rows={2}
+                        />
+                      </div>
+                    </td>
+                  )}
+                  {columnVisible("tags") && (
+                    <td className="px-3 py-3 align-top">
+                      <CellTextarea
+                        value={rowInput(row, "productTags")}
+                        onChange={(value) => updateDraft(row.variantId, "productTags", value)}
+                        ariaLabel="Теги и фильтры"
+                        rows={2}
+                      />
+                      <p className="mt-1 text-[11px] text-muted-foreground">До 3 тегов через запятую</p>
+                    </td>
+                  )}
+                  {columnVisible("saleUnit") && (
+                    <td className="px-3 py-3 align-top">
+                      <CellSelect
+                        value={rowInput(row, "saleUnit")}
+                        onChange={(value) => updateDraft(row.variantId, "saleUnit", value)}
+                        ariaLabel="Единица продажи"
+                      >
+                        <option value="BOTH">Смешанная</option>
+                        <option value="CUBE">м³</option>
+                        <option value="SQUARE">м²</option>
+                        <option value="PIECE">шт</option>
+                      </CellSelect>
+                    </td>
+                  )}
+                  {columnVisible("featured") && (
+                    <td className="px-3 py-3 align-top">
                       <button
                         type="button"
-                        onClick={() => void saveRow(row)}
-                        disabled={!dirty || rowSaving || savingAll}
-                        className="inline-flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-45"
+                        onClick={() => toggleFeatured(row)}
+                        disabled={Boolean(saving)}
+                        className={`inline-flex min-h-10 w-full items-center justify-center rounded-xl border px-3 text-xs font-semibold ${
+                          featuredIsActive
+                            ? "border-primary/40 bg-primary/10 text-primary"
+                            : "border-border text-muted-foreground"
+                        }`}
                       >
-                        {rowSaving ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : savedId === row.variantId ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
-                        {savedId === row.variantId ? "Готово" : "Сохранить"}
+                        {featuredIsActive ? "рекоменд." : "обычный"}
                       </button>
-                    </div>
-                  </td>
+                    </td>
+                  )}
+                  {columnVisible("size") && (
+                    <td className="px-3 py-3 align-top">
+                      <CellInput
+                        value={rowInput(row, "size")}
+                        onChange={(value) => updateDraft(row.variantId, "size", value)}
+                        ariaLabel={`Размер ${row.productName}`}
+                      />
+                    </td>
+                  )}
+                  {columnVisible("pricePerCube") && (
+                    <td className="px-3 py-3 align-top">
+                      <CellInput
+                        value={rowInput(row, "pricePerCube")}
+                        onChange={(value) => updateDraft(row.variantId, "pricePerCube", value)}
+                        ariaLabel="Цена за м³"
+                      />
+                    </td>
+                  )}
+                  {columnVisible("pricePerSquareMeter") && (
+                    <td className="px-3 py-3 align-top">
+                      <CellInput
+                        value={rowInput(row, "pricePerSquareMeter")}
+                        onChange={(value) => updateDraft(row.variantId, "pricePerSquareMeter", value)}
+                        ariaLabel="Цена за м²"
+                      />
+                    </td>
+                  )}
+                  {columnVisible("pricePerPiece") && (
+                    <td className="px-3 py-3 align-top">
+                      <CellInput
+                        value={rowInput(row, "pricePerPiece")}
+                        onChange={(value) => updateDraft(row.variantId, "pricePerPiece", value)}
+                        ariaLabel="Цена за штуку"
+                      />
+                    </td>
+                  )}
+                  {columnVisible("piecesPerCube") && (
+                    <td className="px-3 py-3 align-top">
+                      <CellInput
+                        value={rowInput(row, "piecesPerCube")}
+                        onChange={(value) => updateDraft(row.variantId, "piecesPerCube", value)}
+                        ariaLabel="Штук в кубе"
+                      />
+                    </td>
+                  )}
+                  {columnVisible("stockQty") && (
+                    <td className="px-3 py-3 align-top">
+                      <CellInput
+                        value={rowInput(row, "stockQty")}
+                        onChange={(value) => updateDraft(row.variantId, "stockQty", value)}
+                        ariaLabel="Остаток"
+                      />
+                    </td>
+                  )}
+                  {columnVisible("variantSortOrder") && (
+                    <td className="px-3 py-3 align-top">
+                      <CellInput
+                        value={rowInput(row, "variantSortOrder")}
+                        onChange={(value) => updateDraft(row.variantId, "variantSortOrder", value)}
+                        ariaLabel="Порядок варианта"
+                      />
+                    </td>
+                  )}
+                  {columnVisible("status") && (
+                    <td className="px-3 py-3 align-top">
+                      <button
+                        type="button"
+                        onClick={() => toggleStock(row)}
+                        disabled={Boolean(saving)}
+                        className={`inline-flex min-h-10 w-full items-center justify-center rounded-xl border px-3 text-xs font-semibold ${
+                          stockIsActive
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+                            : "border-destructive/30 bg-destructive/10 text-destructive"
+                        }`}
+                      >
+                        {stockIsActive ? "в наличии" : "нет"}
+                      </button>
+                    </td>
+                  )}
+                  {columnVisible("action") && (
+                    <td className="px-3 py-3 text-right align-top">
+                      <div className="flex justify-end gap-2">
+                        {dirty && (
+                          <button
+                            type="button"
+                            onClick={() => resetRow(row)}
+                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border hover:bg-accent"
+                            aria-label="Сбросить строку"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => void saveRow(row)}
+                          disabled={!dirty || rowSaving || savingAll}
+                          className="inline-flex h-10 min-w-24 items-center justify-center gap-2 rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                          {rowSaving ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : savedId === row.variantId ? (
+                            <Check className="h-4 w-4" />
+                          ) : (
+                            <Save className="h-4 w-4" />
+                          )}
+                          {savedId === row.variantId ? "Готово" : "Сохранить"}
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -1147,6 +1603,7 @@ export function ProductsTableEditor() {
           const isSelected = selectedIds.has(row.variantId);
           const productIsActive = effectiveBoolean(row, drafts, "productActive");
           const stockIsActive = effectiveBoolean(row, drafts, "inStock");
+          const featuredIsActive = effectiveBoolean(row, drafts, "productFeatured");
           return (
             <div key={row.variantId} className={`rounded-2xl border border-border bg-card p-3 ${dirty ? "ring-1 ring-primary/40" : isSelected ? "ring-1 ring-primary/20" : ""}`}>
               <div className="flex items-start justify-between gap-3">
@@ -1159,7 +1616,12 @@ export function ProductsTableEditor() {
                     className="mt-1 h-4 w-4 shrink-0 rounded border-border accent-primary"
                   />
                   <div className="min-w-0">
-                    <p className="font-semibold text-foreground">{row.productName}</p>
+                    <CellInput
+                      value={rowInput(row, "productName")}
+                      onChange={(value) => updateDraft(row.variantId, "productName", value)}
+                      ariaLabel={`Название ${row.productName}`}
+                      className="font-semibold"
+                    />
                     <p className="mt-1 text-xs text-muted-foreground">{row.categoryName} · {saleUnitLabel(row.saleUnit)}</p>
                   </div>
                 </div>
@@ -1168,6 +1630,29 @@ export function ProductsTableEditor() {
                     без цены
                   </span>
                 )}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <CellSelect
+                  value={rowInput(row, "categoryId")}
+                  onChange={(value) => updateDraft(row.variantId, "categoryId", value)}
+                  ariaLabel="Категория"
+                >
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </CellSelect>
+                <CellSelect
+                  value={rowInput(row, "saleUnit")}
+                  onChange={(value) => updateDraft(row.variantId, "saleUnit", value)}
+                  ariaLabel="Единица продажи"
+                >
+                  <option value="BOTH">Смешанная</option>
+                  <option value="CUBE">м³</option>
+                  <option value="SQUARE">м²</option>
+                  <option value="PIECE">шт</option>
+                </CellSelect>
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <CellInput value={rowInput(row, "size")} onChange={(value) => updateDraft(row.variantId, "size", value)} ariaLabel="Размер" />
@@ -1197,6 +1682,16 @@ export function ProductsTableEditor() {
                   className="min-h-10 flex-1 rounded-xl border border-border px-3 text-xs font-semibold"
                 >
                   {productIsActive ? "На сайте" : "Скрыт"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleFeatured(row)}
+                  disabled={Boolean(saving)}
+                  className={`min-h-10 flex-1 rounded-xl border px-3 text-xs font-semibold ${
+                    featuredIsActive ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                  }`}
+                >
+                  {featuredIsActive ? "Рекоменд." : "Обычный"}
                 </button>
               </div>
               <div className="mt-3 flex gap-2">
