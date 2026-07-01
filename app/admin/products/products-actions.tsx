@@ -8,7 +8,7 @@
  * standalone wrapper, рендерится сразу после ProductsClient в server-page.
  */
 import { useRouter } from "next/navigation";
-import { Plus, FileCheck, Stethoscope, Tags } from "lucide-react";
+import { Plus, FileCheck, Stethoscope, Tags, Table2 } from "lucide-react";
 import { useAdminPageActions } from "@/components/admin/admin-page-actions";
 
 export function ProductsActions() {
@@ -31,6 +31,13 @@ export function ProductsActions() {
         href: "/admin/products/audit",
         onClick: () => router.push("/admin/products/audit"),
         hideOnMobile: true,
+      },
+      {
+        id: "price-table",
+        label: "Таблица цен",
+        icon: Table2,
+        href: "/admin/products/table",
+        onClick: () => router.push("/admin/products/table"),
       },
       {
         id: "product-types",

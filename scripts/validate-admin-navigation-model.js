@@ -61,6 +61,7 @@ const utilityRouteParents = new Map([
   ["/admin/images/fix", "/admin/media"],
   ["/admin/orders/trash", "/admin/orders"],
   ["/admin/products/import-prices", "/admin/products"],
+  ["/admin/products/table", "/admin/products"],
   ["/admin/watermark/recovery", "/admin/watermark"],
   ["/admin/workflows", "/admin/crm"],
 ]);
