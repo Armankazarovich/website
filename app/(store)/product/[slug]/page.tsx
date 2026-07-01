@@ -385,41 +385,6 @@ export default async function ProductPage({ params }: Props) {
             </div>
           </div>
 
-          {/* Quick features */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {[
-              { label: "Производитель", sub: "Без посредников", icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M2 22V9L12 3L22 9V22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 22h20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M9 22v-7h6v7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              )},
-              { label: "ГОСТ", sub: "Сертифицировано", icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L3.5 6.5V12C3.5 16.7 7.3 21.1 12 22.5C16.7 21.1 20.5 16.7 20.5 12V6.5L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M8.5 12l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              )},
-              { label: "Доставка", sub: "1–3 дня по МО", icon: (
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M1 4h13v13H1V4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M14 9h4.5L22 13v4h-8V9z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="5" cy="19" r="2" stroke="currentColor" strokeWidth="1.5"/><circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.5"/></svg>
-              )},
-            ].map((f) => (
-              <div key={f.label} className="store-feature-card flex flex-col items-center text-center p-3 rounded-xl border gap-2">
-                <div className="store-icon-tile w-9 h-9 rounded-xl shrink-0">
-                  {f.icon}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold leading-tight">{f.label}</p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">{f.sub}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {dimensionFacts.length > 0 && (
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {dimensionFacts.map((fact) => (
-                <div key={fact} className="rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-center">
-                  <p className="text-sm font-semibold leading-tight">{fact}</p>
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* Variant selector */}
           <VariantSelector
             productId={product.id}
@@ -440,6 +405,42 @@ export default async function ProductPage({ params }: Props) {
             }))}
             phoneLink={firstPhoneLink}
           />
+
+          <section className="space-y-3" aria-label="Преимущества и характеристики товара">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              {[
+                { label: "Производитель", sub: "Без посредников", icon: (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M2 22V9L12 3L22 9V22" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 22h20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M9 22v-7h6v7" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                )},
+                { label: "ГОСТ", sub: "Сертифицировано", icon: (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L3.5 6.5V12C3.5 16.7 7.3 21.1 12 22.5C16.7 21.1 20.5 16.7 20.5 12V6.5L12 2Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M8.5 12l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                )},
+                { label: "Доставка", sub: "1–3 дня по МО", icon: (
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M1 4h13v13H1V4z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M14 9h4.5L22 13v4h-8V9z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="5" cy="19" r="2" stroke="currentColor" strokeWidth="1.5"/><circle cx="18" cy="19" r="2" stroke="currentColor" strokeWidth="1.5"/></svg>
+                )},
+              ].map((f) => (
+                <div key={f.label} className="store-feature-card flex flex-col items-center text-center p-3 rounded-xl border gap-2">
+                  <div className="store-icon-tile w-9 h-9 rounded-xl shrink-0">
+                    {f.icon}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold leading-tight">{f.label}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{f.sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {dimensionFacts.length > 0 && (
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                {dimensionFacts.map((fact) => (
+                  <div key={fact} className="rounded-xl border border-border/60 bg-card/70 px-3 py-2.5 text-center">
+                    <p className="text-sm font-semibold leading-tight">{fact}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
 
           {/* Calculator link */}
           {showCalculatorLink && (
