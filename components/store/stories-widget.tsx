@@ -104,6 +104,10 @@ function storyRelations(story: Story) {
   });
 }
 
+function mediaKey(story: Story) {
+  return `${story.id}::${story.mediaUrl || ""}`;
+}
+
 function isPreviewElementVisible(element: HTMLElement) {
   const rect = element.getBoundingClientRect();
   const style = window.getComputedStyle(element);
@@ -142,11 +146,16 @@ function StoryMedia({
   const [previewVisible, setPreviewVisible] = useState(false);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [videoLoading, setVideoLoading] = useState(false);
-  const [previewVideoEnabled, setPreviewVideoEnabled] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+  // Keyed to story.id + mediaUrl (not a bare boolean) so a HEAD check that resolves for a
+  // story the widget has already moved past can never approve autoplay for the new story.
+  const [approvedPreviewKey, setApprovedPreviewKey] = useState<string | null>(null);
   const [previewPausedByScroll, setPreviewPausedByScroll] = useState(false);
   const src = storyVisual(story);
+  const currentKey = mediaKey(story);
   const hasInlineVideo = Boolean(isVideoStory(story) && story.mediaUrl && canInlineVideo(story.mediaUrl));
-  const showVideo = Boolean((expanded || previewVideoEnabled) && hasInlineVideo);
+  const previewVideoEnabled = approvedPreviewKey === currentKey;
+  const showVideo = Boolean((expanded || previewVideoEnabled) && hasInlineVideo && !(videoError && !expanded));
   const videoActive = expanded || previewVideoEnabled;
   const videoShouldPlay = videoActive && !(previewVideoEnabled && !expanded && previewPausedByScroll);
   const setVideoNode = useCallback((node: HTMLVideoElement | null) => {
@@ -186,10 +195,10 @@ function StoryMedia({
 
   useEffect(() => {
     setVideoLoading(showVideo && expanded);
-  }, [expanded, showVideo, story.mediaUrl]);
+    setVideoError(false);
+  }, [expanded, showVideo, currentKey]);
 
   useEffect(() => {
-    setPreviewVideoEnabled(false);
     if (expanded || !allowPreviewVideo || !previewVisible || !hasInlineVideo || !story.mediaUrl) return;
     if (typeof window === "undefined") return;
 
@@ -199,24 +208,29 @@ function StoryMedia({
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
     if (connection?.saveData || /(^|-)2g$/i.test(connection?.effectiveType || "")) return;
 
-    let cancelled = false;
+    const keyAtScheduleTime = currentKey;
+    const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       try {
-        const response = await fetch(story.mediaUrl || "", { method: "HEAD", cache: "force-cache" });
+        const response = await fetch(story.mediaUrl || "", {
+          method: "HEAD",
+          cache: "force-cache",
+          signal: controller.signal,
+        });
         const bytes = Number(response.headers.get("content-length") || 0);
-        if (!cancelled && bytes > 0 && bytes <= STORY_PREVIEW_VIDEO_MAX_BYTES) {
-          setPreviewVideoEnabled(true);
+        if (bytes > 0 && bytes <= STORY_PREVIEW_VIDEO_MAX_BYTES) {
+          setApprovedPreviewKey(keyAtScheduleTime);
         }
       } catch {
-        // If the server cannot answer HEAD, keep the compact widget lightweight.
+        // Aborted (story changed) or the server cannot answer HEAD — keep the widget lightweight.
       }
     }, STORY_PREVIEW_VIDEO_DELAY_MS);
 
     return () => {
-      cancelled = true;
+      controller.abort();
       window.clearTimeout(timer);
     };
-  }, [allowPreviewVideo, expanded, hasInlineVideo, previewVisible, story.mediaUrl]);
+  }, [allowPreviewVideo, expanded, hasInlineVideo, previewVisible, story.mediaUrl, currentKey]);
 
   useEffect(() => {
     setPreviewPausedByScroll(false);
@@ -253,6 +267,7 @@ function StoryMedia({
     return (
       <div className="relative h-full w-full bg-background">
         <video
+          key={currentKey}
           ref={setVideoNode}
           className="h-full w-full bg-background object-cover"
           src={story.mediaUrl || undefined}
@@ -274,6 +289,10 @@ function StoryMedia({
           onCanPlay={() => setVideoLoading(false)}
           onPlaying={() => setVideoLoading(false)}
           onWaiting={() => setVideoLoading(true)}
+          onError={() => {
+            setVideoLoading(false);
+            setVideoError(true);
+          }}
           onTimeUpdate={(event) => {
             const video = event.currentTarget;
             if (expanded && Number.isFinite(video.duration) && video.duration > 0) {
@@ -282,9 +301,29 @@ function StoryMedia({
           }}
           onEnded={expanded ? onVideoEnded : undefined}
         />
-        {videoLoading && (
+        {videoLoading && !videoError && (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/55 text-primary">
             <CirclePlay className="h-12 w-12 animate-pulse" />
+          </div>
+        )}
+        {expanded && videoError && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-background/92 px-6 text-center">
+            <p className="text-sm text-muted-foreground">Не удалось загрузить видео. Проверьте соединение и попробуйте ещё раз.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setVideoError(false);
+                setVideoLoading(true);
+                const node = videoRef.current;
+                if (node) {
+                  node.load();
+                  if (videoShouldPlay) node.play().catch(() => null);
+                }
+              }}
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+            >
+              Повторить
+            </button>
           </div>
         )}
       </div>
