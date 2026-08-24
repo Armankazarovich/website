@@ -57,6 +57,7 @@
   "browser:mobile:check:prod": "node scripts/validate-browser-store-mobile-flow.js",
   "browser:stories:check": "node scripts/validate-browser-stories-responsive.js --start-server",
   "browser:stories:check:prod": "node scripts/validate-browser-stories-responsive.js",
+  "browser:stories:recovery:check": "node scripts/validate-stories-preview-recovery.js",
     "text:check": "node scripts/validate-text-encoding-guard.js",
     "role-os:check": "node scripts/validate-dynamic-role-os.js",
     "preflight:section": "node scripts/aray-section-preflight.js",

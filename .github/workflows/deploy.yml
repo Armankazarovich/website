@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'docs/**'
   workflow_dispatch:
 
 concurrency:
@@ -17,9 +19,29 @@ jobs:
     timeout-minutes: 45
     outputs:
       sha_short: ${{ steps.sha.outputs.value }}
+      db_changed: ${{ steps.scope.outputs.db_changed }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Classify database scope
+        id: scope
+        env:
+          BEFORE_SHA: ${{ github.event.before }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          ZERO_SHA="0000000000000000000000000000000000000000"
+          if [ "$EVENT_NAME" = "push" ] && [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "$ZERO_SHA" ]; then
+            git diff --name-only "$BEFORE_SHA" "$GITHUB_SHA" > changed-files.txt
+          else
+            git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA" > changed-files.txt
+          fi
+          DB_CHANGED=$(node scripts/detect-deploy-database-changes.js < changed-files.txt)
+          echo "db_changed=$DB_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "Database scope changed: $DB_CHANGED"
+          rm -f changed-files.txt
 
       - name: Compute short SHA
         id: sha
@@ -81,6 +103,7 @@ jobs:
         run: npx prisma generate
 
       - name: Apply DB schema only (via SSH tunnel) — NO data-migrate here!
+        if: steps.scope.outputs.db_changed == 'true'
         env:
           NODE_ENV: production
         run: |
@@ -154,21 +177,26 @@ jobs:
             PREV_DIR="/home/armankmb/pilo-rus/app-previous"
             ARCHIVE="/home/armankmb/pilo-rus/build-${{ needs.build.outputs.sha_short }}.tar.gz"
             BACKUP_DIR="/home/armankmb/pilo-rus/backups"
+            DB_CHANGED="${{ needs.build.outputs.db_changed }}"
 
             echo "💿 Disk before:"
             df -h / | tail -1
 
-            # ── 1. DB backup ──
-            echo "🗄️ Backing up database..."
-            mkdir -p "$BACKUP_DIR"
-            if [ -f "$APP_DIR/.env" ]; then
+            # ── 1. DB backup (mandatory only for a database-changing release) ──
+            if [ "$DB_CHANGED" = "true" ]; then
+              echo "🗄️ Database change detected; creating mandatory backup..."
+              mkdir -p "$BACKUP_DIR"
+              [ -f "$APP_DIR/.env" ] || { echo "❌ .env missing; cannot back up database"; exit 1; }
               DB_URL=$(grep "^DATABASE_URL=" "$APP_DIR/.env" | cut -d'"' -f2 | cut -d"'" -f2)
-              if [ -n "$DB_URL" ]; then
-                DB_BACKUP="$BACKUP_DIR/db-$(date +%Y%m%d-%H%M%S).sql.gz"
-                pg_dump "$DB_URL" 2>/dev/null | gzip > "$DB_BACKUP" && echo "✅ $DB_BACKUP ($(du -sh "$DB_BACKUP" | cut -f1))" || echo "⚠️ backup failed (non-critical)"
-              fi
+              [ -n "$DB_URL" ] || { echo "❌ DATABASE_URL missing; cannot back up database"; exit 1; }
+              DB_BACKUP="$BACKUP_DIR/db-$(date +%Y%m%d-%H%M%S).sql.gz"
+              pg_dump "$DB_URL" 2>/dev/null | gzip > "$DB_BACKUP"
+              [ -s "$DB_BACKUP" ] || { echo "❌ Database backup is empty"; exit 1; }
+              echo "✅ $DB_BACKUP ($(du -sh "$DB_BACKUP" | cut -f1))"
+              ls -t "$BACKUP_DIR"/db-*.sql.gz 2>/dev/null | tail -n +4 | xargs -r rm -f
+            else
+              echo "✅ Code-only release: no database backup or mutation is required"
             fi
-            ls -t "$BACKUP_DIR"/db-*.sql.gz 2>/dev/null | tail -n +4 | xargs rm -f 2>/dev/null || true
 
             # ── 2. Preserve state (.env, uploads, images) ──
             echo "💾 Preserving state..."
@@ -204,15 +232,18 @@ jobs:
             # /sitemap.xml is now served by the Next metadata route from DB.
             rm -f "$APP_DIR/public/sitemap.xml" "$APP_DIR"/public/sitemap-*.xml "$APP_DIR"/public/server-sitemap*.xml
 
-            # ── 6. Apply schema changes + data migrations ──
-            echo "🗄️ Applying DB schema + data migrations..."
-            # Load .env into shell env so tsx data-migrate sees DATABASE_URL.
-            # Prisma CLI loads .env sama, но tsx — нет.
-            set -a
-            source .env
-            set +a
-            npx prisma db push --skip-generate --accept-data-loss 2>&1 | tail -20
-            npx tsx prisma/data-migrate.ts
+            # ── 6. Apply schema changes + data migrations only when this release contains them ──
+            if [ "$DB_CHANGED" = "true" ]; then
+              echo "🗄️ Applying protected DB schema + data migrations..."
+              # Load .env into shell env so tsx data-migrate sees DATABASE_URL.
+              set -a
+              source .env
+              set +a
+              npx prisma db push --skip-generate --accept-data-loss 2>&1 | tail -20
+              npx tsx prisma/data-migrate.ts
+            else
+              echo "✅ Code-only release: database schema and data migrations are skipped"
+            fi
 
             # ── 7. Restart pm2 ──
             echo "🚀 Restarting pm2..."

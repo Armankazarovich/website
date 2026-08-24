@@ -47,7 +47,7 @@ No Prisma change, no other file touched, Escape/sort-order/media-pipeline untouc
 
 ## Reproducible check (new)
 
-`scripts/validate-stories-preview-recovery.js` — not wired into `package.json` or any deploy/release script (out of scope for this correction); run manually with `BROWSER_BASE_URL=http://localhost:3111 node scripts/validate-stories-preview-recovery.js`.
+`scripts/validate-stories-preview-recovery.js` был создан в этой коррекции. В финальном кандидате 0.9.1 он также подключён к `package.json` и обязательному deploy preflight; запуск: `BROWSER_BASE_URL=http://localhost:3111 npm run browser:stories:recovery:check`.
 
 **No database writes.** It drives a real, isolated headless Chromium (its own `--user-data-dir`, its own `--remote-debugging-port=9331`) against the already-running local dev server and injects three synthetic stories purely at the network layer, by patching `window.fetch` (via `Page.addScriptToEvaluateOnNewDocument`, before any app script runs) to intercept only the widget's own `/api/stories` call on a product page:
 
@@ -57,7 +57,7 @@ No Prisma change, no other file touched, Escape/sort-order/media-pipeline untouc
 
 All other requests (the real page, the real `orb-v2.mp4` / `hero-video.mp4` bytes) go over the real local network — untouched.
 
-### Result: 13/13 gates passed
+### Result финального кандидата: 14/14 gates passed
 
 ```
 OK Local server is available
@@ -66,11 +66,12 @@ OK Stories widget present on test page
 OK Test fetch shim is active (no DB writes used)
 OK Story A (light video) preview approved and mounted
 OK Story A received a real GET for its own file                              — GET count for /aray/orb-v2.mp4: 1
-OK Preview error leaves the poster mounted (no auto re-mount)
-OK Preview error does not trigger a repeated GET                             — 0 new GET after the dispatched error
 OK Switching to heavy story B does not reuse A's approval                    — no <video> mounted on the very next paint after switching
 OK Closed widget never issues GET/Range for the heavy story                  — []
 OK Heavy story stays on its poster in the closed widget
+OK Story A can be approved again after returning from story B
+OK Preview error leaves the poster mounted (no auto re-mount)
+OK Preview error does not trigger a repeated GET                             — 0 new GET after the dispatched error
 OK A non-ok HEAD response never approves the preview                        — 404 HEAD never mounted a <video>
 OK Only HEAD (no GET) was attempted against the failing URL                  — []
 ```

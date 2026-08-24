@@ -160,8 +160,7 @@ node -e "const webpush = require('web-push'); const keys = webpush.generateVAPID
 ## 7. Admin панель
 
 - URL: https://pilo-rus.ru/admin
-- Email: info@pilo-rus.ru
-- Пароль: PiloAdmin2026! (изменить после первого входа!)
+- Логин и пароль хранятся только в защищённом окружении и не коммитятся в Git.
 
 ## Полезные команды
 

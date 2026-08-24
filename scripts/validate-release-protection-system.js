@@ -27,6 +27,10 @@ function includesAll(relPath, tokens) {
 const packageJson = JSON.parse(read("package.json"));
 const qualityGate = read("scripts/aray-quality-gate.js");
 const deployPreflight = exists("scripts/deploy-preflight.js") ? read("scripts/deploy-preflight.js") : "";
+const productionWorkflow = exists(".github/workflows/deploy.yml") ? read(".github/workflows/deploy.yml") : "";
+const deployScopeModule = exists("scripts/detect-deploy-database-changes.js")
+  ? require(filePath("scripts/detect-deploy-database-changes.js"))
+  : null;
 
 const checks = [];
 
@@ -64,6 +68,21 @@ check(
     "Blocked: there are uncommitted changes",
   ]),
   "Preflight should refuse to deploy a different commit than the tested worktree.",
+);
+
+check(
+  "Code-only releases cannot mutate production database",
+  Boolean(deployScopeModule?.hasDatabaseChanges) &&
+    deployScopeModule.hasDatabaseChanges([
+      "components/store/stories-widget.tsx",
+      "scripts/validate-stories-preview-recovery.js",
+    ]) === false &&
+    deployScopeModule.hasDatabaseChanges(["prisma/schema.prisma"]) === true &&
+    deployScopeModule.hasDatabaseChanges(["prisma/data-migrate.ts"]) === true &&
+    deployScopeModule.hasDatabaseChanges(["prisma/migrations/20260824_safe/migration.sql"]) === true &&
+    productionWorkflow.includes("db_changed") &&
+    productionWorkflow.includes("Code-only release: database schema and data migrations are skipped"),
+  "Stories-only deploys must skip every Prisma schema/data command; actual Prisma changes must still take the protected database path.",
 );
 
 check(
@@ -141,6 +160,14 @@ check(
       "1366",
     ]),
   "Deploy must include a responsive browser check for the public stories widget.",
+);
+
+check(
+  "Stories preview recovery guard is wired before deploy",
+  Boolean(packageJson.scripts?.["browser:stories:recovery:check"]) &&
+    deployPreflight.includes("browser:stories:recovery:check") &&
+    exists("scripts/validate-stories-preview-recovery.js"),
+  "The exact light-to-heavy video race and preview-error recovery scenario must run in every deployment preflight.",
 );
 
 check(

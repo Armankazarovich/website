@@ -36,6 +36,7 @@ const requiredIds = [
   "constructor.store-builder",
   "core.aray-voice",
   "core.notifications",
+  "marketing.store-stories",
 ];
 
 const requiredFiles = [

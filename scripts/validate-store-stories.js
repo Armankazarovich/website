@@ -13,6 +13,28 @@ function exists(relativePath) {
 
 const checks = [
   {
+    file: "lib/aray-module-registry.ts",
+    label: "stories are registered in the canonical module registry with versioned protection gates",
+    patterns: [
+      'id: "marketing.store-stories"',
+      '"validate-store-stories"',
+      '"validate-browser-stories-responsive"',
+      '"validate-stories-preview-recovery"',
+      '"docs/evidence/stories/MODULE-PASSPORT-0.9.1.md"',
+    ],
+  },
+  {
+    file: "docs/evidence/stories/MODULE-PASSPORT-0.9.1.md",
+    label: "stories module has a versioned passport and drift lock",
+    patterns: [
+      "marketing.store-stories",
+      "0.9.1",
+      "Drift Lock",
+      "scripts/validate-stories-preview-recovery.js",
+      ".github/workflows/deploy.yml",
+    ],
+  },
+  {
     file: "prisma/schema.prisma",
     label: "database has stories, views and many-to-one story relations",
     patterns: [
@@ -159,6 +181,8 @@ const checks = [
 ];
 
 const requiredFiles = [
+  "lib/aray-module-registry.ts",
+  "docs/evidence/stories/MODULE-PASSPORT-0.9.1.md",
   "app/api/admin/stories/route.ts",
   "app/api/admin/stories/[id]/route.ts",
   "app/api/admin/stories/entity-options/route.ts",

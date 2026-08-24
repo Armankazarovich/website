@@ -292,20 +292,9 @@ async function main() {
 
     screenshots.storyA = await client.send("Page.captureScreenshot", { format: "png" });
 
-    // --- Check 1: preview error must not loop (no repeated auto-mount / auto-GET) ---
-    client.clearEventLog();
-    await client.evaluate(`document.querySelector('[data-store-stories-card] video')?.dispatchEvent(new Event('error')); true`);
-    await sleep(2500); // long enough to catch any re-mount/re-fetch loop if the bug regressed
-
-    const videoAfterError = await client.evaluate(`Boolean(document.querySelector('[data-store-stories-card] video'))`);
-    check("Preview error leaves the poster mounted (no auto re-mount)", !videoAfterError, "A <video> element re-appeared after a preview error without any story/media change.");
-
-    const getsAfterError = client.networkRequests(LIGHT_VIDEO).filter((r) => r.method === "GET").length;
-    check("Preview error does not trigger a repeated GET", getsAfterError === 0, `Expected 0 new GET for ${LIGHT_VIDEO} after the error, saw ${getsAfterError}.`);
-
-    screenshots.afterError = await client.send("Page.captureScreenshot", { format: "png" });
-
-    // --- Check 2: switching light (A) -> heavy (B) must never reuse A's approval ---
+    // --- Check 1: switching light (A) -> heavy (B) while A is still approved must
+    // synchronously invalidate A's permission. Running the error scenario first would
+    // revoke A's approval and could let the original stale-boolean bug escape this test.
     client.clearEventLog();
     await clickDot(client, 2); // story index 1 = heavy
     await sleep(50); // check the very next paint, before any HEAD check could possibly resolve
@@ -323,6 +312,28 @@ async function main() {
     check("Heavy story stays on its poster in the closed widget", !heavyVideoStillMounted, "Heavy story's <video> mounted despite exceeding the 12MB preview threshold.");
 
     screenshots.storyB = await client.send("Page.captureScreenshot", { format: "png" });
+
+    // --- Check 2: preview error must not loop (no repeated auto-mount / auto-GET) ---
+    await clickDot(client, 1); // return to light story A and obtain a fresh exact-key approval
+    let lightReapprovedVideoPresent = false;
+    for (let i = 0; i < 40; i += 1) {
+      lightReapprovedVideoPresent = await client.evaluate(`Boolean(document.querySelector('[data-store-stories-card] video'))`);
+      if (lightReapprovedVideoPresent) break;
+      await sleep(100);
+    }
+    check("Story A can be approved again after returning from story B", lightReapprovedVideoPresent, "Expected story A to receive a fresh approval for its own media key.");
+
+    client.clearEventLog();
+    await client.evaluate(`document.querySelector('[data-store-stories-card] video')?.dispatchEvent(new Event('error')); true`);
+    await sleep(2500); // long enough to catch any re-mount/re-fetch loop if the bug regressed
+
+    const videoAfterError = await client.evaluate(`Boolean(document.querySelector('[data-store-stories-card] video'))`);
+    check("Preview error leaves the poster mounted (no auto re-mount)", !videoAfterError, "A <video> element re-appeared after a preview error without any story/media change.");
+
+    const getsAfterError = client.networkRequests(LIGHT_VIDEO).filter((r) => r.method === "GET").length;
+    check("Preview error does not trigger a repeated GET", getsAfterError === 0, `Expected 0 new GET for ${LIGHT_VIDEO} after the error, saw ${getsAfterError}.`);
+
+    screenshots.afterError = await client.send("Page.captureScreenshot", { format: "png" });
 
     // --- Check 3: HEAD response.ok must gate approval, independent of byte size ---
     client.clearEventLog();
