@@ -6,7 +6,11 @@ Module ID: `marketing.store-stories`
 
 Владелец: PiloRus
 
-Статус: **RELEASE CANDIDATE** — станет `PROTECTED STABLE` только после успешного выпуска и независимой проверки на `pilo-rus.ru`.
+Статус: **PROTECTED PATCH** — версия 0.9.1 выпущена и независимо проверена на `pilo-rus.ru` 2026-08-24. Канонический модуль остаётся `beta` до устранения перечисленного ниже долга доступности и выпуска 1.0.0.
+
+Source fingerprint: `b8594c675eca6a208b505e575819c9ebe9a983b0`
+
+Live evidence: `docs/evidence/stories/LIVE-RELEASE-0.9.1-2026-08-24.md`
 
 ## Пользовательская задача
 
@@ -69,6 +73,8 @@ Module ID: `marketing.store-stories`
 - `.github/workflows/deploy.yml`.
 
 Для code-only выпуска классификатор обязан вернуть `db_changed=false`; тогда workflow пропускает резервную копию, `prisma db push` и `prisma/data-migrate.ts`. Любое реальное изменение Prisma переводит выпуск на отдельный защищённый путь с обязательной резервной копией.
+
+Защита 0.9.1 считается актуальной только для source fingerprint выше. Любое изменение владельца или обязательной проверки переводит этот паспорт в stale до повторного полного шлюза, живого браузера и новой версии.
 
 ## Откат
 
