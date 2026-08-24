@@ -195,8 +195,14 @@ function StoryMedia({
 
   useEffect(() => {
     setVideoLoading(showVideo && expanded);
+  }, [expanded, showVideo]);
+
+  // Reset only when the story/media identity actually changes — never as a side effect of
+  // showVideo (which itself depends on videoError), or a preview error would immediately
+  // clear itself, re-enable the video, fail again, and loop forever.
+  useEffect(() => {
     setVideoError(false);
-  }, [expanded, showVideo, currentKey]);
+  }, [currentKey]);
 
   useEffect(() => {
     if (expanded || !allowPreviewVideo || !previewVisible || !hasInlineVideo || !story.mediaUrl) return;
@@ -218,7 +224,7 @@ function StoryMedia({
           signal: controller.signal,
         });
         const bytes = Number(response.headers.get("content-length") || 0);
-        if (bytes > 0 && bytes <= STORY_PREVIEW_VIDEO_MAX_BYTES) {
+        if (response.ok && bytes > 0 && bytes <= STORY_PREVIEW_VIDEO_MAX_BYTES) {
           setApprovedPreviewKey(keyAtScheduleTime);
         }
       } catch {
@@ -292,6 +298,12 @@ function StoryMedia({
           onError={() => {
             setVideoLoading(false);
             setVideoError(true);
+            if (!expanded) {
+              // Revoke exactly this story's preview approval so it can never silently
+              // re-mount the same failing file — only a genuine story/media change
+              // (a fresh HEAD check) or an explicit open may grant it again.
+              setApprovedPreviewKey((prev) => (prev === currentKey ? null : prev));
+            }
           }}
           onTimeUpdate={(event) => {
             const video = event.currentTarget;
