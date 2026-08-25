@@ -10,7 +10,7 @@ Module ID: `marketing.store-stories`
 
 Предыдущая защищённая версия: `0.9.1`, паспорт `docs/evidence/stories/MODULE-PASSPORT-0.9.1.md`.
 
-Source fingerprint: будет закреплён финальным release receipt после полного шлюза.
+Source fingerprint кандидата: `c0f6e6c` (паспорт, registry и release protection; финальный release receipt закрепит полный SHA).
 
 ## Пользовательская задача
 

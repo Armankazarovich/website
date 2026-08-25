@@ -88,10 +88,10 @@
 - Consumes: current StoreStory id, tenant and local `mediaUrl`.
 - Produces: conditional publish receipt and `rollbackStoryMediaJob(id, tenantId)`.
 
-- [ ] Add a failing test using a temporary Prisma adapter contract: publish only when the current URL still matches, preserve every unrelated field, and rollback only from the generated URL to the recorded original.
-- [ ] Run and verify the conditional publish assertions fail.
-- [ ] Implement manager-confirmed optimize/rollback API and worker publication using `updateMany` guards and rollback receipt before mutation.
-- [ ] Run the contract and failure-conflict tests, then commit.
+- [x] Add a failing test using a temporary Prisma adapter contract: publish only when the current URL still matches, preserve every unrelated field, and rollback only from the generated URL to the recorded original.
+- [x] Run and verify the conditional publish assertions fail.
+- [x] Implement manager-confirmed optimize/rollback API and worker publication using `updateMany` guards and rollback receipt before mutation.
+- [x] Run the contract and failure-conflict tests, then commit.
 
 ### Task 5: Manager experience and honest copy
 
@@ -104,10 +104,10 @@
 - Consumes: upload/reprocess state and job status.
 - Produces: visible upload, processing, ready, failed, retry, optimize and rollback controls.
 
-- [ ] Add failing module gates for the approved human texts and recovery controls.
-- [ ] Run `npm run stories:check` and verify the new gates fail.
-- [ ] Implement the smallest UI changes, disable save during unfinished processing, apply auto-poster only when empty, and distinguish recorded LIVE from future direct streaming.
-- [ ] Run `npm run stories:check`, TypeScript and text checks; commit.
+- [x] Add failing module gates for the approved human texts and recovery controls.
+- [x] Run `npm run stories:check` and verify the new gates fail.
+- [x] Implement the smallest UI changes, disable save during unfinished processing, apply auto-poster only when empty, and distinguish recorded LIVE from future direct streaming.
+- [x] Run `npm run stories:check`, TypeScript and text checks; commit.
 
 ### Task 6: Passport, registry and release protection
 
@@ -121,10 +121,10 @@
 **Interfaces:**
 - Produces: versioned Module DNA, owners, dependencies, checks, migration/rollback and Drift Lock.
 
-- [ ] Add failing registry/release gates for version 0.10.0, media check, worker files, bundled encoder presence and rollback contract.
-- [ ] Run the gates and verify failure before passport/registry changes.
-- [ ] Write the passport, update the existing registry entry and ensure release artifact contains both binaries and worker files.
-- [ ] Run stories, modules, protection and release checks; commit.
+- [x] Add failing registry/release gates for version 0.10.0, media check, worker files, bundled encoder presence and rollback contract.
+- [x] Run the gates and verify failure before passport/registry changes.
+- [x] Write the passport, update the existing registry entry and ensure release artifact contains both binaries and worker files.
+- [x] Run stories, modules, protection and release checks; commit.
 
 ### Task 7: Local browser and production candidate verification
 
