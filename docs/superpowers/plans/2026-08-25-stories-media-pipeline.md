@@ -6,7 +6,7 @@
 
 **Architecture:** Чистая policy-библиотека и отдельный worker управляют FFmpeg/FFprobe, а файловая очередь вне публичного каталога отделяет тяжёлую работу от HTTP-запроса и Prisma. Существующие upload API и `/admin/stories` становятся адаптерами; публичный контракт `mediaUrl` остаётся совместимым.
 
-**Tech Stack:** Next.js 14, TypeScript/React, Node.js child process, Prisma 5, `ffmpeg-static`, `ffprobe-static`, filesystem receipts, Playwright project checks.
+**Tech Stack:** Next.js 14, TypeScript/React, Node.js child process, Prisma 5, `ffmpeg-static`, filesystem receipts, Playwright project checks.
 
 **Spec:** `docs/superpowers/specs/2026-08-25-stories-media-pipeline-design.md`
 
@@ -34,7 +34,7 @@
 
 - [ ] Write Node assertions for small MP4 pass-through, MOV/large MP4 optimization, required H.264/AAC/faststart profile, invalid job IDs and rejected oversized/incompatible output.
 - [ ] Run `node scripts/test-story-media-pipeline.cjs` and verify it fails because the policy module is missing.
-- [ ] Add pinned `ffmpeg-static` and `ffprobe-static` dependencies and implement the minimal pure policy.
+- [ ] Add pinned `ffmpeg-static` dependency and implement the minimal pure policy.
 - [ ] Run the test and verify all policy assertions pass.
 - [ ] Commit the tested policy slice.
 
@@ -47,12 +47,12 @@
 - Modify: `.gitignore`
 
 **Interfaces:**
-- Consumes: Task 1 policy and bundled binaries.
+- Consumes: Task 1 policy and bundled FFmpeg binary.
 - Produces: `createStoryMediaJob(input)`, `getStoryMediaJob(id)`, `retryStoryMediaJob(id)` and sanitized `StoryMediaJobPublic`.
 
 - [ ] Extend the failing test to generate a real short vertical fixture and assert source preservation, queue states, H.264/AAC output, poster, atomic final names and no remaining processing file.
 - [ ] Run the test and verify the queue/worker assertions fail before implementation.
-- [ ] Implement atomic job receipts, one-worker lock, FFmpeg execution, FFprobe validation, poster generation, safe public status and idempotent retry.
+- [ ] Implement atomic job receipts, one-worker lock, FFmpeg execution, validation by control decode/metadata output, poster generation, safe public status and idempotent retry.
 - [ ] Run the real integration test and verify success and failure/retry branches.
 - [ ] Commit the queue/worker slice.
 
@@ -156,4 +156,3 @@
 - [ ] Verify live desktop/tablet/mobile playback under constrained network, HTTP 206, console/network, views, CTA, relations and second-story non-mutation.
 - [ ] Exercise rollback, verify the original plays, then reapply the same ready web-copy only if rollback proof is green.
 - [ ] Promote to `0.10.0-rc.1`; promote to `1.0.0` only after the second heavy story and a future manager upload pass the same matrix.
-
