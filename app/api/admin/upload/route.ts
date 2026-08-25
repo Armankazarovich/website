@@ -3,10 +3,14 @@ export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+import { dirname, join } from "path";
 import { existsSync } from "fs";
 import { randomUUID } from "crypto";
 import { canUploadGlobalMedia } from "@/lib/media-permissions";
+
+const { completeStoryVideoUpload, planStoryVideoUpload } = require("@/lib/story-media-upload.cjs");
+
+export const runtime = "nodejs";
 
 // Максимальные размеры и качество для разных папок
 const RESIZE_CONFIG: Record<string, { width: number; height: number; quality: number }> = {
@@ -187,6 +191,26 @@ export async function POST(req: Request) {
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 
   if (isVideo) {
+    if (folder === "stories") {
+      const plan = planStoryVideoUpload({
+        uploadStem: `upload-${uploadId}`,
+        extension: extRaw,
+        mime: normalizedMime,
+        fileSize: file.size,
+        publicRoot: dir,
+      });
+      await mkdir(dirname(plan.sourcePath), { recursive: true });
+      await writeFile(plan.sourcePath, inputBuffer);
+      try {
+        const payload = completeStoryVideoUpload(plan);
+        return NextResponse.json(payload, { status: payload.status === "READY" ? 200 : 202 });
+      } catch {
+        return NextResponse.json(
+          { error: "Не удалось запустить подготовку видео. Оригинал сохранён." },
+          { status: 503 },
+        );
+      }
+    }
     const filename = `upload-${uploadId}.${extRaw}`;
     await writeFile(join(dir, filename), inputBuffer);
     return NextResponse.json({ url: `/images/${folder}/${filename}` });

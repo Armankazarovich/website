@@ -54,11 +54,12 @@
 - [x] Run the test and verify the queue/worker assertions fail before implementation.
 - [x] Implement atomic job receipts, one-worker lock, FFmpeg execution, validation by control decode/metadata output, poster generation, safe public status and idempotent retry.
 - [x] Run the real integration test and verify success and failure/retry branches.
-- [ ] Commit the queue/worker slice.
+- [x] Commit the queue/worker slice.
 
 ### Task 3: Upload and status API adapters
 
 **Files:**
+- Create: `lib/story-media-upload.cjs`
 - Create: `app/api/admin/story-media/jobs/[id]/route.ts`
 - Modify: `app/api/admin/upload/route.ts`
 - Modify: `app/api/admin/upload/chunk/route.ts`
@@ -69,11 +70,11 @@
 - Consumes: `createStoryMediaJob`, `getStoryMediaJob`, `retryStoryMediaJob`.
 - Produces: upload payload `{ url?; jobId?; status?; originalUrl?; posterUrl? }`, `uploadStoryMediaFile(file, options)` and retry polling.
 
-- [ ] Add a failing contract test for protected job payloads, polling terminal states and the rule that a heavy upload never returns its original URL as ready playback.
-- [ ] Run the test and verify failure on the old upload response.
-- [ ] Route story videos through the queue while leaving images and non-story uploads unchanged; add protected GET/POST status handling.
-- [ ] Update the client to poll jobs, expose progress states and return poster metadata while preserving the existing string API for other media screens.
-- [ ] Run focused media and TypeScript checks, then commit.
+- [x] Add a failing contract test for protected job payloads, polling terminal states and the rule that a heavy upload never returns its original URL as ready playback.
+- [x] Run the test and verify failure on the old upload response.
+- [x] Route story videos through the queue while leaving images and non-story uploads unchanged; add protected GET/POST status handling.
+- [x] Update the client to poll jobs, expose progress states and return poster metadata while preserving the existing string API for other media screens.
+- [x] Run focused media and TypeScript checks, then commit.
 
 ### Task 4: Existing-story canary and rollback
 

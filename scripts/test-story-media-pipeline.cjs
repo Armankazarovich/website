@@ -11,6 +11,10 @@ const {
   getStoryMediaJobPublic,
   resolveStoryMediaSourceFromUrl,
 } = require("../lib/story-media-jobs.cjs");
+const {
+  completeStoryVideoUpload,
+  planStoryVideoUpload,
+} = require("../lib/story-media-upload.cjs");
 const { runStoryMediaJob } = require("../lib/story-media-worker.cjs");
 
 const {
@@ -73,6 +77,60 @@ check("local story media URLs resolve only inside the story folder", () => {
   );
   assert.throws(() => resolveStoryMediaSourceFromUrl("/images/stories/../secret.mp4", { publicRoot }));
   assert.throws(() => resolveStoryMediaSourceFromUrl("https://example.com/video.mp4", { publicRoot }));
+});
+
+check("upload plan keeps small MP4 direct and stages heavy video as an original", () => {
+  const publicRoot = path.resolve("public", "images", "stories");
+  const small = planStoryVideoUpload({
+    uploadStem: "upload-small-1234",
+    extension: "mp4",
+    mime: "video/mp4",
+    fileSize: 4 * 1024 * 1024,
+    publicRoot,
+  });
+  assert.equal(small.optimize, false);
+  assert.equal(small.sourcePath, path.join(publicRoot, "upload-small-1234.mp4"));
+  assert.equal(small.sourceUrl, "/images/stories/upload-small-1234.mp4");
+
+  const heavy = planStoryVideoUpload({
+    uploadStem: "upload-heavy-1234",
+    extension: "mp4",
+    mime: "video/mp4",
+    fileSize: STORY_MEDIA_OPTIMIZE_THRESHOLD_BYTES + 1,
+    publicRoot,
+  });
+  assert.equal(heavy.optimize, true);
+  assert.equal(heavy.sourcePath, path.join(publicRoot, "originals", "upload-heavy-1234.mp4"));
+  assert.equal(heavy.sourceUrl, "/images/stories/originals/upload-heavy-1234.mp4");
+});
+
+check("heavy upload returns a job and never exposes the original as ready playback", () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "pilorus-story-upload-"));
+  const publicRoot = path.join(tempRoot, "public", "images", "stories");
+  const jobsRoot = path.join(tempRoot, ".story-media-jobs");
+  try {
+    const plan = planStoryVideoUpload({
+      uploadStem: "upload-heavy-5678",
+      extension: "mov",
+      mime: "video/quicktime",
+      fileSize: 2_048,
+      publicRoot,
+    });
+    fs.mkdirSync(path.dirname(plan.sourcePath), { recursive: true });
+    fs.writeFileSync(plan.sourcePath, "preserved original", "utf8");
+    const payload = completeStoryVideoUpload(plan, {
+      jobsRoot,
+      ffmpegPath,
+      runInBackground: false,
+    });
+    assert.equal(payload.status, "QUEUED");
+    assert.ok(isSafeStoryMediaJobId(payload.jobId));
+    assert.equal(payload.originalUrl, plan.sourceUrl);
+    assert.equal(payload.url, null);
+    assert.notEqual(payload.url, payload.originalUrl);
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
 });
 
 check("encoder profile is mobile-safe and serial", () => {

@@ -6,7 +6,11 @@ import { canUploadGlobalMedia } from "@/lib/media-permissions";
 import { randomUUID } from "crypto";
 import { existsSync } from "fs";
 import { mkdir, open, readFile, rm, stat, writeFile } from "fs/promises";
-import { join } from "path";
+import { dirname, join } from "path";
+
+const { completeStoryVideoUpload, planStoryVideoUpload } = require("@/lib/story-media-upload.cjs");
+
+export const runtime = "nodejs";
 
 const RESIZE_CONFIG: Record<string, { width: number; height: number; quality: number }> = {
   categories: { width: 900, height: 600, quality: 85 },
@@ -198,8 +202,19 @@ export async function POST(req: Request) {
   await mkdir(targetDir, { recursive: true });
 
   if (isVideo) {
+    const storyPlan = folder === "stories"
+      ? planStoryVideoUpload({
+          uploadStem: `upload-${uploadName}`,
+          extension: extRaw,
+          mime: normalizedMime,
+          fileSize,
+          publicRoot: targetDir,
+        })
+      : null;
     const filename = `upload-${uploadName}.${extRaw}`;
-    const output = await open(join(targetDir, filename), "w");
+    const targetPath = storyPlan?.sourcePath || join(targetDir, filename);
+    if (storyPlan) await mkdir(dirname(storyPlan.sourcePath), { recursive: true });
+    const output = await open(targetPath, "w");
     try {
       for (let i = 0; i < total; i += 1) {
         await output.write(await readFile(join(chunkRoot, `${i}.part`)));
@@ -208,6 +223,17 @@ export async function POST(req: Request) {
       await output.close();
     }
     await cleanup(chunkRoot);
+    if (storyPlan) {
+      try {
+        const payload = completeStoryVideoUpload(storyPlan);
+        return NextResponse.json(payload, { status: payload.status === "READY" ? 200 : 202 });
+      } catch {
+        return NextResponse.json(
+          { error: "Не удалось запустить подготовку видео. Оригинал сохранён." },
+          { status: 503 },
+        );
+      }
+    }
     return NextResponse.json({ ok: true, done: true, url: `/images/${folder}/${filename}` });
   }
 
