@@ -30,6 +30,7 @@ dev-server*.err.log
 dev-*.log
 dev-*.err.log
 /tmp/
+/.story-media-jobs/
 
 # local backups / generated visual references
 /backups/

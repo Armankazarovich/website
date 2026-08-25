@@ -32,17 +32,17 @@
 **Interfaces:**
 - Produces: `shouldOptimizeStoryVideo(input)`, `buildStoryFfmpegArgs(input, output)`, `validateStoryMediaProbe(probe, sourceSize, outputSize)`, `isSafeStoryMediaJobId(value)`.
 
-- [ ] Write Node assertions for small MP4 pass-through, MOV/large MP4 optimization, required H.264/AAC/faststart profile, invalid job IDs and rejected oversized/incompatible output.
-- [ ] Run `node scripts/test-story-media-pipeline.cjs` and verify it fails because the policy module is missing.
-- [ ] Add pinned `ffmpeg-static` dependency and implement the minimal pure policy.
-- [ ] Run the test and verify all policy assertions pass.
-- [ ] Commit the tested policy slice.
+- [x] Write Node assertions for small MP4 pass-through, MOV/large MP4 optimization, required H.264/AAC/faststart profile, invalid job IDs and rejected oversized/incompatible output.
+- [x] Run `node scripts/test-story-media-pipeline.cjs` and verify it fails because the policy module is missing.
+- [x] Add pinned `ffmpeg-static` dependency and implement the minimal pure policy.
+- [x] Run the test and verify all policy assertions pass.
+- [x] Commit the tested policy slice.
 
 ### Task 2: Durable queue and worker
 
 **Files:**
 - Create: `lib/story-media-worker.cjs`
-- Create: `lib/story-media-jobs.ts`
+- Create: `lib/story-media-jobs.cjs`
 - Modify: `scripts/test-story-media-pipeline.cjs`
 - Modify: `.gitignore`
 
@@ -50,10 +50,10 @@
 - Consumes: Task 1 policy and bundled FFmpeg binary.
 - Produces: `createStoryMediaJob(input)`, `getStoryMediaJob(id)`, `retryStoryMediaJob(id)` and sanitized `StoryMediaJobPublic`.
 
-- [ ] Extend the failing test to generate a real short vertical fixture and assert source preservation, queue states, H.264/AAC output, poster, atomic final names and no remaining processing file.
-- [ ] Run the test and verify the queue/worker assertions fail before implementation.
-- [ ] Implement atomic job receipts, one-worker lock, FFmpeg execution, validation by control decode/metadata output, poster generation, safe public status and idempotent retry.
-- [ ] Run the real integration test and verify success and failure/retry branches.
+- [x] Extend the failing test to generate a real short vertical fixture and assert source preservation, queue states, H.264/AAC output, poster, atomic final names and no remaining processing file.
+- [x] Run the test and verify the queue/worker assertions fail before implementation.
+- [x] Implement atomic job receipts, one-worker lock, FFmpeg execution, validation by control decode/metadata output, poster generation, safe public status and idempotent retry.
+- [x] Run the real integration test and verify success and failure/retry branches.
 - [ ] Commit the queue/worker slice.
 
 ### Task 3: Upload and status API adapters
@@ -80,7 +80,7 @@
 **Files:**
 - Create: `app/api/admin/stories/[id]/media/route.ts`
 - Modify: `lib/story-media-worker.cjs`
-- Modify: `lib/story-media-jobs.ts`
+- Modify: `lib/story-media-jobs.cjs`
 - Modify: `scripts/test-story-media-pipeline.cjs`
 
 **Interfaces:**
