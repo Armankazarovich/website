@@ -18,6 +18,8 @@ import {
   Play,
   Plus,
   Radio,
+  RefreshCw,
+  RotateCcw,
   Search,
   Share2,
   Sparkles,
@@ -31,7 +33,14 @@ import { AdminModal } from "@/components/admin/admin-modal";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { uploadAdminMediaFile } from "@/lib/admin-upload-client";
+import {
+  monitorStoryMediaJob,
+  retryStoryMediaUpload,
+  StoryMediaUploadError,
+  type StoryMediaUploadState,
+  uploadAdminMediaFile,
+  uploadStoryMediaFile,
+} from "@/lib/admin-upload-client";
 
 const MediaPickerModal = dynamic(
   () => import("@/app/admin/media/media-client").then((m) => ({ default: m.MediaPickerModal })),
@@ -69,6 +78,28 @@ type Story = {
 };
 
 type StoryForm = Omit<Story, "id" | "views" | "createdAt"> & { id?: string };
+
+type StoryMediaCardState = StoryMediaUploadState & {
+  canRollback?: boolean;
+};
+
+function storyMediaPhase(status?: string): StoryMediaUploadState["phase"] {
+  if (status === "PROCESSING") return "processing";
+  if (status === "PUBLISHING") return "publishing";
+  if (status === "READY") return "ready";
+  if (status === "FAILED") return "failed";
+  return "queued";
+}
+
+function storyMediaMessage(phase: StoryMediaUploadState["phase"], fallback?: string | null) {
+  if (fallback) return fallback;
+  if (phase === "queued") return "Видео в очереди. Оригинал сохранён.";
+  if (phase === "processing") return "Готовим лёгкую web-копию. Сторис пока использует прежнее видео.";
+  if (phase === "publishing") return "Проверяем и безопасно подключаем готовую web-копию.";
+  if (phase === "ready") return "Лёгкая web-копия подключена. Оригинал сохранён для отката.";
+  if (phase === "failed") return "Не удалось подготовить видео. Сторис не изменена, оригинал сохранён.";
+  return "Загружаем исходник…";
+}
 
 type StoryRelation = {
   entityType: string;
@@ -120,7 +151,7 @@ const BLANK_STORY: StoryForm = {
 const TYPE_LABEL: Record<StoryType, string> = {
   IMAGE: "Фото",
   VIDEO: "Видео",
-  LIVE: "Live",
+  LIVE: "Онлайн-продавец",
 };
 
 const ENTITY_LABEL: Record<string, string> = {
@@ -379,6 +410,7 @@ function StoryModal({
   const [form, setForm] = useState<StoryForm>(() => normalizeForm(story));
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState<"media" | "poster" | null>(null);
+  const [mediaUploadState, setMediaUploadState] = useState<StoryMediaUploadState | null>(null);
   const [mediaPickerTarget, setMediaPickerTarget] = useState<"media" | "poster" | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
   const [entityOptions, setEntityOptions] = useState<EntityOption[]>([]);
@@ -465,8 +497,8 @@ function StoryModal({
         ...prev,
         type: "LIVE",
         title: "Онлайн-продавец",
-        subtitle: "Живой обзор товара и ответы на вопросы",
-        description: "Закрепленный эфир или короткое видео, которое встречает посетителя и помогает быстрее выбрать.",
+        subtitle: "Записанный обзор товара и ответы на частые вопросы",
+        description: "Короткое видео онлайн-продавца встречает посетителя и помогает быстрее выбрать. Прямой эфир подключается отдельным модулем.",
         ctaLabel: "Задать вопрос",
         ctaUrl: "/contacts",
         entityType: null,
@@ -513,11 +545,50 @@ function StoryModal({
     setUploading(target);
     setError("");
     try {
-      const url = await uploadAdminMediaFile(file, "stories");
       const pickedKind = pickedMediaKindFromFile(file);
-      applyStoryMedia(target, url, pickedKind);
+      if (target === "media" && pickedKind === "video") {
+        const result = await uploadStoryMediaFile(file, { onState: setMediaUploadState });
+        applyStoryMedia(target, result.url, pickedKind);
+        if (result.posterUrl) {
+          setForm((prev) => ({ ...prev, posterUrl: prev.posterUrl || result.posterUrl || "" }));
+        }
+      } else {
+        const url = await uploadAdminMediaFile(file, "stories");
+        applyStoryMedia(target, url, pickedKind);
+        if (target === "media") setMediaUploadState(null);
+      }
     } catch (err: any) {
       setError(err.message || "Не удалось загрузить файл");
+      if (target === "media" && err instanceof StoryMediaUploadError) {
+        setMediaUploadState({
+          phase: "failed",
+          jobId: err.jobId || undefined,
+          message: err.message,
+        });
+      }
+    } finally {
+      setUploading(null);
+    }
+  };
+
+  const retryMediaUpload = async () => {
+    const jobId = mediaUploadState?.jobId;
+    if (!jobId) return;
+    setUploading("media");
+    setError("");
+    try {
+      const result = await retryStoryMediaUpload(jobId, { onState: setMediaUploadState });
+      applyStoryMedia("media", result.url, "video");
+      if (result.posterUrl) {
+        setForm((prev) => ({ ...prev, posterUrl: prev.posterUrl || result.posterUrl || "" }));
+      }
+    } catch (err: any) {
+      setError(err.message || "Не удалось повторить подготовку видео");
+      setMediaUploadState({
+        phase: "failed",
+        jobId,
+        message: err.message || "Не удалось подготовить видео. Оригинал сохранён.",
+      });
     } finally {
       setUploading(null);
     }
@@ -553,7 +624,7 @@ function StoryModal({
       open
       onClose={onClose}
       title={isNew ? "Новая сторис" : "Редактировать сторис"}
-      subtitle="Видео, live, товарный обзор, услуга или отзыв. Связанные сторис показываются первыми на нужной странице."
+      subtitle="Видео, записанный онлайн-продавец, товарный обзор, услуга или отзыв. Связанные сторис показываются первыми на нужной странице."
       size="xl"
       bodyClassName="p-4 sm:p-5"
       footer={(
@@ -561,7 +632,7 @@ function StoryModal({
           <Button variant="outline" onClick={onClose} className="min-h-11">
             Отмена
           </Button>
-          <Button onClick={save} disabled={saving} className="min-h-11">
+          <Button onClick={save} disabled={saving || uploading !== null} className="min-h-11">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Сохранить
           </Button>
@@ -603,6 +674,7 @@ function StoryModal({
               <input
                 type="file"
                 accept={STORY_MEDIA_ACCEPT}
+                disabled={uploading !== null}
                 className="hidden"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
@@ -617,6 +689,7 @@ function StoryModal({
               <input
                 type="file"
                 accept={STORY_POSTER_ACCEPT}
+                disabled={uploading !== null}
                 className="hidden"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
@@ -626,8 +699,35 @@ function StoryModal({
               />
             </label>
           </div>
+          {mediaUploadState && (
+            <div className={cn(
+              "rounded-xl border px-3 py-2.5 text-xs leading-5",
+              mediaUploadState.phase === "failed"
+                ? "border-destructive/35 bg-destructive/10 text-destructive"
+                : mediaUploadState.phase === "ready"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  : "border-primary/30 bg-primary/10 text-foreground",
+            )}>
+              <div className="flex items-start gap-2">
+                {uploading === "media"
+                  ? <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+                  : mediaUploadState.phase === "failed"
+                    ? <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" />
+                    : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
+                <div className="min-w-0 flex-1">
+                  <p>{mediaUploadState.message}</p>
+                  {mediaUploadState.phase === "failed" && mediaUploadState.jobId && (
+                    <Button type="button" variant="outline" onClick={retryMediaUpload} disabled={uploading !== null} className="mt-2 min-h-9">
+                      <RefreshCw className="h-4 w-4" />
+                      Повторить подготовку
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
           <p className="text-[11px] leading-5 text-muted-foreground">
-            Сторис лучше до 1 минуты; технический предел загрузки видео — 500MB. Для LIVE используйте ссылку на эфир или длинное видео.
+            Сторис лучше до 1 минуты. Видео до 500 МБ загружается как оригинал, затем автоматически готовится лёгкая web-копия. Оригинал сохраняется.
           </p>
           <div className="grid grid-cols-2 gap-2">
             <Button type="button" variant="outline" onClick={() => setMediaPickerTarget("media")} className="min-h-10">
@@ -663,7 +763,7 @@ function StoryModal({
             </Button>
           )}
           <p className="text-xs leading-5 text-muted-foreground">
-            Видео можно загрузить сюда или вставить ссылку. Для live пока используем ссылку на эфир, а дальше подключим провайдера трансляций.
+            LIVE в текущей версии — записанное видео онлайн-продавца. Прямой эфир пока не подключён; интерфейс не выдаёт запись за настоящую трансляцию.
           </p>
         </div>
 
@@ -949,6 +1049,7 @@ export default function AdminStoriesPage() {
   const [loading, setLoading] = useState(true);
   const [modalStory, setModalStory] = useState<Partial<Story> | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<Story | null>(null);
+  const [storyMediaStates, setStoryMediaStates] = useState<Record<string, StoryMediaCardState>>({});
   const [error, setError] = useState("");
 
   const activeCount = useMemo(() => stories.filter(isVisibleNow).length, [stories]);
@@ -962,7 +1063,46 @@ export default function AdminStoriesPage() {
       const res = await fetch("/api/admin/stories");
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || "Не удалось загрузить сторис");
-      setStories(Array.isArray(data) ? data : []);
+      const nextStories = Array.isArray(data) ? data : [];
+      setStories(nextStories);
+      const mediaStories = nextStories.filter((story: Story) =>
+        story.type !== "IMAGE" && story.mediaUrl?.startsWith("/images/stories/"),
+      );
+      const receipts = await Promise.all(mediaStories.map(async (story: Story) => {
+        const response = await fetch(`/api/admin/stories/${encodeURIComponent(story.id)}/media`, { cache: "no-store" });
+        if (!response.ok) return null;
+        const payload = await response.json().catch(() => null);
+        return payload?.job ? { storyId: story.id, job: payload.job } : null;
+      }));
+      const restoredStates: Record<string, StoryMediaCardState> = {};
+      for (const receipt of receipts) {
+        if (!receipt) continue;
+        const phase = storyMediaPhase(receipt.job.status);
+        restoredStates[receipt.storyId] = {
+          phase,
+          jobId: receipt.job.id,
+          message: receipt.job.rolledBack
+            ? "Откат выполнен. Сторис использует исходное видео."
+            : storyMediaMessage(phase, receipt.job.error),
+          canRollback: Boolean(receipt.job.canRollback),
+        };
+      }
+      setStoryMediaStates(restoredStates);
+      for (const receipt of receipts) {
+        if (!receipt) continue;
+        const phase = storyMediaPhase(receipt.job.status);
+        if (!["queued", "processing", "publishing"].includes(phase)) continue;
+        void monitorStoryMediaJob(receipt.job.id, {
+          onState: (state) => setStoryMediaState(receipt.storyId, state),
+        }).then(
+          () => loadStories(),
+          (monitorError) => setStoryMediaState(receipt.storyId, {
+            phase: "failed",
+            jobId: receipt.job.id,
+            message: monitorError?.message || storyMediaMessage("failed"),
+          }),
+        );
+      }
     } catch (err: any) {
       setError(err.message || "Не удалось загрузить сторис");
     } finally {
@@ -1001,12 +1141,101 @@ export default function AdminStoriesPage() {
     await saveStory({ ...normalizeForm(story), active: !story.active });
   };
 
+  const setStoryMediaState = (storyId: string, state: StoryMediaUploadState, canRollback = false) => {
+    setStoryMediaStates((prev) => ({
+      ...prev,
+      [storyId]: { ...state, canRollback },
+    }));
+  };
+
+  const prepareStoryVideo = async (story: Story, retryJobId?: string) => {
+    if (!(await confirmAction(
+      `Подготовить лёгкую web-копию для «${story.title}»? Сторис переключится только после проверки, оригинал сохранится.`,
+    ))) return;
+
+    setError("");
+    try {
+      let jobId = retryJobId || "";
+      if (jobId) {
+        const result = await retryStoryMediaUpload(jobId, {
+          onState: (state) => setStoryMediaState(story.id, state),
+        });
+        setStoryMediaState(story.id, {
+          phase: "ready",
+          jobId,
+          message: storyMediaMessage("ready"),
+        }, true);
+        await loadStories();
+        return result;
+      }
+
+      setStoryMediaState(story.id, {
+        phase: "queued",
+        message: storyMediaMessage("queued"),
+      });
+      const response = await fetch(`/api/admin/stories/${encodeURIComponent(story.id)}/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "optimize", confirm: true }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new StoryMediaUploadError(payload.error || storyMediaMessage("failed"), payload.id);
+      jobId = payload.id || "";
+      if (!jobId) {
+        setStoryMediaState(story.id, {
+          phase: "ready",
+          message: payload.message || "Видео уже подходит для сайта.",
+        });
+        return;
+      }
+
+      await monitorStoryMediaJob(jobId, {
+        onState: (state) => setStoryMediaState(story.id, state),
+      });
+      setStoryMediaState(story.id, {
+        phase: "ready",
+        jobId,
+        message: storyMediaMessage("ready"),
+      }, true);
+      await loadStories();
+    } catch (err: any) {
+      const jobId = err instanceof StoryMediaUploadError ? err.jobId : retryJobId;
+      const message = err.message || storyMediaMessage("failed");
+      setStoryMediaState(story.id, { phase: "failed", jobId: jobId || undefined, message });
+      setError(message);
+    }
+  };
+
+  const rollbackStoryVideo = async (story: Story, jobId: string) => {
+    if (!(await confirmAction(
+      `Вернуть оригинал для «${story.title}»? Подготовленная web-копия останется в журнале, данные сторис не изменятся.`,
+    ))) return;
+    setError("");
+    try {
+      const response = await fetch(`/api/admin/stories/${encodeURIComponent(story.id)}/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "rollback", jobId, confirm: true }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Не удалось вернуть оригинал");
+      setStoryMediaState(story.id, {
+        phase: "ready",
+        jobId,
+        message: "Откат выполнен. Сторис снова использует исходное видео.",
+      });
+      await loadStories();
+    } catch (err: any) {
+      setError(err.message || "Не удалось вернуть оригинал");
+    }
+  };
+
   return (
     <div className="space-y-6 px-4 py-4 pb-32 sm:px-6 sm:py-6 sm:pb-36">
       <AdminSectionTitle
         icon={CirclePlay}
         title="Сторис и онлайн-продавец"
-        subtitle="Видео, live, отзывы и привязка к товарам/услугам"
+        subtitle="Видео, онлайн-продавец, отзывы и привязка к товарам/услугам"
         action={(
           <div className="flex gap-2">
             <Button asChild variant="outline" className="hidden min-h-11 sm:inline-flex">
@@ -1091,6 +1320,10 @@ export default function AdminStoriesPage() {
             const Icon = getTypeIcon(story.type);
             const entityKey = story.entityType || "general";
             const storyRelations = normalizeRelations(story);
+            const mediaState = storyMediaStates[story.id];
+            const mediaBusy = mediaState && ["uploading", "queued", "processing", "publishing"].includes(mediaState.phase);
+            const canPrepareVideo = story.type !== "IMAGE" && story.mediaUrl?.startsWith("/images/stories/");
+            const preparedWebCopy = /-web\.mp4(?:[?#]|$)/i.test(story.mediaUrl || "");
             return (
               <article key={story.id} className="overflow-hidden rounded-2xl border border-border bg-card">
                 <div className="grid gap-0 sm:grid-cols-[150px_1fr]">
@@ -1105,6 +1338,7 @@ export default function AdminStoriesPage() {
                         <Icon className="h-3 w-3" />
                         {TYPE_LABEL[story.type]}
                       </span>
+                      {preparedWebCopy && <Badge variant="outline" className="rounded-full">web-копия</Badge>}
                     </div>
                     <h2 className="line-clamp-2 font-display text-xl font-bold">{story.title}</h2>
                     {story.subtitle && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{story.subtitle}</p>}
@@ -1123,6 +1357,45 @@ export default function AdminStoriesPage() {
                       )}
                       <p>Просмотры: {story.views} · порядок {story.sortOrder}</p>
                     </div>
+                    {mediaState && (
+                      <div className={cn(
+                        "mt-3 rounded-xl border px-3 py-2 text-xs leading-5",
+                        mediaState.phase === "failed"
+                          ? "border-destructive/35 bg-destructive/10 text-destructive"
+                          : "border-primary/25 bg-primary/10 text-foreground",
+                      )}>
+                        <div className="flex items-start gap-2">
+                          {mediaBusy
+                            ? <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+                            : mediaState.phase === "failed"
+                              ? <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" />
+                              : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
+                          <div className="min-w-0 flex-1">
+                            <p>{mediaState.message}</p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {mediaBusy && (
+                                <Button type="button" variant="outline" onClick={loadStories} className="min-h-9">
+                                  <RefreshCw className="h-4 w-4" />
+                                  Обновить статус
+                                </Button>
+                              )}
+                              {mediaState.phase === "failed" && mediaState.jobId && (
+                                <Button type="button" variant="outline" onClick={() => prepareStoryVideo(story, mediaState.jobId)} className="min-h-9">
+                                  <RefreshCw className="h-4 w-4" />
+                                  Повторить
+                                </Button>
+                              )}
+                              {mediaState.canRollback && mediaState.jobId && (
+                                <Button type="button" variant="outline" onClick={() => rollbackStoryVideo(story, mediaState.jobId!)} className="min-h-9">
+                                  <RotateCcw className="h-4 w-4" />
+                                  Вернуть оригинал
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div className="mt-auto flex flex-wrap gap-2 pt-4">
                       <Button variant="outline" onClick={() => toggleActive(story)} className="min-h-10">
                         {story.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -1132,6 +1405,12 @@ export default function AdminStoriesPage() {
                         <Pencil className="h-4 w-4" />
                         Изменить
                       </Button>
+                      {canPrepareVideo && !preparedWebCopy && (
+                        <Button variant="outline" onClick={() => prepareStoryVideo(story)} disabled={Boolean(mediaBusy)} className="min-h-10">
+                          {mediaBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                          Подготовить видео
+                        </Button>
+                      )}
                       {story.ctaUrl && (
                         <Button asChild variant="outline" className="min-h-10">
                           <Link href={story.ctaUrl} target="_blank">
@@ -1182,7 +1461,7 @@ export default function AdminStoriesPage() {
           <div className="rounded-2xl border border-border bg-background/40 p-4">
             <h3 className="font-semibold">Онлайн-продавец</h3>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Live хранит ссылку на эфир. Следующий слой подключит расписание, трансляции и заявки из просмотра.
+              Сейчас это записанное видео продавца: обзор, ответы и понятный следующий шаг. Прямой эфир пока не подключён и появится отдельным проверенным слоем.
             </p>
           </div>
         </div>

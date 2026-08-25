@@ -133,7 +133,7 @@ function phaseFromStatus(status?: AdminUploadPayload["status"]): StoryMediaUploa
   return "queued";
 }
 
-async function waitForStoryMediaJob(jobId: string, options: UploadOptions): Promise<StoryMediaUploadResult> {
+export async function monitorStoryMediaJob(jobId: string, options: UploadOptions = {}): Promise<StoryMediaUploadResult> {
   const startedAt = Date.now();
   while (Date.now() - startedAt < STORY_MEDIA_POLL_TIMEOUT_MS) {
     const response = await fetch(`/api/admin/story-media/jobs/${encodeURIComponent(jobId)}`, {
@@ -164,7 +164,7 @@ async function resolveUploadPayload(payload: AdminUploadPayload, options: Upload
   const jobId = payload.jobId || payload.id || null;
   if (jobId) {
     emitState(options, phaseFromStatus(payload.status), jobId);
-    return waitForStoryMediaJob(jobId, options);
+    return monitorStoryMediaJob(jobId, options);
   }
   if (!payload.url) throw new StoryMediaUploadError(payload.error || "Файл загружен не полностью");
   emitState(options, "ready");

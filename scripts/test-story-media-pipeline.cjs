@@ -10,6 +10,7 @@ const {
   createStoryMediaJob,
   getStoryMediaJobPublic,
   resolveStoryMediaSourceFromUrl,
+  resumeStoryMediaJobIfInterrupted,
   rollbackStoryMediaJob,
 } = require("../lib/story-media-jobs.cjs");
 const {
@@ -128,6 +129,13 @@ check("heavy upload returns a job and never exposes the original as ready playba
     assert.equal(payload.originalUrl, plan.sourceUrl);
     assert.equal(payload.url, null);
     assert.notEqual(payload.url, payload.originalUrl);
+    const jobPath = path.join(jobsRoot, `${payload.jobId}.json`);
+    const interrupted = JSON.parse(fs.readFileSync(jobPath, "utf8"));
+    interrupted.status = "PROCESSING";
+    fs.writeFileSync(jobPath, `${JSON.stringify(interrupted, null, 2)}\n`, "utf8");
+    const recovered = resumeStoryMediaJobIfInterrupted(payload.jobId, { jobsRoot, runInBackground: false });
+    assert.equal(recovered.status, "QUEUED");
+    assert.ok(JSON.parse(fs.readFileSync(jobPath, "utf8")).recoveredAt);
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }

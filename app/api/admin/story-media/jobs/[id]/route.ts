@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { canUploadGlobalMedia } from "@/lib/media-permissions";
 
-const { getStoryMediaJobPublic, retryStoryMediaJob } = require("@/lib/story-media-jobs.cjs");
+const { resumeStoryMediaJobIfInterrupted, retryStoryMediaJob } = require("@/lib/story-media-jobs.cjs");
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -16,7 +16,7 @@ async function authorize() {
 export async function GET(_req: Request, { params }: { params: { id: string } }) {
   if (!(await authorize())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const job = getStoryMediaJobPublic(params.id);
+    const job = resumeStoryMediaJobIfInterrupted(params.id);
     if (!job) return NextResponse.json({ error: "Задание не найдено" }, { status: 404 });
     return NextResponse.json(job);
   } catch {

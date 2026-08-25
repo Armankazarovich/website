@@ -11,6 +11,7 @@ import { getCurrentTenantId } from "@/lib/tenant-context";
 
 const {
   createStoryMediaJob,
+  findLatestStoryMediaJobForStory,
   getStoryMediaJob,
   resolveStoryMediaSourceFromUrl,
   rollbackStoryMediaJob,
@@ -30,6 +31,18 @@ function safeOutputStem(storyId: string, mediaUrl: string) {
   const base = path.basename(mediaUrl, path.extname(mediaUrl)).replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 64);
   const storyPart = storyId.replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 24);
   return `${base || "story"}-${storyPart || "media"}-${Date.now()}-${randomUUID().slice(0, 8)}`.slice(0, 120);
+}
+
+export async function GET(_req: Request, { params }: { params: { id: string } }) {
+  const auth = await requireManager();
+  if (!auth.authorized) return auth.response;
+  const tenantId = getCurrentTenantId();
+  const story = await prisma.storeStory.findFirst({
+    where: { id: params.id, tenantId },
+    select: { id: true },
+  });
+  if (!story) return NextResponse.json({ error: "Сторис не найдена" }, { status: 404 });
+  return NextResponse.json({ job: findLatestStoryMediaJobForStory(story.id, tenantId) });
 }
 
 export async function POST(req: Request, { params }: { params: { id: string } }) {
