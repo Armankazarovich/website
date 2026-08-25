@@ -20,18 +20,40 @@ const checks = [
       '"validate-store-stories"',
       '"validate-browser-stories-responsive"',
       '"validate-stories-preview-recovery"',
-      '"docs/evidence/stories/MODULE-PASSPORT-0.9.1.md"',
+      'version: "0.10.0-beta.1"',
+      '"test-story-media-pipeline"',
+      '"docs/evidence/stories/MODULE-PASSPORT-0.10.0.md"',
     ],
   },
   {
-    file: "docs/evidence/stories/MODULE-PASSPORT-0.9.1.md",
+    file: "docs/evidence/stories/MODULE-PASSPORT-0.10.0.md",
     label: "stories module has a versioned passport and drift lock",
     patterns: [
       "marketing.store-stories",
-      "0.9.1",
+      "0.10.0-beta.1",
+      "LOCAL CANDIDATE",
+      "Оригинал никогда не перезаписывается",
+      "условная публикация",
+      "Двухуровневый откат",
       "Drift Lock",
-      "scripts/validate-stories-preview-recovery.js",
+      "npm run stories:media:check",
       ".github/workflows/deploy.yml",
+    ],
+  },
+  {
+    file: "lib/story-media-worker.cjs",
+    label: "media worker validates, publishes and preserves rollback evidence",
+    patterns: ["buildStoryFfmpegArgs", "inspectOutput", "PUBLISHING", "rollback", "runStoryMediaPublish"],
+  },
+  {
+    file: "lib/story-media-jobs.cjs",
+    label: "media queue preserves originals, recovers interrupted jobs and exposes bounded rollback",
+    patterns: [
+      ".story-media-jobs",
+      "resumeStoryMediaJobIfInterrupted",
+      "rollbackStoryMediaJob",
+      "findLatestStoryMediaJobForStory",
+      "canRollback",
     ],
   },
   {
@@ -195,7 +217,7 @@ const checks = [
 
 const requiredFiles = [
   "lib/aray-module-registry.ts",
-  "docs/evidence/stories/MODULE-PASSPORT-0.9.1.md",
+  "docs/evidence/stories/MODULE-PASSPORT-0.10.0.md",
   "app/api/admin/stories/route.ts",
   "app/api/admin/stories/[id]/route.ts",
   "app/api/admin/stories/[id]/media/route.ts",
@@ -209,6 +231,10 @@ const requiredFiles = [
   "components/store/stories-page-client.tsx",
   "lib/store-stories.ts",
   "lib/store-story-admin.ts",
+  "lib/story-media-jobs.cjs",
+  "lib/story-media-policy.cjs",
+  "lib/story-media-publish.cjs",
+  "lib/story-media-worker.cjs",
 ];
 
 const failures = [];

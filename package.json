@@ -38,6 +38,7 @@
     "analytics:check": "node scripts/validate-analytics-integration.js",
     "finance:check": "node scripts/validate-finance-integration.js",
     "stories:check": "node scripts/validate-store-stories.js",
+    "stories:media:check": "node scripts/test-story-media-pipeline.cjs",
     "content:check": "node scripts/validate-content-tools.js",
     "release:check": "node scripts/validate-release-readiness.js",
     "release:smoke": "node scripts/validate-release-smoke.js",

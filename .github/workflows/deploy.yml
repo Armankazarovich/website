@@ -99,6 +99,12 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps --prefer-offline
 
+      - name: Verify bundled Stories media runtime
+        run: |
+          node -e "const fs=require('fs'); const binary=require('ffmpeg-static'); if(!binary||!fs.existsSync(binary)) throw new Error('Bundled FFmpeg is missing'); fs.accessSync(binary, fs.constants.X_OK); console.log('Bundled FFmpeg is executable')"
+          npm run stories:media:check
+          npm run stories:check
+
       - name: Generate Prisma Client
         run: npx prisma generate
 

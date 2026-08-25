@@ -63,6 +63,7 @@ export type ArayModuleRuntimeState = {
 export type ArayModulePassport = {
   id: string;
   name: string;
+  version?: string;
   category: ArayModuleCategory;
   status: ArayModuleStatus;
   routes: string[];
@@ -504,6 +505,7 @@ export const arayModuleRegistry = [
   {
     id: "marketing.store-stories",
     name: "PiloRus Stories / Live Commerce",
+    version: "0.10.0-beta.1",
     category: "marketing",
     status: "beta",
     routes: [
@@ -514,7 +516,9 @@ export const arayModuleRegistry = [
       "/api/stories/[id]/message",
       "/api/admin/stories",
       "/api/admin/stories/[id]",
+      "/api/admin/stories/[id]/media",
       "/api/admin/stories/entity-options",
+      "/api/admin/story-media/jobs/[id]",
     ],
     navItems: ["stories"],
     permissions: ["stories.view", "stories.manage"],
@@ -524,22 +528,41 @@ export const arayModuleRegistry = [
       "core.notifications",
       "business.aray-messenger",
     ],
-    settings: ["previewVideoLimit", "mediaErrorRecovery", "relations", "sortOrder"],
+    settings: [
+      "previewVideoLimit",
+      "mediaErrorRecovery",
+      "mediaPipelineVersion:0.10.0",
+      "originalsPreserved",
+      "conditionalPublish",
+      "durableRollback",
+      "relations",
+      "sortOrder",
+    ],
     billing: { plan: "free" },
     aray: {
       skills: ["explain-story-context", "prepare-story-follow-up"],
       quickActions: ["open-public-stories", "open-story-manager"],
       confirmations: ["story-write", "story-delete", "external-message-send"],
     },
-    events: ["story_viewed", "story_message_created", "story_media_failed"],
+    events: [
+      "story_viewed",
+      "story_message_created",
+      "story_media_queued",
+      "story_media_ready",
+      "story_media_failed",
+      "story_media_rolled_back",
+    ],
     dataSources: [
       "StoreStory",
       "StoreStoryRelation",
       "stories-media",
-      "docs/evidence/stories/MODULE-PASSPORT-0.9.1.md",
+      ".story-media-jobs",
+      "ffmpeg-static@5.3.0",
+      "docs/evidence/stories/MODULE-PASSPORT-0.10.0.md",
     ],
     quality: [
       "validate-store-stories",
+      "test-story-media-pipeline",
       "validate-browser-stories-responsive",
       "validate-stories-preview-recovery",
       "code-only-deploy-database-lock",

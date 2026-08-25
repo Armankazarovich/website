@@ -140,6 +140,7 @@ run("Multivendor foundation guard", "node", ["scripts/validate-multivendor-found
 run("PWA icon guard", "node", ["scripts/validate-pwa-icons.js"]);
 run("Release readiness guard", "node", ["scripts/validate-release-readiness.js"]);
 run("Store stories guard", "node", ["scripts/validate-store-stories.js"]);
+run("Store stories media pipeline", "node", ["scripts/test-story-media-pipeline.cjs"]);
 run("Content tools guard", "node", ["scripts/validate-content-tools.js"]);
 run("TypeScript check", "npx", ["tsc", "--noEmit"]);
 scanSecrets();
