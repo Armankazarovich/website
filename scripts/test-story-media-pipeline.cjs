@@ -10,11 +10,16 @@ const {
   createStoryMediaJob,
   getStoryMediaJobPublic,
   resolveStoryMediaSourceFromUrl,
+  rollbackStoryMediaJob,
 } = require("../lib/story-media-jobs.cjs");
 const {
   completeStoryVideoUpload,
   planStoryVideoUpload,
 } = require("../lib/story-media-upload.cjs");
+const {
+  publishStoryMedia,
+  rollbackStoryMedia,
+} = require("../lib/story-media-publish.cjs");
 const { runStoryMediaJob } = require("../lib/story-media-worker.cjs");
 
 const {
@@ -28,12 +33,7 @@ const {
 const checks = [];
 
 function check(name, fn) {
-  try {
-    fn();
-    checks.push({ name, ok: true });
-  } catch (error) {
-    checks.push({ name, ok: false, error });
-  }
+  checks.push({ name, fn });
 }
 
 check("small compatible MP4 is kept without re-encoding", () => {
@@ -133,6 +133,57 @@ check("heavy upload returns a job and never exposes the original as ready playba
   }
 });
 
+check("conditional publish and rollback change only the intended story media URL", async () => {
+  const story = {
+    id: "story-canary",
+    tenantId: "pilorus",
+    mediaUrl: "/images/stories/original-heavy.mp4",
+    title: "Онлайн-продавец",
+    views: 89,
+    sortOrder: 100,
+    active: true,
+  };
+  const updates = [];
+  const store = {
+    async getStory({ storyId, tenantId }) {
+      return story.id === storyId && story.tenantId === tenantId ? { ...story } : null;
+    },
+    async updateMediaUrl({ storyId, tenantId, expectedUrl, nextUrl }) {
+      if (story.id !== storyId || story.tenantId !== tenantId || story.mediaUrl !== expectedUrl) return 0;
+      updates.push({ storyId, tenantId, expectedUrl, nextUrl });
+      story.mediaUrl = nextUrl;
+      return 1;
+    },
+  };
+  const job = {
+    outputUrl: "/images/stories/original-heavy-web.mp4",
+    publishTarget: {
+      storyId: story.id,
+      tenantId: story.tenantId,
+      expectedUrl: "/images/stories/original-heavy.mp4",
+    },
+  };
+
+  const published = await publishStoryMedia(job, store);
+  assert.equal(published.changed, true);
+  assert.equal(story.mediaUrl, job.outputUrl);
+  assert.equal(story.title, "Онлайн-продавец");
+  assert.equal(story.views, 89);
+  assert.equal(story.sortOrder, 100);
+  assert.equal(story.active, true);
+  assert.equal(updates.length, 1);
+
+  const rolledBack = await rollbackStoryMedia(job, store);
+  assert.equal(rolledBack.changed, true);
+  assert.equal(story.mediaUrl, job.publishTarget.expectedUrl);
+  assert.equal(story.views, 89);
+  assert.equal(updates.length, 2);
+
+  story.mediaUrl = "/images/stories/manager-changed.mp4";
+  await assert.rejects(() => publishStoryMedia(job, store), /изменилась/);
+  assert.equal(updates.length, 2, "conflict must not overwrite a manager change");
+});
+
 check("encoder profile is mobile-safe and serial", () => {
   const args = buildStoryFfmpegArgs("source.mov", "result.processing.mp4");
   const joined = args.join(" ");
@@ -183,7 +234,7 @@ check("validation rejects wrong codec, oversized frame and non-smaller output", 
   assert.equal(validateStoryMediaProbe(validProbe, 1_000_000, 1_800_000).ok, false);
 });
 
-check("real worker preserves the source and publishes only a validated web copy", () => {
+check("real worker preserves the source, publishes conditionally and keeps a durable rollback", async () => {
   assert.ok(ffmpegPath && fs.existsSync(ffmpegPath), "bundled FFmpeg is missing");
   const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "pilorus-story-media-"));
   const jobsRoot = path.join(tempRoot, ".story-media-jobs");
@@ -193,6 +244,21 @@ check("real worker preserves the source and publishes only a validated web copy"
   fs.mkdirSync(originalsRoot, { recursive: true });
 
   const sourcePath = path.join(originalsRoot, "fixture.mov");
+  const story = {
+    id: "story-worker-canary",
+    tenantId: "pilorus",
+    mediaUrl: "/images/stories/originals/fixture.mov",
+  };
+  const store = {
+    async getStory({ storyId, tenantId }) {
+      return story.id === storyId && story.tenantId === tenantId ? { ...story } : null;
+    },
+    async updateMediaUrl({ storyId, tenantId, expectedUrl, nextUrl }) {
+      if (story.id !== storyId || story.tenantId !== tenantId || story.mediaUrl !== expectedUrl) return 0;
+      story.mediaUrl = nextUrl;
+      return 1;
+    },
+  };
 
   try {
     const fixture = spawnSync(
@@ -236,6 +302,11 @@ check("real worker preserves the source and publishes only a validated web copy"
       jobsRoot,
       publicRoot,
       ffmpegPath,
+      publishTarget: {
+        storyId: story.id,
+        tenantId: story.tenantId,
+        expectedUrl: story.mediaUrl,
+      },
       runInBackground: false,
     });
     const jobPath = path.join(jobsRoot, `${created.id}.json`);
@@ -245,12 +316,21 @@ check("real worker preserves the source and publishes only a validated web copy"
     assert.equal(created.originalUrl, "/images/stories/originals/fixture.mov");
     assert.equal("sourcePath" in created, false, "public job must not expose server paths");
 
-    const result = runStoryMediaJob(jobPath);
+    const result = runStoryMediaJob(jobPath, {
+      publishRunner(job) {
+        assert.equal(story.mediaUrl, job.publishTarget.expectedUrl);
+        story.mediaUrl = job.outputUrl;
+        return { changed: true };
+      },
+    });
     const receipt = JSON.parse(fs.readFileSync(jobPath, "utf8"));
     const publicJob = getStoryMediaJobPublic(created.id, { jobsRoot });
     assert.equal(result.status, "READY");
     assert.equal(receipt.status, "READY");
     assert.equal(publicJob.status, "READY");
+    assert.equal(publicJob.published, true);
+    assert.equal(publicJob.canRollback, true);
+    assert.equal(story.mediaUrl, "/images/stories/fixture-web.mp4");
     assert.equal("diagnostic" in publicJob, false, "public job must not expose diagnostics");
     assert.equal(receipt.url, "/images/stories/fixture-web.mp4");
     assert.equal(receipt.posterUrl, "/images/stories/fixture-poster.jpg");
@@ -265,6 +345,15 @@ check("real worker preserves the source and publishes only a validated web copy"
     assert.ok(receipt.media.height <= 1280);
     assert.ok(receipt.media.frameRate <= 30.01);
     assert.equal(receipt.media.fastStart, true);
+
+    const rolledBack = await rollbackStoryMediaJob(created.id, { jobsRoot, store });
+    assert.equal(rolledBack.published, false);
+    assert.equal(rolledBack.canRollback, false);
+    assert.equal(story.mediaUrl, "/images/stories/originals/fixture.mov");
+    const rollbackReceipt = JSON.parse(fs.readFileSync(jobPath, "utf8"));
+    assert.ok(rollbackReceipt.rolledBackAt);
+    assert.equal(rollbackReceipt.rollback.oldUrl, "/images/stories/originals/fixture.mov");
+    assert.equal(rollbackReceipt.rollback.newUrl, "/images/stories/fixture-web.mp4");
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -312,11 +401,26 @@ check("failed processing keeps the original and can be retried", () => {
   }
 });
 
-const failed = checks.filter((item) => !item.ok);
-if (failed.length) {
-  console.error(`Story media pipeline failed: ${failed.length}/${checks.length}`);
-  for (const item of failed) console.error(`- ${item.name}: ${item.error?.message || item.error}`);
-  process.exit(1);
+async function main() {
+  const results = [];
+  for (const item of checks) {
+    try {
+      await item.fn();
+      results.push({ name: item.name, ok: true });
+    } catch (error) {
+      results.push({ name: item.name, ok: false, error });
+    }
+  }
+  const failed = results.filter((item) => !item.ok);
+  if (failed.length) {
+    console.error(`Story media pipeline failed: ${failed.length}/${results.length}`);
+    for (const item of failed) console.error(`- ${item.name}: ${item.error?.message || item.error}`);
+    process.exit(1);
+  }
+  console.log(`Story media pipeline passed: ${results.length}/${results.length}`);
 }
 
-console.log(`Story media pipeline passed: ${checks.length}/${checks.length}`);
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
