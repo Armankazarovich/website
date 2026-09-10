@@ -505,7 +505,7 @@ export const arayModuleRegistry = [
   {
     id: "marketing.store-stories",
     name: "PiloRus Stories / Live Commerce",
-    version: "0.10.0-beta.1",
+    version: "0.11.0-beta.1",
     category: "marketing",
     status: "beta",
     routes: [
@@ -518,6 +518,7 @@ export const arayModuleRegistry = [
       "/api/admin/stories/[id]",
       "/api/admin/stories/[id]/media",
       "/api/admin/stories/entity-options",
+      "/api/admin/stories/reorder",
       "/api/admin/story-media/jobs/[id]",
     ],
     navItems: ["stories"],
@@ -531,7 +532,8 @@ export const arayModuleRegistry = [
     settings: [
       "previewVideoLimit",
       "mediaErrorRecovery",
-      "mediaPipelineVersion:0.10.0",
+      "mediaPipelineVersion:0.11.0",
+      "maxDuration:180s",
       "originalsPreserved",
       "conditionalPublish",
       "durableRollback",
@@ -558,7 +560,7 @@ export const arayModuleRegistry = [
       "stories-media",
       ".story-media-jobs",
       "ffmpeg-static@5.3.0",
-      "docs/evidence/stories/MODULE-PASSPORT-0.10.0.md",
+      "docs/evidence/stories/MODULE-PASSPORT-0.11.0.md",
     ],
     quality: [
       "validate-store-stories",

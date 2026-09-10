@@ -20,17 +20,18 @@ const checks = [
       '"validate-store-stories"',
       '"validate-browser-stories-responsive"',
       '"validate-stories-preview-recovery"',
-      'version: "0.10.0-beta.1"',
+      'version: "0.11.0-beta.1"',
       '"test-story-media-pipeline"',
-      '"docs/evidence/stories/MODULE-PASSPORT-0.10.0.md"',
+      '"docs/evidence/stories/MODULE-PASSPORT-0.11.0.md"',
+      '"/api/admin/stories/reorder"',
     ],
   },
   {
-    file: "docs/evidence/stories/MODULE-PASSPORT-0.10.0.md",
+    file: "docs/evidence/stories/MODULE-PASSPORT-0.11.0.md",
     label: "stories module has a versioned passport and drift lock",
     patterns: [
       "marketing.store-stories",
-      "0.10.0-beta.1",
+      "0.11.0-beta.1",
       "LOCAL CANDIDATE",
       "Оригинал никогда не перезаписывается",
       "условная публикация",
@@ -259,7 +260,7 @@ const checks = [
 
 const requiredFiles = [
   "lib/aray-module-registry.ts",
-  "docs/evidence/stories/MODULE-PASSPORT-0.10.0.md",
+  "docs/evidence/stories/MODULE-PASSPORT-0.11.0.md",
   "app/api/admin/stories/route.ts",
   "app/api/admin/stories/[id]/route.ts",
   "app/api/admin/stories/[id]/media/route.ts",
