@@ -486,7 +486,7 @@ export const ADMIN_NAVIGATION_META: Record<string, AdminNavigationRouteMeta> = {
   },
   "/admin/stories": {
     title: "Сторис",
-    subtitle: "Видео, live и онлайн-продавец",
+    subtitle: "Видео и онлайн-продавец",
     searchHint: "Видео-сторис, обзоры и отзывы",
     keywords: ["сторис", "stories", "видео", "live", "онлайн продавец", "отзывы", "обзор товара"],
     placeholder: "Сторис, товар, услуга, отзыв, видео или live...",

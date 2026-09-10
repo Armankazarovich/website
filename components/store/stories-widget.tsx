@@ -820,6 +820,11 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
                 const dx = touch.clientX - start.x;
                 const dy = touch.clientY - start.y;
                 // Свайп — только уверенный горизонтальный жест, чтобы не мешать прокрутке.
+                // Свайп вниз — закрыть, как в Instagram и Telegram.
+                if (dy > 80 && Math.abs(dy) > Math.abs(dx) * 1.5) {
+                  closeStory();
+                  return;
+                }
                 if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
                 if (dx < 0) next();
                 else prev();

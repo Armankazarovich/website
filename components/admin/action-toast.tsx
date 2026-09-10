@@ -16,10 +16,13 @@ export function ActionToast({
   message,
   onDismiss,
   durationMs = 2000,
+  action,
 }: {
   message: string | null;
   onDismiss: () => void;
   durationMs?: number;
+  /** Необязательная кнопка в строке — например «Вернуть» для обратимого действия. */
+  action?: { label: string; onClick: () => void } | null;
 }) {
   useEffect(() => {
     if (!message) return;
@@ -35,9 +38,21 @@ export function ActionToast({
       aria-live="polite"
       className="fixed left-1/2 -translate-x-1/2 bottom-24 lg:bottom-28 z-[60] pointer-events-none animate-in fade-in slide-in-from-bottom-2"
     >
-      <div className="arayglass arayglass-glow flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-foreground shadow-lg max-w-[90vw]">
+      <div className={`arayglass flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border text-sm text-foreground max-w-[90vw]${action ? " pointer-events-auto" : ""}`}>
         <Check className="w-4 h-4 text-primary shrink-0" />
         <span>{message}</span>
+        {action && (
+          <button
+            type="button"
+            onClick={() => {
+              action.onClick();
+              onDismiss();
+            }}
+            className="-my-1 ml-1 min-h-11 shrink-0 rounded-xl px-3 font-semibold text-primary transition-colors hover:bg-primary/10"
+          >
+            {action.label}
+          </button>
+        )}
       </div>
     </div>
   );

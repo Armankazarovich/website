@@ -124,6 +124,11 @@ const checks = [
     patterns: ["serverComponentsExternalPackages", "'ffmpeg-static'"],
   },
   {
+    file: "app/globals.css",
+    label: "story viewer is full screen on phones and docked on desktop",
+    patterns: ["@media (max-width: 639px)", ".store-story-overlay .store-story-side-panel", "100dvh", ".admin-modal-panel.admin-modal-compact"],
+  },
+  {
     file: "app/api/admin/upload/chunk/route.ts",
     label: "admin media uploads can bypass proxy body limits with chunks",
     patterns: ["CHUNK_MAX_SIZE", "STORY_VIDEO_MAX_SIZE", "validateVideoMagic", "video/x-quicktime"],
@@ -163,6 +168,9 @@ const checks = [
       "Reorder.Group",
       "/api/admin/stories/reorder",
       "Порядок сторис",
+      "ActionToast",
+      "Статистика сторис",
+      "admin-modal-compact",
       "Прямой эфир пока не подключён",
       "addRelation",
       "entityOptions",

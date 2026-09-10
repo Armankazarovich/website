@@ -2463,6 +2463,51 @@ button, a, [role="button"], input, select, textarea {
   box-shadow: none;
 }
 
+/* Телефон: сторис на весь экран, как в Instagram и Telegram (Арман, 10.09.2026).
+   Два класса в селекторе — чтобы перебить утилиты окна (430px, скругления). */
+@media (max-width: 639px) {
+  .store-story-overlay {
+    padding: 0;
+    background: hsl(var(--background));
+  }
+
+  .store-story-overlay .store-story-side-panel {
+    width: 100%;
+    max-width: none;
+    height: 100dvh;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .store-story-side-panel .store-story-frame {
+    flex: 1 1 auto;
+    min-height: 0;
+    aspect-ratio: auto;
+    max-height: none;
+  }
+}
+
+/* Небольшое окно (удаление, статистика сторис): карточка по размеру текста по центру,
+   на телефоне — снизу, как принято в приложениях (Арман, 10.09.2026). */
+.admin-modal-panel.admin-modal-compact {
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  max-height: calc(100dvh - 2rem);
+}
+
+@media (max-width: 639px) {
+  .admin-modal-panel.admin-modal-compact {
+    inset: auto max(0.5rem, env(safe-area-inset-right, 0px)) max(0.5rem, env(safe-area-inset-bottom, 0px)) max(0.5rem, env(safe-area-inset-left, 0px));
+    margin: 0;
+    max-height: calc(100dvh - 1rem);
+  }
+}
+
 @media (min-width: 1024px) {
   .store-story-overlay {
     align-items: flex-start;

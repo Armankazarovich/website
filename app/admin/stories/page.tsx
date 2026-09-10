@@ -1,7 +1,7 @@
 "use client";
 
-import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ActionToast } from "@/components/admin/action-toast";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Reorder, useDragControls } from "framer-motion";
@@ -9,6 +9,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpRight,
+  BarChart3,
   CheckCircle2,
   CirclePlay,
   Eye,
@@ -1163,7 +1164,9 @@ function StoryModal({
 }
 
 export default function AdminStoriesPage() {
-  const confirmAction = useAdminConfirm();
+  // Где действие можно вернуть — не спрашиваем: делаем сразу и даём «Вернуть» (Арман, 10.09.2026).
+  const [toast, setToast] = useState<{ message: string; action?: { label: string; onClick: () => void } } | null>(null);
+  const dismissToast = useCallback(() => setToast(null), []);
   const [stories, setStories] = useState<Story[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalStory, setModalStory] = useState<Partial<Story> | null>(null);
@@ -1174,6 +1177,9 @@ export default function AdminStoriesPage() {
   const activeCount = useMemo(() => stories.filter(isVisibleNow).length, [stories]);
   const linkedCount = useMemo(() => stories.filter((story) => normalizeRelations(story).length > 0).length, [stories]);
   const liveCount = useMemo(() => stories.filter((story) => story.type === "LIVE").length, [stories]);
+  const totalViews = useMemo(() => stories.reduce((sum, story) => sum + (story.views || 0), 0), [stories]);
+  const topStories = useMemo(() => [...stories].sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3), [stories]);
+  const [statsOpen, setStatsOpen] = useState(false);
 
   // Режим «Порядок»: черновик списка, сохраняется одной кнопкой.
   const [ordering, setOrdering] = useState(false);
@@ -1295,16 +1301,15 @@ export default function AdminStoriesPage() {
   };
 
   const toggleActive = async (story: Story) => {
-    if (!(await confirmAction({
-      title: story.active ? "Скрыть сторис?" : "Показать сторис?",
-      description: story.active
-        ? `«${story.title}» пропадёт с сайта. Вернуть можно в любой момент.`
-        : `«${story.title}» снова появится на сайте.`,
-      confirmLabel: story.active ? "Скрыть" : "Показать",
-      variant: "default",
-      hint: null,
-    }))) return;
-    await saveStory({ ...normalizeForm(story), active: !story.active });
+    const nextActive = !story.active;
+    await saveStory({ ...normalizeForm(story), active: nextActive });
+    setToast({
+      message: nextActive ? `«${story.title}» снова на сайте` : `«${story.title}» скрыта с сайта`,
+      action: {
+        label: "Вернуть",
+        onClick: () => void saveStory({ ...normalizeForm(story), active: story.active }),
+      },
+    });
   };
 
   const setStoryMediaState = (storyId: string, state: StoryMediaUploadState, canRollback = false) => {
@@ -1315,13 +1320,7 @@ export default function AdminStoriesPage() {
   };
 
   const prepareStoryVideo = async (story: Story, retryJobId?: string) => {
-    if (!(await confirmAction({
-      title: "Облегчить видео?",
-      description: `«${story.title}» будет открываться быстро. Покупатели увидят новую версию, когда она будет готова. Ваш файл сохранится.`,
-      confirmLabel: "Облегчить",
-      variant: "default",
-      hint: null,
-    }))) return;
+    // Без окна: действие обратимо — на карточке сразу виден ход, потом «Вернуть как было».
 
     setError("");
     try {
@@ -1377,13 +1376,7 @@ export default function AdminStoriesPage() {
   };
 
   const rollbackStoryVideo = async (story: Story, jobId: string) => {
-    if (!(await confirmAction({
-      title: "Вернуть как было?",
-      description: `«${story.title}» снова будет показывать исходное видео. Облегчённую версию можно включить обратно.`,
-      confirmLabel: "Вернуть",
-      variant: "default",
-      hint: null,
-    }))) return;
+    // Без окна: облегчённую версию можно включить снова одной кнопкой.
     setError("");
     try {
       const response = await fetch(`/api/admin/stories/${encodeURIComponent(story.id)}/media`, {
@@ -1426,20 +1419,6 @@ export default function AdminStoriesPage() {
         )}
       />
 
-      <section className="grid gap-3 md:grid-cols-4">
-        {[
-          ["Всего", stories.length],
-          ["Активны", activeCount],
-          ["Связаны", linkedCount],
-          ["Онлайн", liveCount],
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-2xl border border-border bg-card p-4">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
-            <p className="mt-2 font-display text-3xl font-bold">{value}</p>
-          </div>
-        ))}
-      </section>
-
       {error && (
         <div className="admin-alert admin-alert-danger px-3 py-2 text-sm">
           {error}
@@ -1447,31 +1426,23 @@ export default function AdminStoriesPage() {
       )}
 
       {!loading && stories.length > 0 && (
-        <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card/70 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase text-primary/80">Рабочая зона</p>
-            <h2 className="mt-1 font-display text-2xl font-bold">Сторис в эфире</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {activeCount} активны · {linkedCount} связаны · {liveCount} онлайн
-            </p>
-          </div>
+        <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card/70 px-4 py-3">
+          <p className="min-w-0 text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">{activeCount} на сайте</span>
+            {stories.length - activeCount > 0 ? ` · ${stories.length - activeCount} скрыто` : ""}
+            {liveCount > 0 ? ` · ${liveCount} онлайн-продавец` : ""}
+          </p>
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" className="min-h-10">
-              <Link href="/stories" target="_blank">
-                <ArrowUpRight className="h-4 w-4" />
-                На сайте
-              </Link>
+            <Button variant="outline" onClick={() => setStatsOpen(true)} className="min-h-11">
+              <BarChart3 className="h-4 w-4" />
+              Статистика
             </Button>
             {stories.length > 1 && (
-              <Button variant="outline" onClick={startOrdering} disabled={ordering} className="min-h-10">
+              <Button variant="outline" onClick={startOrdering} disabled={ordering} className="min-h-11">
                 <ListOrdered className="h-4 w-4" />
                 Порядок
               </Button>
             )}
-            <Button onClick={() => setModalStory({})} className="min-h-10">
-              <Plus className="h-4 w-4" />
-              Создать
-            </Button>
           </div>
         </section>
       )}
@@ -1625,7 +1596,7 @@ export default function AdminStoriesPage() {
                         {story.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         {story.active ? "Скрыть" : "Показать"}
                       </Button>
-                      <Button asChild variant="outline" className="min-h-10">
+                      <Button asChild variant="outline" className="min-h-11">
                         <Link href={storyPublicHref(story.id)} target="_blank">
                           <ArrowUpRight className="h-4 w-4" />
                           На сайте
@@ -1681,9 +1652,56 @@ export default function AdminStoriesPage() {
         />
       )}
 
+      <ActionToast message={toast?.message ?? null} action={toast?.action} onDismiss={dismissToast} durationMs={5000} />
+
+      {statsOpen && (
+        <AdminModal
+          open
+          size="sm"
+          className="admin-modal-compact"
+          onClose={() => setStatsOpen(false)}
+          title="Статистика сторис"
+          footer={(
+            <Button variant="outline" onClick={() => setStatsOpen(false)} className="min-h-11">
+              Закрыть
+            </Button>
+          )}
+        >
+          <dl className="grid grid-cols-2 gap-3">
+            {([
+              ["Всего", stories.length],
+              ["На сайте", activeCount],
+              ["Скрыто", stories.length - activeCount],
+              ["С товаром или услугой", linkedCount],
+              ["Онлайн-продавец", liveCount],
+              ["Просмотров", totalViews],
+            ] as const).map(([label, value]) => (
+              <div key={label} className="rounded-2xl border border-border bg-card p-3">
+                <dt className="text-xs font-semibold text-muted-foreground">{label}</dt>
+                <dd className="mt-1 font-display text-2xl font-bold">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          {topStories.length > 0 && totalViews > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-semibold uppercase text-muted-foreground">Больше всего смотрят</p>
+              <ol className="mt-2 space-y-1.5 text-sm">
+                {topStories.map((story, place) => (
+                  <li key={story.id} className="flex items-center justify-between gap-3">
+                    <span className="truncate">{place + 1}. {story.title}</span>
+                    <span className="shrink-0 tabular-nums text-muted-foreground">{story.views}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </AdminModal>
+      )}
+
       {deleteCandidate && (
         <AdminModal
           open
+          className="admin-modal-compact"
           onClose={() => setDeleteCandidate(null)}
           title="Удалить сторис"
           subtitle="Сторис исчезнет из виджета и публичной страницы."
