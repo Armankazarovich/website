@@ -503,6 +503,9 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
               data-store-stories-spotlight-media
               onClick={() => openStory(spotlightStory.id)}
               className="group relative block min-h-[360px] text-left"
+              // На телефоне общее правило магазина «кнопка не ниже 40» перебивало высоту витрины,
+              // и большое видео схлопывалось в полоску 40 точек. Встроенный стиль сильнее.
+              style={{ minHeight: 360 }}
             >
               <StoryVisual story={spotlightStory} />
               <span className="absolute inset-0 bg-gradient-to-t from-background via-background/35 to-transparent" />
