@@ -224,7 +224,7 @@ function StoryBadge({ type }: { type: StoreStoryKind }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-border bg-card/95 px-2 py-1 text-[10px] font-semibold uppercase text-foreground">
       <Icon className="h-3 w-3 text-primary" />
-      {type === "LIVE" ? "Live" : "Story"}
+      {type === "LIVE" ? "Онлайн" : "Сторис"}
     </span>
   );
 }
@@ -233,7 +233,7 @@ type StoryFilter = "all" | "live" | "video" | "product" | "service";
 
 const STORY_FILTERS = [
   { id: "all", label: "Все", icon: Layers3 },
-  { id: "live", label: "Live", icon: Radio },
+  { id: "live", label: "Онлайн", icon: Radio },
   { id: "video", label: "Видео", icon: Film },
   { id: "product", label: "Товары", icon: Boxes },
   { id: "service", label: "Услуги", icon: MessageCircle },
@@ -271,7 +271,7 @@ function RelatedAction({ relation, onClick }: { relation: StoryRelation; onClick
           {relationLabel(relation.entityType)}
         </span>
         <span className="mt-0.5 block truncate text-sm font-semibold text-foreground">
-          {relation.label || relation.entityId}
+          {relation.label || relationLabel(relation.entityType)}
         </span>
         <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
           {relation.ctaUrl ? relationActionLabel(relation.entityType) : "Ссылка не задана"}
@@ -311,6 +311,7 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [filter, setFilter] = useState<StoryFilter>("all");
   const timerRef = useRef<number | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const activeStory = activeIndex === null ? null : stories[activeIndex];
   const activePosition = activeIndex ?? 0;
   const total = stories.length;
@@ -396,6 +397,19 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
     };
   }, [activeStory, detailsOpen, next, paused]);
 
+  // Окно сторис с клавиатуры: Esc закрывает, стрелки листают.
+  useEffect(() => {
+    if (!activeStory) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+      else if (event.key === "ArrowRight") next();
+      else if (event.key === "ArrowLeft") prev();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStory, next, prev]);
+
   if (stories.length === 0) {
     return (
       <div className="rounded-2xl border border-border bg-card p-8 text-center">
@@ -458,7 +472,7 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
                 type="button"
                 onClick={() => setFilter(item.id)}
                 className={cn(
-                  "inline-flex min-h-10 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors",
+                  "inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 text-sm font-semibold transition-colors",
                   selected
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-card text-foreground hover:border-primary/45",
@@ -525,20 +539,6 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
                 </p>
               </div>
 
-              <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="rounded-xl border border-border bg-background/35 p-3">
-                  <div className="font-semibold text-foreground">{formatStoryViews(spotlightStory.views)}</div>
-                  <div className="mt-1 text-muted-foreground">интерес</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background/35 p-3">
-                  <div className="font-semibold text-foreground">{storyRelations(spotlightStory).length || 1}</div>
-                  <div className="mt-1 text-muted-foreground">связей</div>
-                </div>
-                <div className="rounded-xl border border-border bg-background/35 p-3">
-                  <div className="font-semibold text-foreground">{spotlightStory.type === "LIVE" ? "Live" : "Story"}</div>
-                  <div className="mt-1 text-muted-foreground">формат</div>
-                </div>
-              </div>
 
               {spotlightRelation && <RelatedAction relation={spotlightRelation} />}
 
@@ -572,7 +572,7 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
             <button
               type="button"
               onClick={() => setFilter("all")}
-              className="mt-4 inline-flex min-h-10 items-center justify-center rounded-xl border border-primary/35 bg-primary/10 px-4 text-sm font-semibold text-primary"
+              className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl border border-primary/35 bg-primary/10 px-4 text-sm font-semibold text-primary"
             >
               Показать все
             </button>
@@ -619,7 +619,7 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
                   type="button"
                   data-store-stories-page-card-open
                   onClick={() => openStory(story.id)}
-                  className="inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-primary/35 bg-primary/10 px-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/15"
                 >
                   <CirclePlay className="h-4 w-4" />
                   Смотреть сторис
@@ -634,7 +634,7 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
       {activeStory && (
         <PopupPortal>
         <div className="store-story-overlay fixed inset-0 z-[120] flex items-center justify-center bg-background/96 p-2 sm:p-4" onClick={close}>
-          <div className="store-story-side-panel relative flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-black/40" onClick={(event) => event.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-label={activeStory.title || "Сторис"} className="store-story-side-panel relative flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-black/40" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between gap-3 border-b border-border px-3 py-3">
               <div className="min-w-0">
                 <StoryBadge type={activeStory.type} />
@@ -676,7 +676,25 @@ export function StoriesPageClient({ stories, initialStoryId }: { stories: Story[
               </div>
             )}
 
-            <div className="store-story-frame relative aspect-[9/16] shrink-0 bg-background">
+            <div
+              className="store-story-frame relative aspect-[9/16] shrink-0 bg-background"
+              onTouchStart={(event) => {
+                const touch = event.touches[0];
+                touchStartRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+              }}
+              onTouchEnd={(event) => {
+                const start = touchStartRef.current;
+                touchStartRef.current = null;
+                const touch = event.changedTouches[0];
+                if (!start || !touch || total <= 1) return;
+                const dx = touch.clientX - start.x;
+                const dy = touch.clientY - start.y;
+                // Только уверенный горизонтальный жест, чтобы не мешать прокрутке.
+                if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+                if (dx < 0) next();
+                else prev();
+              }}
+            >
               <StoryVisual
                 story={activeStory}
                 active

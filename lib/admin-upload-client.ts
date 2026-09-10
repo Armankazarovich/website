@@ -52,12 +52,12 @@ function makeUploadId() {
 }
 
 function stateMessage(phase: StoryMediaUploadPhase) {
-  if (phase === "uploading") return "Загружаем исходник…";
-  if (phase === "queued") return "Видео в очереди. Оригинал сохранён.";
-  if (phase === "processing") return "Подготавливаем видео для сайта…";
-  if (phase === "publishing") return "Проверяем готовую web-копию…";
-  if (phase === "ready") return "Видео готово для сайта.";
-  return "Не удалось подготовить видео. Оригинал сохранён.";
+  if (phase === "uploading") return "Загружаем видео…";
+  if (phase === "queued") return "Видео в очереди…";
+  if (phase === "processing") return "Облегчаем видео, чтобы не тормозило…";
+  if (phase === "publishing") return "Почти готово…";
+  if (phase === "ready") return "Видео готово.";
+  return "Не получилось облегчить видео. Ваш файл цел — попробуйте ещё раз.";
 }
 
 function emitState(options: UploadOptions, phase: StoryMediaUploadPhase, jobId?: string | null) {
@@ -157,7 +157,7 @@ export async function monitorStoryMediaJob(jobId: string, options: UploadOptions
     }
     await delay(STORY_MEDIA_POLL_INTERVAL_MS, options.signal);
   }
-  throw new StoryMediaUploadError("Подготовка видео заняла слишком много времени. Оригинал сохранён.", jobId);
+  throw new StoryMediaUploadError("Облегчение идёт дольше обычного. Ваш файл цел — обновите статус чуть позже.", jobId);
 }
 
 async function resolveUploadPayload(payload: AdminUploadPayload, options: UploadOptions): Promise<StoryMediaUploadResult> {
@@ -199,6 +199,11 @@ export async function retryStoryMediaUpload(jobId: string, options: UploadOption
 // проверяет ещё раз перед сжатием.
 const STORY_MAX_DURATION_SECONDS = 180;
 
+function formatMinutes(seconds: number) {
+  const total = Math.round(seconds);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
 function readVideoDuration(file: File): Promise<number | null> {
   return new Promise((resolve) => {
     const looksVideo = file.type.startsWith("video/") || /\.(mp4|mov|m4v|webm)$/i.test(file.name);
@@ -229,7 +234,7 @@ export async function uploadStoryMediaFile(file: File, options: UploadOptions = 
   const duration = await readVideoDuration(file);
   if (duration !== null && duration > STORY_MAX_DURATION_SECONDS + 1) {
     throw new StoryMediaUploadError(
-      `Ролик длиннее 3 минут (${Math.round(duration)} с). Сейчас сторис принимает до 3 минут — обрежьте ролик или разделите на части.`,
+      `Видео длиннее 3 минут (${formatMinutes(duration)}). Обрежьте его или разделите на две сторис.`,
     );
   }
   return uploadAdminMedia(file, "stories", options);

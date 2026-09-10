@@ -11,6 +11,7 @@ type AdminConfirmOptions = {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: AdminConfirmVariant;
+  hint?: string | null;
 };
 
 type PendingConfirm = Required<Pick<AdminConfirmOptions, "title" | "confirmLabel" | "cancelLabel">> &
@@ -36,6 +37,7 @@ export function AdminConfirmProvider({ children }: { children: ReactNode }) {
         confirmLabel: normalized.confirmLabel || "Подтвердить",
         cancelLabel: normalized.cancelLabel || "Отмена",
         variant: normalized.variant || "warning",
+        hint: normalized.hint,
         resolve,
       });
     });
@@ -68,6 +70,7 @@ export function AdminConfirmProvider({ children }: { children: ReactNode }) {
           confirmLabel={pending.confirmLabel}
           cancelLabel={pending.cancelLabel}
           variant={pending.variant}
+          hint={pending.hint}
           onClose={close}
           onConfirm={confirm}
         />

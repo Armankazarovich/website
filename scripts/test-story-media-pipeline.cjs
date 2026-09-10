@@ -71,7 +71,7 @@ check("story source up to three minutes is accepted, longer is refused with a hu
   const long = validateStorySourceDuration(181.5);
   assert.equal(long.ok, false);
   assert.match(long.reason, /3 минут/);
-  assert.match(long.reason, /Оригинал сохранён/);
+  assert.match(long.reason, /Ваш файл цел/);
   assert.equal(validateStorySourceDuration(0).ok, true, "unknown duration is left to output validation");
   assert.equal(validateStorySourceDuration(Number.NaN).ok, true, "unknown duration is left to output validation");
 });
@@ -202,6 +202,38 @@ check("conditional publish and rollback change only the intended story media URL
   story.mediaUrl = "/images/stories/manager-changed.mp4";
   await assert.rejects(() => publishStoryMedia(job, store), /изменилась/);
   assert.equal(updates.length, 2, "conflict must not overwrite a manager change");
+});
+
+check("publish fills an empty cover from the prepared frame and never replaces a manager cover", async () => {
+  const make = (posterUrl) => {
+    const story = { id: "s1", tenantId: "pilorus", mediaUrl: "/images/stories/a.mp4", posterUrl };
+    const store = {
+      async getStory() {
+        return { ...story };
+      },
+      async updateMediaUrl({ expectedUrl, nextUrl, posterUrl: nextPoster }) {
+        if (story.mediaUrl !== expectedUrl) return 0;
+        story.mediaUrl = nextUrl;
+        if (nextPoster) story.posterUrl = nextPoster;
+        return 1;
+      },
+    };
+    return { story, store };
+  };
+  const job = {
+    outputUrl: "/images/stories/a-web.mp4",
+    posterUrl: "/images/stories/a-web-poster.jpg",
+    publishTarget: { storyId: "s1", tenantId: "pilorus", expectedUrl: "/images/stories/a.mp4" },
+  };
+  const empty = make(null);
+  await publishStoryMedia(job, empty.store);
+  assert.equal(empty.story.posterUrl, job.posterUrl);
+  const own = make("/images/stories/manager-cover.jpg");
+  await publishStoryMedia(job, own.store);
+  assert.equal(own.story.posterUrl, "/images/stories/manager-cover.jpg");
+  await rollbackStoryMedia(job, empty.store);
+  assert.equal(empty.story.mediaUrl, "/images/stories/a.mp4");
+  assert.equal(empty.story.posterUrl, job.posterUrl, "rollback keeps the frame cover of the same video");
 });
 
 check("encoder profile is mobile-safe and serial", () => {
@@ -404,7 +436,7 @@ check("failed processing keeps the original and can be retried", () => {
     assert.equal(failed.status, "FAILED");
     assert.equal(publicFailed.status, "FAILED");
     assert.equal(publicFailed.canRetry, true);
-    assert.equal(publicFailed.error, "Не удалось подготовить видео. Оригинал сохранён.");
+    assert.equal(publicFailed.error, "Не получилось облегчить видео. Ваш файл цел — попробуйте ещё раз.");
     assert.equal("diagnostic" in publicFailed, false);
     assert.ok(fs.existsSync(sourcePath), "failed processing must keep the source");
     assert.equal(fs.existsSync(path.join(publicRoot, "retry-fixture-web.mp4")), false);

@@ -31,6 +31,6 @@ export async function POST(_req: Request, { params }: { params: { id: string } }
     if (!job) return NextResponse.json({ error: "Задание не найдено" }, { status: 404 });
     return NextResponse.json(job, { status: job.status === "READY" ? 200 : 202 });
   } catch {
-    return NextResponse.json({ error: "Не удалось повторить подготовку видео" }, { status: 400 });
+    return NextResponse.json({ error: "Не получилось повторить — попробуйте ещё раз" }, { status: 400 });
   }
 }

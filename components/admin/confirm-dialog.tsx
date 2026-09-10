@@ -14,6 +14,8 @@ interface ConfirmDialogProps {
   cancelLabel?: string;
   variant?: "danger" | "warning" | "default" | "destructive";
   loading?: boolean;
+  /** Вторая строка-подсказка. null — не показывать: описание уже всё сказало. */
+  hint?: string | null;
 }
 
 export function ConfirmDialog({
@@ -27,6 +29,7 @@ export function ConfirmDialog({
   cancelLabel = "Отмена",
   variant: variantProp = "danger",
   loading = false,
+  hint,
 }: ConfirmDialogProps) {
   const onClose = onCloseProp || onCancel || (() => {});
   const variant = variantProp === "destructive" ? "danger" : variantProp;
@@ -89,13 +92,16 @@ export function ConfirmDialog({
               {description}
             </p>
           )}
-          <p className="text-sm leading-6 text-muted-foreground">
-            {isDanger
-              ? "Проверьте действие перед подтверждением. Если это удаление, восстановление может быть ограничено."
-              : isWarning
-                ? "Проверьте детали перед подтверждением: действие изменит рабочие данные."
-                : "Подтвердите действие, чтобы система выполнила его сейчас."}
-          </p>
+          {hint !== null && (
+            <p className="text-sm leading-6 text-muted-foreground">
+              {hint ??
+                (isDanger
+                  ? "Проверьте действие перед подтверждением. Если это удаление, восстановление может быть ограничено."
+                  : isWarning
+                    ? "Проверьте детали перед подтверждением: действие изменит рабочие данные."
+                    : "Подтвердите действие, чтобы система выполнила его сейчас.")}
+            </p>
+          )}
         </div>
       </div>
     </AdminModal>

@@ -231,7 +231,7 @@ export async function POST(req: Request) {
         return NextResponse.json(payload, { status: payload.status === "READY" ? 200 : 202 });
       } catch {
         return NextResponse.json(
-          { error: "Не удалось запустить подготовку видео. Оригинал сохранён." },
+          { error: "Не получилось начать облегчение видео. Ваш файл цел — попробуйте ещё раз." },
           { status: 503 },
         );
       }

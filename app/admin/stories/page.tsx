@@ -4,14 +4,19 @@ import { useAdminConfirm } from "@/components/admin/admin-confirm-provider";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { Reorder, useDragControls } from "framer-motion";
 import {
+  ArrowDown,
+  ArrowUp,
   ArrowUpRight,
   CheckCircle2,
   CirclePlay,
   Eye,
   EyeOff,
+  GripVertical,
   Image as ImageIcon,
   Link2,
+  ListOrdered,
   Loader2,
   Pause,
   Pencil,
@@ -93,12 +98,12 @@ function storyMediaPhase(status?: string): StoryMediaUploadState["phase"] {
 
 function storyMediaMessage(phase: StoryMediaUploadState["phase"], fallback?: string | null) {
   if (fallback) return fallback;
-  if (phase === "queued") return "Видео в очереди. Оригинал сохранён.";
-  if (phase === "processing") return "Готовим лёгкую web-копию. Сторис пока использует прежнее видео.";
-  if (phase === "publishing") return "Проверяем и безопасно подключаем готовую web-копию.";
-  if (phase === "ready") return "Лёгкая web-копия подключена. Оригинал сохранён для отката.";
-  if (phase === "failed") return "Не удалось подготовить видео. Сторис не изменена, оригинал сохранён.";
-  return "Загружаем исходник…";
+  if (phase === "queued") return "Видео в очереди…";
+  if (phase === "processing") return "Облегчаем видео. Покупатели пока видят прежнее.";
+  if (phase === "publishing") return "Почти готово…";
+  if (phase === "ready") return "Видео облегчено — у покупателей не тормозит.";
+  if (phase === "failed") return "Не получилось облегчить видео. Сторис не изменилась — попробуйте ещё раз.";
+  return "Загружаем видео…";
 }
 
 type StoryRelation = {
@@ -299,7 +304,121 @@ function suggestEntityCta(entityType: string | null) {
   return "Смотреть";
 }
 
-function StoryPreview({ story }: { story: StoryForm | Story }) {
+// Менеджер видит вес видео прямо на карточке: тяжёлое тормозит у покупателя,
+// лёгкое готово. Правило «тяжёлое» — то же, что у обработчика видео.
+const { shouldOptimizeStoryVideo } = require("@/lib/story-media-policy.cjs") as {
+  shouldOptimizeStoryVideo: (input: { size: number; extension: string; mime?: string }) => boolean;
+};
+
+function MediaWeightBadge({ story, prepared }: { story: Story; prepared: boolean }) {
+  const url = story.mediaUrl || "";
+  const isVideo = story.type !== "IMAGE" && storyTypeFromMedia(url) === "VIDEO";
+  const [bytes, setBytes] = useState<number | null>(null);
+  useEffect(() => {
+    if (!isVideo || !url.startsWith("/")) return;
+    let alive = true;
+    fetch(url, { method: "HEAD", cache: "no-store" })
+      .then((response) => {
+        const length = Number(response.headers.get("content-length"));
+        if (alive && response.ok && Number.isFinite(length) && length > 0) setBytes(length);
+      })
+      .catch(() => null);
+    return () => {
+      alive = false;
+    };
+  }, [isVideo, url]);
+  if (!isVideo || bytes === null) {
+    return prepared ? <Badge variant="outline" className="rounded-full">лёгкое видео</Badge> : null;
+  }
+  const mb = bytes / 1048576;
+  const extension = (url.split("?")[0].split(".").pop() || "").toLowerCase();
+  const heavy = !prepared && shouldOptimizeStoryVideo({ size: bytes, extension, mime: extension === "mp4" ? "video/mp4" : "" });
+  const size = (mb >= 10 ? Math.round(mb) : Math.round(mb * 10) / 10).toLocaleString("ru-RU");
+  return (
+    <Badge variant="outline" className={cn("rounded-full", heavy && "border-destructive/40 text-destructive")}>
+      {heavy ? `видео ${size} МБ — облегчите` : `видео ${size} МБ — лёгкое`}
+    </Badge>
+  );
+}
+
+// Строка режима «Порядок»: тянуть за ручку — мышью или пальцем; стрелки —
+// для клавиатуры и для тех, кому неудобно тянуть.
+function OrderRow({
+  story,
+  index,
+  total,
+  onMove,
+}: {
+  story: Story;
+  index: number;
+  total: number;
+  onMove: (from: number, to: number) => void;
+}) {
+  const controls = useDragControls();
+  const visual = story.posterUrl || (storyTypeFromMedia(story.mediaUrl || "") === "IMAGE" ? story.mediaUrl : "");
+  const Icon = getTypeIcon(story.type);
+  return (
+    <Reorder.Item
+      value={story}
+      dragListener={false}
+      dragControls={controls}
+      whileDrag={{ scale: 1.02 }}
+      className="flex items-center gap-2 rounded-2xl border border-border bg-card p-2 sm:gap-3"
+    >
+      <button
+        type="button"
+        onPointerDown={(event) => controls.start(event)}
+        className="flex h-11 w-11 shrink-0 cursor-grab touch-none items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/40 active:cursor-grabbing"
+        aria-label={`Перетащить «${story.title}»`}
+        title="Потяните, чтобы переставить"
+      >
+        <GripVertical className="h-5 w-5" />
+      </button>
+      <span className="w-5 shrink-0 text-center text-sm font-semibold tabular-nums text-muted-foreground">{index + 1}</span>
+      <div className="flex h-14 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-background text-primary">
+        {visual ? <img src={visual} alt="" className="h-full w-full object-cover" /> : <Icon className="h-4 w-4" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">{story.title}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {TYPE_LABEL[story.type]}
+          {story.pinned ? " · закреплена" : ""}
+          {story.active ? "" : " · скрыта"}
+        </p>
+      </div>
+      <div className="flex shrink-0 gap-1">
+        <button
+          type="button"
+          onClick={() => onMove(index, index - 1)}
+          disabled={index === 0}
+          className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-foreground transition-colors hover:border-primary/40 disabled:opacity-30"
+          aria-label={`Выше: «${story.title}»`}
+        >
+          <ArrowUp className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onMove(index, index + 1)}
+          disabled={index === total - 1}
+          className="flex h-11 w-11 items-center justify-center rounded-xl border border-border text-foreground transition-colors hover:border-primary/40 disabled:opacity-30"
+          aria-label={`Ниже: «${story.title}»`}
+        >
+          <ArrowDown className="h-4 w-4" />
+        </button>
+      </div>
+    </Reorder.Item>
+  );
+}
+
+// Название связанного товара или услуги вместо служебного адреса.
+function relationName(story: Story, relations: ReturnType<typeof normalizeRelations>) {
+  const match = relations.find((relation) => relation.entityId === story.entityId) || relations[0];
+  return (match?.label || "").trim();
+}
+
+// compact — превью в карточке списка: заголовок и тип уже написаны рядом,
+// поэтому в превью только видео и две кнопки под палец.
+function StoryPreview({ story, compact = false }: { story: StoryForm | Story; compact?: boolean }) {
   const mediaUrl = story.mediaUrl || "";
   const visual = story.posterUrl || mediaUrl;
   const Icon = getTypeIcon(story.type);
@@ -342,11 +461,13 @@ function StoryPreview({ story }: { story: StoryForm | Story }) {
           <Icon className="h-9 w-9" />
         </div>
       )}
-      <div className="absolute inset-0 bg-background/45" />
-      <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full border border-border bg-card/90 px-2 py-1 text-[10px] font-semibold uppercase text-foreground">
-        <Icon className="h-3 w-3" />
-        {TYPE_LABEL[story.type]}
-      </span>
+      <div className={cn("absolute inset-0", compact ? "bg-background/10" : "bg-background/45")} />
+      {!compact && (
+        <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full border border-border bg-card/90 px-2 py-1 text-[10px] font-semibold uppercase text-foreground">
+          <Icon className="h-3 w-3" />
+          {TYPE_LABEL[story.type]}
+        </span>
+      )}
       {shouldRenderVideo && (
         <>
           <button
@@ -356,12 +477,12 @@ function StoryPreview({ story }: { story: StoryForm | Story }) {
               event.stopPropagation();
               setPreviewPaused((paused) => !paused);
             }}
-            className="absolute left-3 top-3 inline-flex min-h-7 items-center gap-1 rounded-full border border-border bg-card/90 px-2 text-[10px] font-semibold text-foreground transition-colors hover:border-primary/40"
+            className="absolute right-14 top-2 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card/90 text-foreground transition-colors hover:border-primary/40"
             aria-label={previewPaused ? "Продолжить превью" : "Поставить превью на паузу"}
             title={previewPaused ? "Продолжить" : "Пауза"}
           >
-            {previewPaused ? <Play className="h-3 w-3 text-primary" /> : <Pause className="h-3 w-3 text-primary" />}
-            {previewPaused ? "пуск" : "пауза"}
+            {previewPaused ? <Play className="h-4 w-4 text-primary" /> : <Pause className="h-4 w-4 text-primary" />}
+            <span className="sr-only">{previewPaused ? "Продолжить" : "Пауза"}</span>
           </button>
           <button
             type="button"
@@ -371,7 +492,7 @@ function StoryPreview({ story }: { story: StoryForm | Story }) {
               setPreviewSound((enabled) => !enabled);
             }}
             className={cn(
-              "absolute right-3 top-3 inline-flex min-h-7 items-center gap-1 rounded-full border px-2 text-[10px] font-semibold transition-colors",
+              "absolute right-2 top-2 flex h-11 w-11 items-center justify-center rounded-full border transition-colors",
               previewSound
                     ? "border-primary/45 bg-primary/15 text-primary"
                 : "border-border bg-card/90 text-foreground hover:border-primary/40",
@@ -379,21 +500,17 @@ function StoryPreview({ story }: { story: StoryForm | Story }) {
             aria-label={previewSound ? "Выключить звук превью" : "Включить звук превью"}
             title={previewSound ? "Выключить звук" : "Включить звук"}
           >
-            {previewSound ? <VolumeX className="h-3 w-3" /> : <Volume2 className="h-3 w-3 text-primary" />}
-            {previewSound ? "выкл." : "звук"}
+            {previewSound ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4 text-primary" />}
+            <span className="sr-only">{previewSound ? "Выключить звук" : "Включить звук"}</span>
           </button>
         </>
       )}
-      <span className={cn(
-        "absolute right-3 rounded-full border border-border bg-card/90 px-2 py-1 text-[10px] font-semibold text-muted-foreground",
-        shouldRenderVideo ? "top-12" : "top-3",
-      )}>
-        9:16
-      </span>
-      <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-card/90 p-3">
-        <p className="line-clamp-2 text-sm font-bold text-foreground">{story.title || "Название сторис"}</p>
-        {story.subtitle && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{story.subtitle}</p>}
-      </div>
+      {!compact && (
+        <div className="absolute inset-x-3 bottom-3 rounded-2xl bg-card/90 p-3">
+          <p className="line-clamp-2 text-sm font-bold text-foreground">{story.title || "Название сторис"}</p>
+          {story.subtitle && <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{story.subtitle}</p>}
+        </div>
+      )}
     </div>
   );
 }
@@ -587,7 +704,7 @@ function StoryModal({
       setMediaUploadState({
         phase: "failed",
         jobId,
-        message: err.message || "Не удалось подготовить видео. Оригинал сохранён.",
+        message: err.message || "Не получилось облегчить видео. Ваш файл цел.",
       });
     } finally {
       setUploading(null);
@@ -648,7 +765,7 @@ function StoryModal({
               {([
                 ["IMAGE", ImageIcon, "Фото"],
                 ["VIDEO", CirclePlay, "Видео"],
-                ["LIVE", Radio, "LIVE"],
+                ["LIVE", Radio, "Онлайн"],
               ] as const).map(([type, Icon, label]) => (
                 <button
                   key={type}
@@ -727,7 +844,7 @@ function StoryModal({
             </div>
           )}
           <p className="text-[11px] leading-5 text-muted-foreground">
-            Сторис лучше до 1 минуты. Видео до 500 МБ загружается как оригинал, затем автоматически готовится лёгкая web-копия. Оригинал сохраняется.
+            Видео до 3 минут. Сайт сам облегчит его, чтобы у покупателей не тормозило. Ваш файл сохранится как есть.
           </p>
           <div className="grid grid-cols-2 gap-2">
             <Button type="button" variant="outline" onClick={() => setMediaPickerTarget("media")} className="min-h-10">
@@ -793,7 +910,7 @@ function StoryModal({
               <select className={fieldClass} value={form.type} onChange={(event) => set("type", event.target.value as StoryType)}>
                 <option value="VIDEO">Видео</option>
                 <option value="IMAGE">Фото</option>
-                <option value="LIVE">Live</option>
+                <option value="LIVE">Онлайн-продавец</option>
               </select>
             </div>
             <div>
@@ -965,17 +1082,6 @@ function StoryModal({
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className={labelClass}>Видео / фото / live ссылка</label>
-              <input className={fieldClass} value={form.mediaUrl || ""} onChange={(event) => set("mediaUrl", event.target.value)} placeholder="/images/stories/video.mp4" />
-            </div>
-            <div>
-              <label className={labelClass}>Обложка</label>
-              <input className={fieldClass} value={form.posterUrl || ""} onChange={(event) => set("posterUrl", event.target.value)} placeholder="/images/stories/poster.webp" />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
               <label className={labelClass}>Связь</label>
               <select className={fieldClass} value={form.entityType || "general"} onChange={(event) => set("entityType", event.target.value === "general" ? null : event.target.value)}>
                 <option value="general">Общая сторис</option>
@@ -986,15 +1092,28 @@ function StoryModal({
                 <option value="company">О компании</option>
               </select>
             </div>
-            <div>
-              <label className={labelClass}>ID или slug связи</label>
-              <input className={fieldClass} value={form.entityId || ""} onChange={(event) => set("entityId", event.target.value)} placeholder="doska-stroganaya-suhaya-sosna" disabled={!form.entityType} />
-            </div>
-            <div>
-              <label className={labelClass}>Порядок</label>
-              <input className={fieldClass} type="number" value={form.sortOrder} onChange={(event) => set("sortOrder", Number(event.target.value))} />
-            </div>
           </div>
+
+          {/* Служебные адреса нужны редко — специалисту. Порядок меняется перетаскиванием в списке. */}
+          <details className="rounded-xl border border-border bg-background/40 px-3 py-2">
+            <summary className="cursor-pointer select-none py-1.5 text-sm font-semibold text-muted-foreground">
+              Дополнительно — адреса файлов и связи
+            </summary>
+            <div className="mt-3 grid gap-4 md:grid-cols-3">
+              <div>
+                <label className={labelClass}>Адрес видео или фото</label>
+                <input className={fieldClass} value={form.mediaUrl || ""} onChange={(event) => set("mediaUrl", event.target.value)} placeholder="/images/stories/video.mp4" />
+              </div>
+              <div>
+                <label className={labelClass}>Адрес обложки</label>
+                <input className={fieldClass} value={form.posterUrl || ""} onChange={(event) => set("posterUrl", event.target.value)} placeholder="/images/stories/poster.webp" />
+              </div>
+              <div>
+                <label className={labelClass}>Адрес товара или услуги</label>
+                <input className={fieldClass} value={form.entityId || ""} onChange={(event) => set("entityId", event.target.value)} placeholder="doska-stroganaya-suhaya-sosna" disabled={!form.entityType} />
+              </div>
+            </div>
+          </details>
 
           <div className="grid gap-4 md:grid-cols-2">
             <div>
@@ -1056,6 +1175,45 @@ export default function AdminStoriesPage() {
   const linkedCount = useMemo(() => stories.filter((story) => normalizeRelations(story).length > 0).length, [stories]);
   const liveCount = useMemo(() => stories.filter((story) => story.type === "LIVE").length, [stories]);
 
+  // Режим «Порядок»: черновик списка, сохраняется одной кнопкой.
+  const [ordering, setOrdering] = useState(false);
+  const [orderDraft, setOrderDraft] = useState<Story[]>([]);
+  const [orderSaving, setOrderSaving] = useState(false);
+  const startOrdering = () => {
+    setOrderDraft(stories);
+    setOrdering(true);
+  };
+  const moveInDraft = (from: number, to: number) => {
+    setOrderDraft((list) => {
+      if (to < 0 || to >= list.length) return list;
+      const next = [...list];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  };
+  const saveOrder = async () => {
+    // На сайте закреплённые всегда первые — присылаем их первыми, порядок внутри групп сохраняем.
+    const ordered = [...orderDraft.filter((story) => story.pinned), ...orderDraft.filter((story) => !story.pinned)];
+    setOrderSaving(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/stories/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: ordered.map((story) => story.id), confirm: true }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Не получилось сохранить порядок — попробуйте ещё раз");
+      setOrdering(false);
+      await loadStories();
+    } catch (err: any) {
+      setError(err.message || "Не получилось сохранить порядок — попробуйте ещё раз");
+    } finally {
+      setOrderSaving(false);
+    }
+  };
+
   const loadStories = async () => {
     setLoading(true);
     setError("");
@@ -1082,7 +1240,7 @@ export default function AdminStoriesPage() {
           phase,
           jobId: receipt.job.id,
           message: receipt.job.rolledBack
-            ? "Откат выполнен. Сторис использует исходное видео."
+            ? "Вернули как было."
             : storyMediaMessage(phase, receipt.job.error),
           canRollback: Boolean(receipt.job.canRollback),
         };
@@ -1137,7 +1295,15 @@ export default function AdminStoriesPage() {
   };
 
   const toggleActive = async (story: Story) => {
-    if (!(await confirmAction(story.active ? "Скрыть сторис?" : "Показать сторис?"))) return;
+    if (!(await confirmAction({
+      title: story.active ? "Скрыть сторис?" : "Показать сторис?",
+      description: story.active
+        ? `«${story.title}» пропадёт с сайта. Вернуть можно в любой момент.`
+        : `«${story.title}» снова появится на сайте.`,
+      confirmLabel: story.active ? "Скрыть" : "Показать",
+      variant: "default",
+      hint: null,
+    }))) return;
     await saveStory({ ...normalizeForm(story), active: !story.active });
   };
 
@@ -1149,9 +1315,13 @@ export default function AdminStoriesPage() {
   };
 
   const prepareStoryVideo = async (story: Story, retryJobId?: string) => {
-    if (!(await confirmAction(
-      `Подготовить лёгкую web-копию для «${story.title}»? Сторис переключится только после проверки, оригинал сохранится.`,
-    ))) return;
+    if (!(await confirmAction({
+      title: "Облегчить видео?",
+      description: `«${story.title}» будет открываться быстро. Покупатели увидят новую версию, когда она будет готова. Ваш файл сохранится.`,
+      confirmLabel: "Облегчить",
+      variant: "default",
+      hint: null,
+    }))) return;
 
     setError("");
     try {
@@ -1184,7 +1354,7 @@ export default function AdminStoriesPage() {
       if (!jobId) {
         setStoryMediaState(story.id, {
           phase: "ready",
-          message: payload.message || "Видео уже подходит для сайта.",
+          message: payload.message || "Видео и так лёгкое — облегчать не нужно.",
         });
         return;
       }
@@ -1207,9 +1377,13 @@ export default function AdminStoriesPage() {
   };
 
   const rollbackStoryVideo = async (story: Story, jobId: string) => {
-    if (!(await confirmAction(
-      `Вернуть оригинал для «${story.title}»? Подготовленная web-копия останется в журнале, данные сторис не изменятся.`,
-    ))) return;
+    if (!(await confirmAction({
+      title: "Вернуть как было?",
+      description: `«${story.title}» снова будет показывать исходное видео. Облегчённую версию можно включить обратно.`,
+      confirmLabel: "Вернуть",
+      variant: "default",
+      hint: null,
+    }))) return;
     setError("");
     try {
       const response = await fetch(`/api/admin/stories/${encodeURIComponent(story.id)}/media`, {
@@ -1218,15 +1392,15 @@ export default function AdminStoriesPage() {
         body: JSON.stringify({ action: "rollback", jobId, confirm: true }),
       });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(payload.error || "Не удалось вернуть оригинал");
+      if (!response.ok) throw new Error(payload.error || "Не получилось вернуть как было");
       setStoryMediaState(story.id, {
         phase: "ready",
         jobId,
-        message: "Откат выполнен. Сторис снова использует исходное видео.",
+        message: "Вернули как было.",
       });
       await loadStories();
     } catch (err: any) {
-      setError(err.message || "Не удалось вернуть оригинал");
+      setError(err.message || "Не получилось вернуть как было");
     }
   };
 
@@ -1257,7 +1431,7 @@ export default function AdminStoriesPage() {
           ["Всего", stories.length],
           ["Активны", activeCount],
           ["Связаны", linkedCount],
-          ["Live", liveCount],
+          ["Онлайн", liveCount],
         ].map(([label, value]) => (
           <div key={label} className="rounded-2xl border border-border bg-card p-4">
             <p className="text-xs font-semibold uppercase text-muted-foreground">{label}</p>
@@ -1278,7 +1452,7 @@ export default function AdminStoriesPage() {
             <p className="text-xs font-semibold uppercase text-primary/80">Рабочая зона</p>
             <h2 className="mt-1 font-display text-2xl font-bold">Сторис в эфире</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {activeCount} активны · {linkedCount} связаны · {liveCount} live
+              {activeCount} активны · {linkedCount} связаны · {liveCount} онлайн
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -1288,6 +1462,12 @@ export default function AdminStoriesPage() {
                 На сайте
               </Link>
             </Button>
+            {stories.length > 1 && (
+              <Button variant="outline" onClick={startOrdering} disabled={ordering} className="min-h-10">
+                <ListOrdered className="h-4 w-4" />
+                Порядок
+              </Button>
+            )}
             <Button onClick={() => setModalStory({})} className="min-h-10">
               <Plus className="h-4 w-4" />
               Создать
@@ -1314,6 +1494,31 @@ export default function AdminStoriesPage() {
             Создать сторис
           </Button>
         </div>
+      ) : ordering ? (
+        <section className="space-y-3 rounded-2xl border border-primary/30 bg-card/70 p-3 sm:p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-display text-xl font-bold">Порядок сторис</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Потяните сторис за ручку слева или нажмите стрелки. Закреплённые всегда первые.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setOrdering(false)} disabled={orderSaving} className="min-h-11">
+                Отмена
+              </Button>
+              <Button onClick={saveOrder} disabled={orderSaving} className="min-h-11">
+                {orderSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Сохранить порядок
+              </Button>
+            </div>
+          </div>
+          <Reorder.Group axis="y" values={orderDraft} onReorder={setOrderDraft} className="space-y-2">
+            {orderDraft.map((story, index) => (
+              <OrderRow key={story.id} story={story} index={index} total={orderDraft.length} onMove={moveInDraft} />
+            ))}
+          </Reorder.Group>
+        </section>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {stories.map((story) => {
@@ -1327,7 +1532,7 @@ export default function AdminStoriesPage() {
             return (
               <article key={story.id} className="overflow-hidden rounded-2xl border border-border bg-card">
                 <div className="grid gap-0 sm:grid-cols-[150px_1fr]">
-                  <StoryPreview story={story} />
+                  <StoryPreview story={story} compact />
                   <div className="flex min-w-0 flex-col p-4">
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       <Badge variant={story.active ? "default" : "outline"} className="rounded-full">
@@ -1338,24 +1543,33 @@ export default function AdminStoriesPage() {
                         <Icon className="h-3 w-3" />
                         {TYPE_LABEL[story.type]}
                       </span>
-                      {preparedWebCopy && <Badge variant="outline" className="rounded-full">web-копия</Badge>}
+                      <MediaWeightBadge story={story} prepared={preparedWebCopy} />
                     </div>
                     <h2 className="line-clamp-2 font-display text-xl font-bold">{story.title}</h2>
                     {story.subtitle && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{story.subtitle}</p>}
                     <div className="mt-3 space-y-1 text-xs text-muted-foreground">
                       <p>
                         Связь: <span className="font-semibold text-foreground">{ENTITY_LABEL[entityKey] || entityKey}</span>
-                        {story.entityId ? ` · ${story.entityId}` : ""}
+                        {relationName(story, storyRelations) ? ` · ${relationName(story, storyRelations)}` : ""}
                       </p>
                       {storyRelations.length > 0 && (
                         <p>
-                          Объекты: <span className="font-semibold text-foreground">{storyRelations.length}</span>
+                          Связано с: <span className="font-semibold text-foreground">{storyRelations.length}</span>
                           {" · "}
-                          {storyRelations.slice(0, 2).map((relation) => relation.label || relation.entityId).join(", ")}
+                          {storyRelations.slice(0, 2).map((relation) => relation.label).filter(Boolean).join(", ")}
                           {storyRelations.length > 2 ? "..." : ""}
                         </p>
                       )}
-                      <p>Просмотры: {story.views} · порядок {story.sortOrder}</p>
+                      <p>Просмотров: {story.views}</p>
+                      {story.ctaUrl && (
+                        <p className="truncate">
+                          Кнопка: <span className="font-semibold text-foreground">«{story.ctaLabel || "Смотреть"}»</span>{" "}
+                          <Link href={story.ctaUrl} target="_blank" className="inline-flex items-center gap-1 underline decoration-dotted underline-offset-2 hover:text-primary">
+                            <Link2 className="h-3 w-3" />
+                            проверить
+                          </Link>
+                        </p>
+                      )}
                     </div>
                     {mediaState && (
                       <div className={cn(
@@ -1379,8 +1593,8 @@ export default function AdminStoriesPage() {
                                   Обновить статус
                                 </Button>
                               )}
-                              {mediaState.phase === "failed" && mediaState.jobId && (
-                                <Button type="button" variant="outline" onClick={() => prepareStoryVideo(story, mediaState.jobId)} className="min-h-9">
+                              {mediaState.phase === "failed" && canPrepareVideo && (
+                                <Button type="button" variant="outline" onClick={() => prepareStoryVideo(story, mediaState.jobId || undefined)} className="min-h-9">
                                   <RefreshCw className="h-4 w-4" />
                                   Повторить
                                 </Button>
@@ -1388,7 +1602,7 @@ export default function AdminStoriesPage() {
                               {mediaState.canRollback && mediaState.jobId && (
                                 <Button type="button" variant="outline" onClick={() => rollbackStoryVideo(story, mediaState.jobId!)} className="min-h-9">
                                   <RotateCcw className="h-4 w-4" />
-                                  Вернуть оригинал
+                                  Вернуть как было
                                 </Button>
                               )}
                             </div>
@@ -1397,35 +1611,27 @@ export default function AdminStoriesPage() {
                       </div>
                     )}
                     <div className="mt-auto flex flex-wrap gap-2 pt-4">
-                      <Button variant="outline" onClick={() => toggleActive(story)} className="min-h-10">
-                        {story.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        {story.active ? "Скрыть" : "Показать"}
-                      </Button>
-                      <Button variant="outline" onClick={() => setModalStory(story)} className="min-h-10">
+                      <Button variant="outline" onClick={() => setModalStory(story)} className="min-h-11">
                         <Pencil className="h-4 w-4" />
                         Изменить
                       </Button>
                       {canPrepareVideo && !preparedWebCopy && (
-                        <Button variant="outline" onClick={() => prepareStoryVideo(story)} disabled={Boolean(mediaBusy)} className="min-h-10">
+                        <Button variant="outline" onClick={() => prepareStoryVideo(story)} disabled={Boolean(mediaBusy)} className="min-h-11">
                           {mediaBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                          Подготовить видео
+                          Облегчить видео
                         </Button>
                       )}
-                      {story.ctaUrl && (
-                        <Button asChild variant="outline" className="min-h-10">
-                          <Link href={story.ctaUrl} target="_blank">
-                            <Link2 className="h-4 w-4" />
-                            CTA
-                          </Link>
-                        </Button>
-                      )}
+                      <Button variant="outline" onClick={() => toggleActive(story)} className="min-h-11">
+                        {story.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {story.active ? "Скрыть" : "Показать"}
+                      </Button>
                       <Button asChild variant="outline" className="min-h-10">
                         <Link href={storyPublicHref(story.id)} target="_blank">
                           <ArrowUpRight className="h-4 w-4" />
                           На сайте
                         </Link>
                       </Button>
-                      <Button variant="outline" onClick={() => setDeleteCandidate(story)} className="min-h-10 text-destructive hover:text-destructive">
+                      <Button variant="outline" onClick={() => setDeleteCandidate(story)} className="min-h-11 text-destructive hover:text-destructive" aria-label={`Удалить «${story.title}»`} title="Удалить">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>

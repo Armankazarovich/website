@@ -375,6 +375,9 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
   const [stories, setStories] = useState<Story[]>(initialStories);
   const [index, setIndex] = useState(0);
   const [expanded, setExpanded] = useState(false);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  // Автолистание замирает, пока человек навёл мышь или фокус на виджет, — успеть прочитать.
+  const [rotationPaused, setRotationPaused] = useState(false);
   const [hidden, setHidden] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -441,12 +444,14 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
   }, [entity, initialStories]);
 
   useEffect(() => {
-    if (!current || expanded || hidden || total <= 1) return;
+    if (!current || expanded || hidden || total <= 1 || rotationPaused) return;
+    // Кто просил систему меньше движения — не листаем сами.
+    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const timer = window.setInterval(() => {
       setIndex((value) => (value + 1) % total);
     }, 6500);
     return () => window.clearInterval(timer);
-  }, [current, expanded, hidden, total]);
+  }, [current, expanded, hidden, total, rotationPaused]);
 
   useEffect(() => {
     if (!current || hidden || !expanded || viewedRef.current.has(current.id)) return;
@@ -493,6 +498,26 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
     return () => window.clearInterval(timer);
   }, [current, expanded, detailsOpen, paused, total]);
 
+  // Окно сторис с клавиатуры: Esc закрывает, стрелки листают — как в Instagram
+  // и Telegram на компьютере. На телефоне листают пальцем (см. store-story-frame).
+  useEffect(() => {
+    if (!expanded || typeof window === "undefined") return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setExpanded(false);
+        setSoundEnabled(false);
+        setPaused(false);
+        setStoryProgress(0);
+      } else if (total > 1 && (event.key === "ArrowRight" || event.key === "ArrowLeft")) {
+        setStoryProgress(0);
+        setPaused(false);
+        setIndex((value) => (event.key === "ArrowRight" ? (value + 1) % total : (value - 1 + total) % total));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expanded, total]);
+
   if (!current || total === 0 || (floatingChromeHidden && !expanded)) return null;
 
   const next = () => {
@@ -510,7 +535,7 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
   const linked = relatedActions.length > 0;
   const actionHref = current.ctaUrl || firstAction?.ctaUrl || (current.type === "LIVE" && current.mediaUrl ? current.mediaUrl : "");
   const hasInlineVideo = isVideoStory(current) && Boolean(current.mediaUrl) && canInlineVideo(current.mediaUrl);
-  const compactLabel = current.type === "LIVE" ? "LIVE" : "Обзор";
+  const compactLabel = current.type === "LIVE" ? "Онлайн" : "Обзор";
   const openStory = () => {
     setSoundEnabled(false);
     setPaused(false);
@@ -582,6 +607,10 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
         className="fixed right-6 z-[44] hidden w-[152px] xl:block"
         style={{ bottom: "calc(6.75rem + env(safe-area-inset-bottom, 0px))" }}
         aria-label="Сторис продавца"
+        onMouseEnter={() => setRotationPaused(true)}
+        onMouseLeave={() => setRotationPaused(false)}
+        onFocus={() => setRotationPaused(true)}
+        onBlur={() => setRotationPaused(false)}
       >
         <button
           type="button"
@@ -592,17 +621,19 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
           <span className="absolute inset-0 bg-background/68" />
           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-1 text-[10px] font-semibold text-foreground">
             {current.type === "LIVE" ? <Radio className="h-3 w-3" /> : <CirclePlay className="h-3 w-3" />}
-            {current.type === "LIVE" ? "LIVE" : "Видео"}
+            {current.type === "LIVE" ? "Онлайн" : "Видео"}
           </span>
         </button>
         <button
           type="button"
           onClick={hideWidget}
-          className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary"
+          className="group/hide absolute -right-3.5 -top-3.5 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground"
           aria-label="Скрыть сторис в бок"
           title="Скрыть сторис в бок"
         >
-          <ChevronRight className="h-4 w-4" />
+          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-card transition-colors group-hover/hide:border-primary/45 group-hover/hide:text-primary">
+            <ChevronRight className="h-4 w-4" />
+          </span>
         </button>
         <div className="mt-2 flex justify-center gap-1.5">
           {stories.slice(0, 5).map((story, storyIndex) => (
@@ -610,12 +641,17 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
               key={story.id}
               type="button"
               aria-label={`Сторис ${storyIndex + 1}`}
+              aria-current={storyIndex === index ? "true" : undefined}
               onClick={() => setIndex(storyIndex)}
-              className={cn(
-                "h-1.5 rounded-full transition-all",
-                storyIndex === index ? "w-6 bg-primary" : "w-1.5 bg-muted-foreground/35",
-              )}
-            />
+              className="flex h-6 min-w-6 items-center justify-center"
+            >
+              <span
+                className={cn(
+                  "block h-1.5 rounded-full transition-all",
+                  storyIndex === index ? "w-6 bg-primary" : "w-1.5 bg-muted-foreground/35",
+                )}
+              />
+            </button>
           ))}
         </div>
       </div>
@@ -648,11 +684,13 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
         <button
           type="button"
           onClick={hideWidget}
-          className="absolute -left-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary"
+          className="group/hide absolute -left-5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground"
           aria-label="Свернуть сторис в бок"
           title="Свернуть в бок"
         >
-          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card transition-colors group-hover/hide:border-primary/45 group-hover/hide:text-primary">
+            <ChevronRight className="h-3.5 w-3.5" />
+          </span>
         </button>
       </div>
       )}
@@ -663,6 +701,10 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
         className="group fixed right-0 z-[44] hidden h-[104px] w-11 items-center justify-center rounded-l-2xl border border-r-0 border-primary/28 bg-card text-primary shadow-xl transition-colors hover:border-primary/55 sm:flex xl:hidden"
         style={{ bottom: "calc(6.75rem + env(safe-area-inset-bottom, 0px))" }}
         aria-label="Сторис продавца"
+        onMouseEnter={() => setRotationPaused(true)}
+        onMouseLeave={() => setRotationPaused(false)}
+        onFocus={() => setRotationPaused(true)}
+        onBlur={() => setRotationPaused(false)}
       >
         <button
           type="button"
@@ -681,11 +723,13 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
         <button
           type="button"
           onClick={hideWidget}
-          className="absolute -left-3 -top-3 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary"
+          className="group/hide absolute -left-5 -top-5 flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground"
           aria-label="Скрыть сторис в бок"
           title="Скрыть сторис"
         >
-          <X className="h-3.5 w-3.5" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card transition-colors group-hover/hide:border-primary/45 group-hover/hide:text-primary">
+            <X className="h-3.5 w-3.5" />
+          </span>
         </button>
       </div>
       )}
@@ -693,13 +737,13 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
       {expanded && (
         <PopupPortal>
         <div className="store-story-overlay fixed inset-0 z-[120] flex items-center justify-center bg-background/96 p-2 sm:p-4" onClick={closeStory}>
-          <div className="store-story-side-panel relative flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-black/40" onClick={(event) => event.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-label={current.title || "Сторис"} className="store-story-side-panel relative flex w-full max-w-[430px] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-black/40" onClick={(event) => event.stopPropagation()}>
             <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="inline-flex items-center gap-1 rounded-full border border-primary/35 bg-primary/10 px-2 py-1 text-[10px] font-semibold uppercase text-primary">
                     {current.type === "LIVE" ? <Radio className="h-3 w-3" /> : <CirclePlay className="h-3 w-3" />}
-                    {current.type === "LIVE" ? "Live" : "Stories"}
+                    {current.type === "LIVE" ? "Онлайн-продавец" : "Сторис"}
                   </span>
                   {linked && (
                     <span className="rounded-full border border-border px-2 py-1 text-[10px] text-muted-foreground">
@@ -762,7 +806,25 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
               </div>
             )}
 
-            <div className="store-story-frame relative aspect-[9/16] shrink-0 bg-background">
+            <div
+              className="store-story-frame relative aspect-[9/16] shrink-0 bg-background"
+              onTouchStart={(event) => {
+                const touch = event.touches[0];
+                touchStartRef.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+              }}
+              onTouchEnd={(event) => {
+                const start = touchStartRef.current;
+                touchStartRef.current = null;
+                const touch = event.changedTouches[0];
+                if (!start || !touch || total <= 1) return;
+                const dx = touch.clientX - start.x;
+                const dy = touch.clientY - start.y;
+                // Свайп — только уверенный горизонтальный жест, чтобы не мешать прокрутке.
+                if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+                if (dx < 0) next();
+                else prev();
+              }}
+            >
               <StoryMedia
                 story={current}
                 expanded

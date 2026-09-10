@@ -79,12 +79,12 @@ export async function POST(req: Request, { params }: { params: { id: string } })
     });
     if (!story) return NextResponse.json({ error: "Сторис не найдена" }, { status: 404 });
     if ((story.type !== "VIDEO" && story.type !== "LIVE") || !story.mediaUrl) {
-      return NextResponse.json({ error: "У этой сторис нет видео для подготовки" }, { status: 400 });
+      return NextResponse.json({ error: "У этой сторис нет видео" }, { status: 400 });
     }
 
     const sourcePath = resolveStoryMediaSourceFromUrl(story.mediaUrl);
     if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isFile()) {
-      return NextResponse.json({ error: "Исходное видео не найдено. Сторис не изменена." }, { status: 404 });
+      return NextResponse.json({ error: "Исходное видео не найдено. Сторис не изменилась." }, { status: 404 });
     }
     const size = fs.statSync(sourcePath).size;
     const extension = path.extname(sourcePath).slice(1).toLowerCase();
@@ -97,7 +97,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
         optimized: false,
         published: true,
         canRollback: false,
-        message: "Видео уже подходит для сайта.",
+        message: "Видео и так лёгкое — облегчать не нужно.",
       });
     }
 
@@ -115,7 +115,7 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   } catch (error) {
     console.error("[stories-media] protected action failed", error);
     return NextResponse.json(
-      { error: "Не удалось подготовить видео. Сторис не изменена, оригинал сохранён." },
+      { error: "Не получилось облегчить видео. Сторис не изменилась — попробуйте ещё раз." },
       { status: 409 },
     );
   }
