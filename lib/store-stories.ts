@@ -1,3 +1,4 @@
+import { buyerStoryText } from "@/lib/store-story-templates";
 import "server-only";
 
 import { prisma } from "@/lib/prisma";
@@ -92,8 +93,8 @@ function toPublicStory(story: any): PublicStoreStory {
     id: story.id,
     type: story.type,
     title: story.title,
-    subtitle: story.subtitle,
-    description: story.description,
+    subtitle: buyerStoryText(story.subtitle),
+    description: buyerStoryText(story.description),
     mediaUrl: story.mediaUrl,
     posterUrl: story.posterUrl,
     ctaLabel: story.ctaLabel,

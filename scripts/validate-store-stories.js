@@ -88,6 +88,7 @@ const checks = [
       "allStoryRelations",
       "storyPriority",
       "toPublicStory",
+      "buyerStoryText",
       "bumpStoryView",
     ],
   },
@@ -105,6 +106,11 @@ const checks = [
     file: "app/api/admin/stories/route.ts",
     label: "admin API persists stories with relations",
     patterns: ["requireManager", "buildStoryWrite", "relations", "storyRelationsInclude"],
+  },
+  {
+    file: "lib/store-story-templates.ts",
+    label: "manager template hints never reach buyers and are flagged in admin",
+    patterns: ["STORY_TEMPLATE_HINTS", "isStoryTemplateHint", "buyerStoryText", "если указать slug товара"],
   },
   {
     file: "app/api/admin/stories/reorder/route.ts",
@@ -170,6 +176,7 @@ const checks = [
       "Порядок сторис",
       "ActionToast",
       "Статистика сторис",
+      "isStoryTemplateHint",
       "admin-modal-compact",
       "Прямой эфир пока не подключён",
       "addRelation",

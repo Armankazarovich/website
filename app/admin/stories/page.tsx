@@ -47,6 +47,7 @@ import {
   uploadAdminMediaFile,
   uploadStoryMediaFile,
 } from "@/lib/admin-upload-client";
+import { isStoryTemplateHint } from "@/lib/store-story-templates";
 
 const MediaPickerModal = dynamic(
   () => import("@/app/admin/media/media-client").then((m) => ({ default: m.MediaPickerModal })),
@@ -616,7 +617,7 @@ function StoryModal({
         type: "LIVE",
         title: "Онлайн-продавец",
         subtitle: "Записанный обзор товара и ответы на частые вопросы",
-        description: "Короткое видео онлайн-продавца встречает посетителя и помогает быстрее выбрать. Прямой эфир подключается отдельным модулем.",
+        description: "",
         ctaLabel: "Задать вопрос",
         ctaUrl: "/contacts",
         entityType: null,
@@ -629,8 +630,8 @@ function StoryModal({
         ...prev,
         type: "VIDEO",
         title: "Видео-обзор товара",
-        subtitle: "Покажите материал, размер и качество",
-        description: "Эта сторис будет первой на странице связанного товара, если указать slug товара.",
+        subtitle: "",
+        description: "",
         ctaLabel: "Открыть товар",
         entityType: "product",
       }));
@@ -640,8 +641,8 @@ function StoryModal({
         ...prev,
         type: "VIDEO",
         title: "Как работает услуга",
-        subtitle: "Коротко объясните процесс и следующий шаг",
-        description: "Сторис можно привязать к услуге по slug, чтобы она открывалась первой на странице услуги.",
+        subtitle: "",
+        description: "",
         ctaLabel: "Оставить заявку",
         entityType: "service",
       }));
@@ -651,8 +652,8 @@ function StoryModal({
         ...prev,
         type: "VIDEO",
         title: "Видео-отзыв клиента",
-        subtitle: "Одобренный отзыв можно показать в общем виджете",
-        description: "После модерации видео-отзыв работает как доверительный контент для всего сайта.",
+        subtitle: "",
+        description: "",
         ctaLabel: "Смотреть отзыв",
         entityType: "review",
       }));
@@ -1515,6 +1516,11 @@ export default function AdminStoriesPage() {
                         {TYPE_LABEL[story.type]}
                       </span>
                       <MediaWeightBadge story={story} prepared={preparedWebCopy} />
+                      {(isStoryTemplateHint(story.subtitle) || isStoryTemplateHint(story.description)) && (
+                        <Badge variant="outline" className="rounded-full border-destructive/40 text-destructive" title="Покупатели этот текст не видят — сайт его прячет. Напишите настоящий текст.">
+                          текст-заготовка — перепишите
+                        </Badge>
+                      )}
                     </div>
                     <h2 className="line-clamp-2 font-display text-xl font-bold">{story.title}</h2>
                     {story.subtitle && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{story.subtitle}</p>}
