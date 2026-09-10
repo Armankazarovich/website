@@ -194,7 +194,44 @@ export async function retryStoryMediaUpload(jobId: string, options: UploadOption
   return resolveUploadPayload({ ...payload, jobId }, options);
 }
 
+// Решение Армана 10.09.2026: сторис принимает ролик до трёх минут. Браузер
+// проверяет длину до загрузки, чтобы менеджер не ждал загрузку зря; сервер
+// проверяет ещё раз перед сжатием.
+const STORY_MAX_DURATION_SECONDS = 180;
+
+function readVideoDuration(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    const looksVideo = file.type.startsWith("video/") || /\.(mp4|mov|m4v|webm)$/i.test(file.name);
+    if (typeof document === "undefined" || !looksVideo) {
+      resolve(null);
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    const finish = (value: number | null) => {
+      window.clearTimeout(timer);
+      video.removeAttribute("src");
+      video.load();
+      URL.revokeObjectURL(url);
+      resolve(value);
+    };
+    // Если браузер не умеет читать этот формат, решает сервер.
+    const timer = window.setTimeout(() => finish(null), 8_000);
+    video.preload = "metadata";
+    video.muted = true;
+    video.onloadedmetadata = () => finish(Number.isFinite(video.duration) && video.duration > 0 ? video.duration : null);
+    video.onerror = () => finish(null);
+    video.src = url;
+  });
+}
+
 export async function uploadStoryMediaFile(file: File, options: UploadOptions = {}) {
+  const duration = await readVideoDuration(file);
+  if (duration !== null && duration > STORY_MAX_DURATION_SECONDS + 1) {
+    throw new StoryMediaUploadError(
+      `Ролик длиннее 3 минут (${Math.round(duration)} с). Сейчас сторис принимает до 3 минут — обрежьте ролик или разделите на части.`,
+    );
+  }
   return uploadAdminMedia(file, "stories", options);
 }
 

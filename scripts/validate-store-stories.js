@@ -108,8 +108,8 @@ const checks = [
   },
   {
     file: "app/api/admin/upload/route.ts",
-    label: "story video uploads tolerate short heavy MOV files",
-    patterns: ["STORY_VIDEO_MAX_SIZE", "500MB", 'folder === "stories"'],
+    label: "story video uploads accept up to three minutes of camera video",
+    patterns: ["STORY_VIDEO_MAX_SIZE", "2 * 1024 * 1024 * 1024", "2 ГБ", 'folder === "stories"'],
   },
   {
     file: "app/api/admin/upload/chunk/route.ts",

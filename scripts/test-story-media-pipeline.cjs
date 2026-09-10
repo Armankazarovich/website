@@ -29,6 +29,7 @@ const {
   isSafeStoryMediaJobId,
   shouldOptimizeStoryVideo,
   validateStoryMediaProbe,
+  validateStorySourceDuration,
 } = require("../lib/story-media-policy.cjs");
 
 const checks = [];
@@ -62,6 +63,17 @@ check("large MP4 is optimized", () => {
 check("MOV and WebM are normalized even when small", () => {
   assert.equal(shouldOptimizeStoryVideo({ size: 1024, extension: "mov", mime: "video/quicktime" }), true);
   assert.equal(shouldOptimizeStoryVideo({ size: 1024, extension: "webm", mime: "video/webm" }), true);
+});
+
+check("story source up to three minutes is accepted, longer is refused with a human reason", () => {
+  assert.deepEqual(validateStorySourceDuration(43.7), { ok: true });
+  assert.deepEqual(validateStorySourceDuration(180.9), { ok: true });
+  const long = validateStorySourceDuration(181.5);
+  assert.equal(long.ok, false);
+  assert.match(long.reason, /3 минут/);
+  assert.match(long.reason, /Оригинал сохранён/);
+  assert.equal(validateStorySourceDuration(0).ok, true, "unknown duration is left to output validation");
+  assert.equal(validateStorySourceDuration(Number.NaN).ok, true, "unknown duration is left to output validation");
 });
 
 check("job identifiers accept UUIDs and reject traversal", () => {

@@ -64,9 +64,11 @@ const ALLOWED_FOLDERS = [
 ];
 const IMAGE_MAX_SIZE = 25 * 1024 * 1024;
 const VIDEO_MAX_SIZE = 200 * 1024 * 1024;
-const STORY_VIDEO_MAX_SIZE = 500 * 1024 * 1024;
+// Три минуты с камеры телефона весят до ~1,5 ГБ; сайт сам делает лёгкую копию.
+const STORY_VIDEO_MAX_SIZE = 2 * 1024 * 1024 * 1024;
 const CHUNK_MAX_SIZE = 12 * 1024 * 1024;
-const MAX_CHUNKS = 80;
+// Браузер режет файл на куски по 8 МБ: 2 ГБ — это 256 кусков.
+const MAX_CHUNKS = 256;
 
 function normalizeMime(mime: string, ext: string): string {
   const cleanMime = mime.toLowerCase();
@@ -156,7 +158,7 @@ export async function POST(req: Request) {
   const maxSize = isVideo ? (folder === "stories" ? STORY_VIDEO_MAX_SIZE : VIDEO_MAX_SIZE) : IMAGE_MAX_SIZE;
   if (fileSize > maxSize) {
     return NextResponse.json(
-      { error: `Максимальный размер ${isVideo ? (folder === "stories" ? "500MB" : "200MB") : "25MB"}` },
+      { error: `Максимальный размер ${isVideo ? (folder === "stories" ? "2 ГБ" : "200MB") : "25MB"}` },
       { status: 400 },
     );
   }
