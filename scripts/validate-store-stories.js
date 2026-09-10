@@ -112,6 +112,13 @@ const checks = [
     patterns: ["STORY_VIDEO_MAX_SIZE", "2 * 1024 * 1024 * 1024", "2 ГБ", 'folder === "stories"'],
   },
   {
+    // Найдено 10.09.2026 на экране: без этого сборка теряет путь к FFmpeg,
+    // а тесты, запускающие код напрямую, беду не видят.
+    file: "next.config.js",
+    label: "story media encoder stays outside the webpack bundle",
+    patterns: ["serverComponentsExternalPackages", "'ffmpeg-static'"],
+  },
+  {
     file: "app/api/admin/upload/chunk/route.ts",
     label: "admin media uploads can bypass proxy body limits with chunks",
     patterns: ["CHUNK_MAX_SIZE", "STORY_VIDEO_MAX_SIZE", "validateVideoMagic", "video/x-quicktime"],

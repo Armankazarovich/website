@@ -115,6 +115,9 @@ const nextConfig = {
       'googleapis',
       'sharp',
       'bcryptjs',
+      // Программа сжатия видео сторис: внутри сборки webpack теряет путь к
+      // ffmpeg, и кнопка «Подготовить видео» падает. Берём пакет как есть.
+      'ffmpeg-static',
     ],
   },
   webpack: (config, { isServer, webpack }) => {
