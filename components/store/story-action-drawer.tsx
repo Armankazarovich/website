@@ -100,6 +100,11 @@ const MESSAGE_KIND_OPTIONS: Array<{ value: StoryMessageKind; label: string; hint
   },
 ];
 
+// Файлы от покупателя — версия 2.0. Сейчас до менеджера дошло бы только имя файла,
+// без самого файла, — кнопка обещала бы то, чего не делает. Включить вместе с настоящей
+// загрузкой (хранилище, проверка типа и размера, защита от спама).
+const STORY_BUYER_FILES_ENABLED = false;
+
 function isExternalHref(href: string) {
   return /^https?:\/\//i.test(href);
 }
@@ -145,16 +150,20 @@ function storyDraftSuggestion(kind: StoryMessageKind, relationName?: string | nu
   if (attachmentsCount > 0) {
     return `Здравствуйте. Прикрепил(а) файл${relation}. Подскажите, пожалуйста, что можно сделать и какой следующий шаг.`;
   }
+  // «Улучшить» дальше сам добавляет начало («Здравствуйте…», «Хочу оставить отзыв:») и
+  // строку «Контекст: …» — поэтому здесь только заготовка для заполнения, без оценок:
+  // продукт не пишет за покупателя, что ему понравилось.
+  void relation;
   if (kind === "offer") {
-    return `Здравствуйте. Рассчитайте, пожалуйста${relation}: размер ___, объем ___, доставка в ___. Подскажите итоговую цену и срок.`;
+    return "размер ___, объём ___, доставка в ___; подскажите итоговую цену и срок";
   }
   if (kind === "review") {
-    return `Хочу оставить отзыв${relation}: товар понравился, доставка прошла ___, менеджер помог ___.`;
+    return "что понравилось — ___; что можно улучшить — ___";
   }
   if (kind === "comment") {
-    return `Комментарий по сторис${relation}: хочу уточнить ___ и понять, подойдет ли это для моей задачи.`;
+    return "хочу уточнить ___";
   }
-  return `Здравствуйте. Подскажите, пожалуйста${relation}: есть ли в наличии, какой сорт и когда возможна доставка.`;
+  return "есть ли в наличии, какой сорт и когда возможна доставка";
 }
 
 function contactPayload(value: string) {
@@ -521,7 +530,7 @@ export function StoryActionDrawer({
           type="button"
           onClick={toggleLike}
           className={cn(
-            "inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary",
+            "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary",
             liked && "border-primary/50 bg-primary/10 text-primary",
           )}
           aria-pressed={liked}
@@ -533,7 +542,7 @@ export function StoryActionDrawer({
           type="button"
           onClick={openComments}
           className={cn(
-            "inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary",
+            "inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary",
             commentOpen && "border-primary/45 text-primary",
           )}
         >
@@ -543,7 +552,7 @@ export function StoryActionDrawer({
         <button
           type="button"
           onClick={shareStory}
-          className="inline-flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary"
+          className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-2 text-xs font-semibold text-muted-foreground transition-colors hover:border-primary/45 hover:text-primary"
         >
           {shareStatus === "done" ? <Check className="h-3.5 w-3.5 text-primary" /> : <Share2 className="h-3.5 w-3.5" />}
           {shareStatus === "done" ? "Готово" : shareStatus === "error" ? "Ошибка" : "Поделиться"}
@@ -612,7 +621,7 @@ export function StoryActionDrawer({
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-bold leading-5">Быстро связаться</p>
-                  <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">
+                  <p className="mt-0.5 hidden text-[11px] leading-4 text-muted-foreground sm:block">
                     Сторис, товар и выбранный сценарий попадут менеджеру вместе с сообщением.
                   </p>
                 </div>
@@ -624,7 +633,7 @@ export function StoryActionDrawer({
             </div>
 
             {primaryRelation && (
-              <div className="mb-3 flex min-w-0 items-center gap-2 rounded-xl border border-border bg-background/65 p-2">
+              <div className="mb-3 hidden min-w-0 items-center gap-2 rounded-xl border border-border bg-background/65 p-2 sm:flex">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-card">
                   {primaryRelation.image ? (
                     <img src={primaryRelation.image} alt="" className="h-full w-full object-cover" />
@@ -664,7 +673,7 @@ export function StoryActionDrawer({
                       setMessageStatus("idle");
                     }}
                     className={cn(
-                      "flex min-h-12 items-center gap-2 rounded-xl border border-border bg-background px-2.5 py-1.5 text-left transition-colors hover:border-primary/45",
+                      "flex min-h-11 items-center gap-2 rounded-xl border border-border bg-background px-2.5 py-1.5 text-left transition-colors hover:border-primary/45 sm:min-h-12",
                       messageKind === option.value && "border-primary/55 bg-primary/10 text-primary",
                     )}
                   >
@@ -678,7 +687,7 @@ export function StoryActionDrawer({
                     </span>
                     <span className="min-w-0">
                       <span className="block text-[13px] font-bold leading-4">{option.label}</span>
-                      <span className="mt-0.5 block truncate text-[10px] font-semibold text-muted-foreground">{option.hint}</span>
+                      <span className="mt-0.5 hidden truncate text-[10px] font-semibold text-muted-foreground sm:block">{option.hint}</span>
                     </span>
                   </button>
                 );
@@ -699,6 +708,7 @@ export function StoryActionDrawer({
                   }}
                   maxLength={1200}
                   placeholder={activeKindOption.placeholder}
+                  aria-label={activeKindOption.label}
                   className="min-h-16 w-full resize-none bg-transparent px-3 py-2.5 text-sm leading-5 outline-none placeholder:text-muted-foreground/70"
                 />
               </div>
@@ -713,7 +723,8 @@ export function StoryActionDrawer({
                   value={contact}
                   onChange={(event) => setContact(event.target.value)}
                   placeholder="Телефон, имя или email"
-                  className="min-h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/75 focus:border-primary/55"
+                  aria-label="Как с вами связаться: телефон, имя или email"
+                  className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/75 focus:border-primary/55"
                 />
                 {messageKind === "review" && (
                   <div className="flex min-h-10 items-center justify-center gap-1 rounded-xl border border-border bg-background px-2">
@@ -722,7 +733,7 @@ export function StoryActionDrawer({
                         key={value}
                         type="button"
                         onClick={() => setRating(value)}
-                        className={cn("flex h-7 w-7 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-primary", value <= rating && "text-primary")}
+                        className={cn("flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-primary", value <= rating && "text-primary")}
                         aria-label={`${value} из 5`}
                       >
                         <Star className={cn("h-4 w-4", value <= rating && "fill-current")} />
@@ -771,27 +782,29 @@ export function StoryActionDrawer({
                 onChange={handleFiles}
               />
 
-              <div className="grid grid-cols-[auto_auto_minmax(0,1fr)] gap-1.5">
+              <div className={cn("grid gap-1.5", STORY_BUYER_FILES_ENABLED ? "grid-cols-[auto_auto_minmax(0,1fr)]" : "grid-cols-[auto_minmax(0,1fr)]")}>
                 <button
                   type="button"
                   onClick={polishDraft}
-                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-bold transition-colors hover:border-primary/45 hover:text-primary"
+                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-bold transition-colors hover:border-primary/45 hover:text-primary"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   Улучшить
                 </button>
+                {STORY_BUYER_FILES_ENABLED && (
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-bold transition-colors hover:border-primary/45 hover:text-primary"
+                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-bold transition-colors hover:border-primary/45 hover:text-primary"
                 >
                   <Paperclip className="h-3.5 w-3.5" />
                   {attachments.length > 0 ? `${attachments.length} файл` : "Файл"}
                 </button>
+                )}
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex min-h-10 min-w-0 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex min-h-11 min-w-0 items-center justify-center gap-1.5 rounded-xl bg-primary px-3 text-xs font-bold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? "Отправка..." : "Отправить"}
                   <Send className="h-3.5 w-3.5" />

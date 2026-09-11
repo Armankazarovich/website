@@ -188,6 +188,16 @@ jobs:
             echo "💿 Disk before:"
             df -h / | tail -1
 
+            # ── 0. Disk guard: stop before touching anything if the server is nearly full ──
+            # Выкат копирует public/images во /tmp и держит исходники сторис до 2 ГБ.
+            # Если места мало — остановиться до изменений, прежняя версия продолжает работать.
+            IMAGES_MB=$(du -sm "$APP_DIR/public/images" 2>/dev/null | cut -f1 || echo 0)
+            NEED_TMP_MB=$(( ${IMAGES_MB:-0} + 2048 ))
+            FREE_APP_MB=$(df -Pm "$APP_DIR" | awk 'NR==2{print $4}')
+            FREE_TMP_MB=$(df -Pm /tmp | awk 'NR==2{print $4}')
+            echo "💽 Disk: app free ${FREE_APP_MB} MB, /tmp free ${FREE_TMP_MB} MB, images ${IMAGES_MB} MB, need /tmp >= ${NEED_TMP_MB} MB"
+            [ "${FREE_TMP_MB:-0}" -ge "$NEED_TMP_MB" ] || { echo "❌ Not enough space in /tmp; deploy stopped before any change"; exit 1; }
+            [ "${FREE_APP_MB:-0}" -ge 3072 ] || { echo "❌ Less than 3 GB free for the app; deploy stopped before any change"; exit 1; }
             # ── 1. DB backup (mandatory only for a database-changing release) ──
             if [ "$DB_CHANGED" = "true" ]; then
               echo "🗄️ Database change detected; creating mandatory backup..."
@@ -201,7 +211,20 @@ jobs:
               echo "✅ $DB_BACKUP ($(du -sh "$DB_BACKUP" | cut -f1))"
               ls -t "$BACKUP_DIR"/db-*.sql.gz 2>/dev/null | tail -n +4 | xargs -r rm -f
             else
-              echo "✅ Code-only release: no database backup or mutation is required"
+              # Code-only release: the database is not changed, but a safety copy costs little.
+              echo "🗄️ Code-only release: safety backup of the database (best effort, does not block; no mutation)"
+              mkdir -p "$BACKUP_DIR"
+              DB_URL=$(grep "^DATABASE_URL=" "$APP_DIR/.env" 2>/dev/null | cut -d'"' -f2 | cut -d"'" -f2 || true)
+              if [ -n "$DB_URL" ]; then
+                DB_BACKUP="$BACKUP_DIR/db-$(date +%Y%m%d-%H%M%S).sql.gz"
+                if pg_dump "$DB_URL" 2>/dev/null | gzip > "$DB_BACKUP" && [ -s "$DB_BACKUP" ]; then
+                  echo "✅ $DB_BACKUP ($(du -sh "$DB_BACKUP" | cut -f1))"
+                  ls -t "$BACKUP_DIR"/db-*.sql.gz 2>/dev/null | tail -n +4 | xargs -r rm -f
+                else
+                  rm -f "$DB_BACKUP"
+                  echo "⚠️ Safety backup failed (non-critical for a code-only release)"
+                fi
+              fi
             fi
 
             # ── 2. Preserve state (.env, uploads, images) ──

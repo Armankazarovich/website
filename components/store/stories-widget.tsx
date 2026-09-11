@@ -394,6 +394,27 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
   const viewedRef = useRef<Set<string>>(new Set());
   const floatingChromeHidden = useFloatingChromeHidden();
   useAdminOverlayGuard(lockPageScroll);
+  // Ответ Армана 11.09.2026 (вариант А): на телефоне мини-видео не закрывает кнопки страницы,
+  // пока человек листает, — уезжает в бок и возвращается через 0,7 с после остановки.
+  const [miniHiddenWhileScrolling, setMiniHiddenWhileScrolling] = useState(false);
+  useEffect(() => {
+    if (expanded || typeof window === "undefined") return;
+    let timer: number | null = null;
+    const onScroll = () => {
+      setMiniHiddenWhileScrolling(true);
+      if (timer !== null) window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        timer = null;
+        setMiniHiddenWhileScrolling(false);
+      }, 700);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (timer !== null) window.clearTimeout(timer);
+      setMiniHiddenWhileScrolling(false);
+    };
+  }, [expanded]);
 
   const entity = useMemo(() => deriveEntity(pathname), [pathname]);
   const isCatalogPath = pathname === "/catalog" || pathname.startsWith("/catalog/");
@@ -660,7 +681,11 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
       {!expanded && (
       <div
         data-store-stories-mini-video
-        className="fixed right-2 z-[44] h-[112px] w-[76px] sm:hidden"
+        className={cn(
+          "fixed right-2 z-[44] h-[112px] w-[76px] transition-[transform,opacity] duration-300 motion-reduce:transition-none sm:hidden",
+          miniHiddenWhileScrolling && "pointer-events-none translate-x-[130%] opacity-0",
+        )}
+        data-hidden-while-scrolling={miniHiddenWhileScrolling ? "true" : undefined}
         style={{ bottom: "calc(5.75rem + env(safe-area-inset-bottom, 0px))" }}
       >
         <button
