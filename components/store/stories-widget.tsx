@@ -408,9 +408,20 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
         setMiniHiddenWhileScrolling(false);
       }, 700);
     };
+    // Вернуть сразу, как только браузер сообщил «прокрутка закончилась», и при возвращении
+    // на вкладку — так мини-видео не зависает спрятанным; таймер выше — запасной путь.
+    const showAgain = () => {
+      if (timer !== null) window.clearTimeout(timer);
+      timer = null;
+      setMiniHiddenWhileScrolling(false);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scrollend", showAgain);
+    document.addEventListener("visibilitychange", showAgain);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scrollend", showAgain);
+      document.removeEventListener("visibilitychange", showAgain);
       if (timer !== null) window.clearTimeout(timer);
       setMiniHiddenWhileScrolling(false);
     };

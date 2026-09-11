@@ -158,7 +158,7 @@ function storyDraftSuggestion(kind: StoryMessageKind, relationName?: string | nu
     return "размер ___, объём ___, доставка в ___; подскажите итоговую цену и срок";
   }
   if (kind === "review") {
-    return "что понравилось — ___; что можно улучшить — ___";
+    return "понравилось — ___; можно улучшить — ___";
   }
   if (kind === "comment") {
     return "хочу уточнить ___";
