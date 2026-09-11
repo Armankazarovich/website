@@ -162,7 +162,7 @@ const TYPE_LABEL: Record<StoryType, string> = {
 };
 
 const ENTITY_LABEL: Record<string, string> = {
-  general: "Общие сторис",
+  general: "Общая",
   product: "Товар",
   service: "Услуга",
   promotion: "Акция",
@@ -378,7 +378,14 @@ function OrderRow({
       </button>
       <span className="w-5 shrink-0 text-center text-sm font-semibold tabular-nums text-muted-foreground">{index + 1}</span>
       <div className="flex h-14 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-background text-primary">
-        {visual ? <img src={visual} alt="" className="h-full w-full object-cover" /> : <Icon className="h-4 w-4" />}
+        {visual ? (
+          <img src={visual} alt="" className="h-full w-full object-cover" />
+        ) : story.mediaUrl && storyTypeFromMedia(story.mediaUrl) === "VIDEO" ? (
+          // Нет обложки — кадр из самого ролика, а не значок (замечание Армана 11.09.2026).
+          <video src={`${story.mediaUrl}#t=0.1`} className="h-full w-full object-cover" muted playsInline preload="metadata" aria-hidden="true" />
+        ) : (
+          <Icon className="h-4 w-4" />
+        )}
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-semibold">{story.title}</p>
@@ -459,9 +466,7 @@ function StoryPreview({ story, compact = false }: { story: StoryForm | Story; co
       ) : visual ? (
         <img src={visual} alt={story.title || "Story"} className="h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full w-full items-center justify-center text-primary">
-          <Icon className="h-9 w-9" />
-        </div>
+        <div className="h-full w-full bg-primary/10" />
       )}
       <div className={cn("absolute inset-0", compact ? "bg-background/10" : "bg-background/45")} />
       {!compact && (
@@ -479,7 +484,7 @@ function StoryPreview({ story, compact = false }: { story: StoryForm | Story; co
               event.stopPropagation();
               setPreviewPaused((paused) => !paused);
             }}
-            className="absolute right-14 top-2 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card/90 text-foreground transition-colors hover:border-primary/40"
+            className={cn("absolute right-14 top-2 flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card/90 text-foreground transition-colors hover:border-primary/40", compact && "hidden sm:flex")}
             aria-label={previewPaused ? "Продолжить превью" : "Поставить превью на паузу"}
             title={previewPaused ? "Продолжить" : "Пауза"}
           >
@@ -498,6 +503,7 @@ function StoryPreview({ story, compact = false }: { story: StoryForm | Story; co
               previewSound
                     ? "border-primary/45 bg-primary/15 text-primary"
                 : "border-border bg-card/90 text-foreground hover:border-primary/40",
+              compact && "hidden sm:flex",
             )}
             aria-label={previewSound ? "Выключить звук превью" : "Включить звук превью"}
             title={previewSound ? "Выключить звук" : "Включить звук"}
@@ -607,59 +613,6 @@ function StoryModal({
     }));
   };
 
-  const applyTemplate = (kind: "seller" | "product" | "service" | "review") => {
-    if (kind === "product" || kind === "service" || kind === "review") {
-      setRelationType(kind);
-    }
-    if (kind === "seller") {
-      setForm((prev) => ({
-        ...prev,
-        type: "LIVE",
-        title: "Онлайн-продавец",
-        subtitle: "Записанный обзор товара и ответы на частые вопросы",
-        description: "",
-        ctaLabel: "Задать вопрос",
-        ctaUrl: "/contacts",
-        entityType: null,
-        entityId: "",
-        pinned: true,
-      }));
-    }
-    if (kind === "product") {
-      setForm((prev) => ({
-        ...prev,
-        type: "VIDEO",
-        title: "Видео-обзор товара",
-        subtitle: "",
-        description: "",
-        ctaLabel: "Открыть товар",
-        entityType: "product",
-      }));
-    }
-    if (kind === "service") {
-      setForm((prev) => ({
-        ...prev,
-        type: "VIDEO",
-        title: "Как работает услуга",
-        subtitle: "",
-        description: "",
-        ctaLabel: "Оставить заявку",
-        entityType: "service",
-      }));
-    }
-    if (kind === "review") {
-      setForm((prev) => ({
-        ...prev,
-        type: "VIDEO",
-        title: "Видео-отзыв клиента",
-        subtitle: "",
-        description: "",
-        ctaLabel: "Смотреть отзыв",
-        entityType: "review",
-      }));
-    }
-  };
-
   const uploadFile = async (file: File, target: "media" | "poster") => {
     setUploading(target);
     setError("");
@@ -734,8 +687,74 @@ function StoryModal({
     }
   };
 
-  const selectedEntityOption = entityOptions.find((option) => option.entityType === relationType && option.entityId === form.entityId);
   const selectedRelations = form.relations || [];
+  // Замечание Армана 11.09.2026: «о чём сторис» выбиралось в трёх местах, «Товар» повторялся,
+  // форма была серой и с техшумом. Теперь пять шагов по порядку, в каждом — один выбор;
+  // название и кнопка подставляются из выбранного товара или услуги.
+  const [ctaCustomOpen, setCtaCustomOpen] = useState(false);
+  const aboutOptions: Array<{ value: string; label: string }> = [
+    { value: "general", label: "Общая" },
+    { value: "product", label: "Товар" },
+    { value: "service", label: "Услуга" },
+    { value: "promotion", label: "Акция" },
+    { value: "company", label: "О компании" },
+    { value: "review", label: "Отзыв клиента" },
+  ];
+  const aboutValue = form.entityType || "general";
+  const chooseAbout = (value: string) => {
+    set("entityType", value === "general" ? null : value);
+    if (isRelationType(value)) {
+      setRelationType(value);
+      setEntityQuery("");
+    }
+  };
+  const searchPlaceholder =
+    relationType === "service"
+      ? "Найдите услугу по названию"
+      : relationType === "promotion"
+        ? "Найдите акцию по названию"
+        : relationType === "review"
+          ? "Найдите отзыв по имени или тексту"
+          : "Найдите товар по названию";
+  const primaryRelationHref = selectedRelations.find((relation) => relation.ctaUrl)?.ctaUrl || "";
+  const ctaPresets = ["/contacts", "/catalog", "/stories"];
+  const ctaTarget =
+    !form.ctaUrl || (primaryRelationHref && form.ctaUrl === primaryRelationHref)
+      ? "linked"
+      : ctaPresets.includes(form.ctaUrl)
+        ? form.ctaUrl
+        : "custom";
+  const showCustomCta = ctaCustomOpen || ctaTarget === "custom";
+  const stepTitle = (n: number, title: string, hint?: string) => (
+    <div className="flex items-start gap-3">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+        {n}
+      </span>
+      <div className="min-w-0">
+        <p className="text-base font-semibold leading-7 text-foreground">{title}</p>
+        {hint && <p className="text-xs leading-5 text-muted-foreground">{hint}</p>}
+      </div>
+    </div>
+  );
+  const toggleRow = (checked: boolean, onToggle: () => void, title: string, hint: string) => (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-pressed={checked}
+      className={cn(
+        "flex w-full items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors",
+        checked ? "border-primary/50 bg-primary/10" : "border-border bg-background/60 hover:border-primary/35",
+      )}
+    >
+      <span className={cn("mt-0.5 flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors", checked ? "bg-primary" : "bg-muted")}>
+        <span className={cn("h-4 w-4 rounded-full bg-background transition-transform", checked && "translate-x-4")} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-foreground">{title}</span>
+        <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{hint}</span>
+      </span>
+    </button>
+  );
 
   return (
     <>
@@ -758,106 +777,12 @@ function StoryModal({
         </>
       )}
     >
-      <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
-        <div className="space-y-3">
+      <div className="grid gap-5 lg:grid-cols-[260px_1fr]">
+        {/* Замечание Армана 11.09.2026: форма — пять понятных шагов по порядку, без повторов и
+            техшума. На телефоне первым идёт шаг загрузки, просмотр — ниже. */}
+        <div className="order-2 space-y-3 lg:order-1">
+          <p className={labelClass}>Так увидит покупатель</p>
           <StoryPreview story={form} />
-          <div className="rounded-2xl border border-border bg-card p-3">
-            <p className="mb-2 text-[11px] font-semibold uppercase text-muted-foreground">Формат сторис</p>
-            <div className="grid grid-cols-3 gap-2">
-              {([
-                ["IMAGE", ImageIcon, "Фото"],
-                ["VIDEO", CirclePlay, "Видео"],
-                ["LIVE", Radio, "Онлайн"],
-              ] as const).map(([type, Icon, label]) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => set("type", type)}
-                  className={cn(
-                    "flex min-h-10 flex-col items-center justify-center gap-1 rounded-xl border px-2 text-[11px] font-semibold transition-colors",
-                    form.type === type
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border bg-background text-muted-foreground hover:border-primary/35 hover:text-foreground",
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-background/70 px-3 text-sm font-semibold transition-colors hover:border-primary/45">
-              {uploading === "media" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              Медиа
-              <input
-                type="file"
-                accept={STORY_MEDIA_ACCEPT}
-                disabled={uploading !== null}
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) uploadFile(file, "media");
-                  event.currentTarget.value = "";
-                }}
-              />
-            </label>
-            <label className="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-background/70 px-3 text-sm font-semibold transition-colors hover:border-primary/45">
-              {uploading === "poster" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
-              Обложка
-              <input
-                type="file"
-                accept={STORY_POSTER_ACCEPT}
-                disabled={uploading !== null}
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) uploadFile(file, "poster");
-                  event.currentTarget.value = "";
-                }}
-              />
-            </label>
-          </div>
-          {mediaUploadState && (
-            <div className={cn(
-              "rounded-xl border px-3 py-2.5 text-xs leading-5",
-              mediaUploadState.phase === "failed"
-                ? "border-destructive/35 bg-destructive/10 text-destructive"
-                : mediaUploadState.phase === "ready"
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                  : "border-primary/30 bg-primary/10 text-foreground",
-            )}>
-              <div className="flex items-start gap-2">
-                {uploading === "media"
-                  ? <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
-                  : mediaUploadState.phase === "failed"
-                    ? <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" />
-                    : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
-                <div className="min-w-0 flex-1">
-                  <p>{mediaUploadState.message}</p>
-                  {mediaUploadState.phase === "failed" && mediaUploadState.jobId && (
-                    <Button type="button" variant="outline" onClick={retryMediaUpload} disabled={uploading !== null} className="mt-2 min-h-9">
-                      <RefreshCw className="h-4 w-4" />
-                      Повторить подготовку
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          <p className="text-[11px] leading-5 text-muted-foreground">
-            Видео до 3 минут. Сайт сам облегчит его, чтобы у покупателей не тормозило. Ваш файл сохранится как есть.
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <Button type="button" variant="outline" onClick={() => setMediaPickerTarget("media")} className="min-h-10">
-              <ImageIcon className="h-4 w-4" />
-              Библиотека
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setMediaPickerTarget("poster")} className="min-h-10">
-              <ImageIcon className="h-4 w-4" />
-              Обложка
-            </Button>
-          </div>
           <Button
             type="button"
             variant="outline"
@@ -881,227 +806,314 @@ function StoryModal({
               </Link>
             </Button>
           )}
-          <p className="text-xs leading-5 text-muted-foreground">
-            LIVE в текущей версии — записанное видео онлайн-продавца. Прямой эфир пока не подключён; интерфейс не выдаёт запись за настоящую трансляцию.
-          </p>
         </div>
 
-        <div className="space-y-5">
-          <div className="grid gap-2 sm:grid-cols-4">
-            <Button type="button" variant="outline" onClick={() => applyTemplate("seller")} className="justify-start">
-              <Radio className="h-4 w-4" />
-              Онлайн
-            </Button>
-            <Button type="button" variant="outline" onClick={() => applyTemplate("product")} className="justify-start">
-              <CirclePlay className="h-4 w-4" />
-              Товар
-            </Button>
-            <Button type="button" variant="outline" onClick={() => applyTemplate("service")} className="justify-start">
-              <Sparkles className="h-4 w-4" />
-              Услуга
-            </Button>
-            <Button type="button" variant="outline" onClick={() => applyTemplate("review")} className="justify-start">
-              <Eye className="h-4 w-4" />
-              Отзыв
-            </Button>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <label className={labelClass}>Тип</label>
-              <select className={fieldClass} value={form.type} onChange={(event) => set("type", event.target.value as StoryType)}>
-                <option value="VIDEO">Видео</option>
-                <option value="IMAGE">Фото</option>
-                <option value="LIVE">Онлайн-продавец</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Показывать</label>
-              <select className={fieldClass} value={form.active ? "yes" : "no"} onChange={(event) => set("active", event.target.value === "yes")}>
-                <option value="yes">Активна</option>
-                <option value="no">Скрыта</option>
-              </select>
-            </div>
-            <div>
-              <label className={labelClass}>Закрепление</label>
-              <select className={fieldClass} value={form.pinned ? "yes" : "no"} onChange={(event) => set("pinned", event.target.value === "yes")}>
-                <option value="no">По порядку</option>
-                <option value="yes">Закрепить первой</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-border bg-background/45 p-3">
-              <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-sm font-semibold">Связанные товары, услуги и автошаблон</p>
-                  <p className="text-xs text-muted-foreground">
-                    Один live, обзор или отзыв можно привязать сразу к нескольким товарам и услугам. На нужной странице такая сторис появится первой.
-                  </p>
+        <div className="order-1 space-y-4 lg:order-2">
+          <section className="rounded-2xl border border-border bg-card/60 p-4">
+            {stepTitle(1, "Видео или фото")}
+            <label className="mt-3 flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 px-4 py-5 text-center transition-colors hover:border-primary/70 hover:bg-primary/10">
+              {uploading === "media" ? <Loader2 className="h-6 w-6 animate-spin text-primary" /> : <Upload className="h-6 w-6 text-primary" />}
+              <span className="text-sm font-semibold text-foreground">
+                {form.mediaUrl ? "Заменить видео или фото" : "Загрузить видео или фото"}
+              </span>
+              <span className="max-w-md text-xs leading-5 text-muted-foreground">
+                Видео до 3 минут. Сайт сам облегчит его, чтобы у покупателей не тормозило. Ваш файл сохранится как есть.
+              </span>
+              <input
+                type="file"
+                accept={STORY_MEDIA_ACCEPT}
+                disabled={uploading !== null}
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) uploadFile(file, "media");
+                  event.currentTarget.value = "";
+                }}
+              />
+            </label>
+            {mediaUploadState && (
+              <div className={cn(
+                "mt-3 rounded-xl border px-3 py-2.5 text-xs leading-5",
+                mediaUploadState.phase === "failed"
+                  ? "border-destructive/35 bg-destructive/10 text-destructive"
+                  : mediaUploadState.phase === "ready"
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : "border-primary/30 bg-primary/10 text-foreground",
+              )}>
+                <div className="flex items-start gap-2">
+                  {uploading === "media"
+                    ? <Loader2 className="mt-0.5 h-4 w-4 shrink-0 animate-spin" />
+                    : mediaUploadState.phase === "failed"
+                      ? <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" />
+                      : <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />}
+                  <div className="min-w-0 flex-1">
+                    <p>{mediaUploadState.message}</p>
+                    {mediaUploadState.phase === "failed" && mediaUploadState.jobId && (
+                      <Button type="button" variant="outline" onClick={retryMediaUpload} disabled={uploading !== null} className="mt-2 min-h-9">
+                        <RefreshCw className="h-4 w-4" />
+                        Повторить подготовку
+                      </Button>
+                    )}
+                  </div>
                 </div>
-                {selectedEntityOption && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-1 text-[11px] font-semibold text-primary">
-                    <CheckCircle2 className="h-3.5 w-3.5" />
-                    шаблон связан
-                  </span>
+              </div>
+            )}
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button type="button" variant="outline" onClick={() => setMediaPickerTarget("media")} className="min-h-10">
+                <ImageIcon className="h-4 w-4" />
+                Библиотека
+              </Button>
+              <label className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border bg-background/70 px-3 text-sm font-semibold transition-colors hover:border-primary/45">
+                {uploading === "poster" ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                {form.posterUrl ? "Сменить обложку" : "Обложка"}
+                <input
+                  type="file"
+                  accept={STORY_POSTER_ACCEPT}
+                  disabled={uploading !== null}
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) uploadFile(file, "poster");
+                    event.currentTarget.value = "";
+                  }}
+                />
+              </label>
+            </div>
+            {form.type !== "IMAGE" && (
+              <div className="mt-3">
+                {toggleRow(
+                  form.type === "LIVE",
+                  () => set("type", form.type === "LIVE" ? "VIDEO" : "LIVE"),
+                  "Онлайн-продавец",
+                  "Записанное видео продавца с кнопкой «спросить». Прямой эфир пока не подключён.",
                 )}
               </div>
+            )}
+          </section>
 
-              <div className="mb-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {RELATION_TYPES.map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() => {
-                      setRelationType(type);
-                      setEntityQuery("");
-                    }}
-                    className={cn(
-                      "min-h-10 rounded-xl border px-3 text-xs font-semibold transition-colors",
-                      relationType === type
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-card text-muted-foreground hover:border-primary/35 hover:text-foreground",
-                    )}
-                  >
-                    {ENTITY_LABEL[type]}
-                  </button>
-                ))}
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-[1fr_220px]">
+          <section className="rounded-2xl border border-border bg-card/60 p-4">
+            {stepTitle(2, "О чём сторис", "На странице выбранного товара или услуги эта сторис встанет первой.")}
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {aboutOptions.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => chooseAbout(option.value)}
+                  aria-pressed={aboutValue === option.value}
+                  className={cn(
+                    "min-h-11 rounded-xl border px-3 text-sm font-semibold transition-colors",
+                    aboutValue === option.value
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background/60 text-muted-foreground hover:border-primary/35 hover:text-foreground",
+                  )}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {isRelationType(aboutValue) && (
+              <div className="mt-3 space-y-2">
                 <label className="relative block">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <input
                     className={cn(fieldClass, "pl-9")}
                     value={entityQuery}
                     onChange={(event) => setEntityQuery(event.target.value)}
-                    placeholder="Найти по названию, slug или описанию"
+                    placeholder={searchPlaceholder}
+                    aria-label={searchPlaceholder}
                   />
                 </label>
+                <div className="grid gap-1.5">
+                  {entityLoading && <p className="px-1 text-xs text-muted-foreground">Ищу…</p>}
+                  {!entityLoading && entityOptions.slice(0, 6).map((option) => {
+                    const chosen = selectedRelations.some((relation) => relation.entityType === option.entityType && relation.entityId === option.entityId);
+                    return (
+                      <button
+                        key={`${option.entityType}-${option.entityId}`}
+                        type="button"
+                        onClick={() => applyEntityOption(option)}
+                        disabled={chosen}
+                        className={cn(
+                          "flex min-h-12 w-full items-center gap-3 rounded-xl border px-2 py-1.5 text-left transition-colors",
+                          chosen ? "border-primary/40 bg-primary/5" : "border-border bg-background/60 hover:border-primary/35",
+                        )}
+                      >
+                        <span className="relative h-9 w-9 shrink-0 overflow-hidden rounded-xl bg-muted">
+                          {option.image ? (
+                            <img src={option.image} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <Sparkles className="m-2.5 h-4 w-4 text-primary" />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-sm font-medium text-foreground">{option.label}</span>
+                          {option.detail && <span className="block truncate text-xs text-muted-foreground">{option.detail}</span>}
+                        </span>
+                        <span className="shrink-0 text-xs font-semibold text-primary">{chosen ? "выбрано" : "выбрать"}</span>
+                      </button>
+                    );
+                  })}
+                  {!entityLoading && entityOptions.length === 0 && (
+                    <p className="px-1 text-xs text-muted-foreground">Ничего не нашлось — попробуйте другое слово.</p>
+                  )}
+                </div>
+                <p className="text-xs leading-5 text-muted-foreground">
+                  Можно выбрать несколько. Название и кнопка подставятся из товара — поправьте, если нужно.
+                </p>
+              </div>
+            )}
+            {selectedRelations.length > 0 && (
+              <div className="mt-3 rounded-2xl border border-border bg-background/50 p-3">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <p className="text-xs font-semibold text-muted-foreground">Связанные товары и услуги</p>
+                  <span className="rounded-full border border-border px-2 py-1 text-[11px] text-muted-foreground">
+                    {selectedRelations.length}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedRelations.map((relation) => (
+                    <span
+                      key={relationKey(relation)}
+                      className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card px-2.5 py-1.5 text-xs"
+                    >
+                      {relation.image ? (
+                        <img src={relation.image} alt="" className="h-5 w-5 rounded-full object-cover" />
+                      ) : (
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      )}
+                      <span className="max-w-[190px] truncate font-medium">
+                        {relation.label || relation.entityId}
+                      </span>
+                      <button
+                        type="button"
+                        className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-destructive"
+                        onClick={() => {
+                          setForm((prev) => {
+                            const nextRelations = (prev.relations || []).filter((item) => relationKey(item) !== relationKey(relation));
+                            const removedPrimary = prev.entityType === relation.entityType && prev.entityId === relation.entityId;
+                            return {
+                              ...prev,
+                              relations: nextRelations,
+                              entityType: removedPrimary ? nextRelations[0]?.entityType || prev.entityType : prev.entityType,
+                              entityId: removedPrimary ? nextRelations[0]?.entityId || "" : prev.entityId,
+                            };
+                          });
+                        }}
+                        aria-label={`Убрать «${relation.label || relation.entityId}»`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-2xl border border-border bg-card/60 p-4">
+            {stepTitle(3, "Текст", "Название покупатель видит сразу, подпись и описание — если откроет подробности.")}
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <div>
+                <label className={labelClass}>Название</label>
+                <input className={fieldClass} value={form.title} onChange={(event) => set("title", event.target.value)} placeholder="Например: обзор доски 40×100" />
+              </div>
+              <div>
+                <label className={labelClass}>Подпись (необязательно)</label>
+                <input className={fieldClass} value={form.subtitle || ""} onChange={(event) => set("subtitle", event.target.value)} placeholder="Одна строка: что покупатель поймёт за 2 секунды" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <label className={labelClass}>Описание (необязательно)</label>
+              <textarea className={cn(fieldClass, "min-h-[88px] resize-y")} value={form.description || ""} onChange={(event) => set("description", event.target.value)} placeholder="Пара предложений: почему это важно и что сделать дальше" />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-border bg-card/60 p-4">
+            {stepTitle(4, "Кнопка под видео", "Что написано на кнопке и куда она ведёт.")}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {["Смотреть", "Открыть товар", "Задать вопрос", "Оставить заявку"].map((label) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => set("ctaLabel", label)}
+                  aria-pressed={form.ctaLabel === label}
+                  className={cn(
+                    "min-h-10 rounded-full border px-3 text-sm font-medium transition-colors",
+                    form.ctaLabel === label
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border bg-background/60 text-muted-foreground hover:border-primary/35 hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <div>
+                <label className={labelClass}>Своя надпись</label>
+                <input className={fieldClass} value={form.ctaLabel || ""} onChange={(event) => set("ctaLabel", event.target.value)} placeholder={suggestEntityCta(form.entityType)} />
+              </div>
+              <div>
+                <label className={labelClass}>Куда ведёт</label>
                 <select
                   className={fieldClass}
-                  value={form.entityId || ""}
+                  value={showCustomCta ? "custom" : ctaTarget}
                   onChange={(event) => {
-                    const option = entityOptions.find((item) => item.entityType === relationType && item.entityId === event.target.value);
-                    if (option) applyEntityOption(option);
+                    const value = event.target.value;
+                    if (value === "custom") {
+                      setCtaCustomOpen(true);
+                      return;
+                    }
+                    setCtaCustomOpen(false);
+                    set("ctaUrl", value === "linked" ? primaryRelationHref : value);
                   }}
                 >
-                  <option value="">{entityLoading ? "Загружаю..." : "Выбрать из списка"}</option>
-                  {entityOptions.map((option) => (
-                    <option key={`${option.entityType}-${option.entityId}`} value={option.entityId}>
-                      {option.label}
-                    </option>
-                  ))}
+                  <option value="linked">{selectedRelations.length > 0 ? "К выбранному товару или услуге" : "Без перехода — только видео и чат"}</option>
+                  <option value="/contacts">Контакты</option>
+                  <option value="/catalog">Каталог</option>
+                  <option value="/stories">Все сторис</option>
+                  <option value="custom">Своя ссылка…</option>
                 </select>
               </div>
+            </div>
+            {showCustomCta && (
+              <div className="mt-3">
+                <label className={labelClass}>Своя ссылка</label>
+                <input className={fieldClass} value={form.ctaUrl || ""} onChange={(event) => set("ctaUrl", event.target.value)} placeholder="Адрес страницы на сайте или полная ссылка" />
+              </div>
+            )}
+          </section>
 
-              {selectedEntityOption && (
-                <button
-                  type="button"
-                  onClick={() => applyEntityOption(selectedEntityOption)}
-                  className="mt-3 flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-2 text-left transition-colors hover:border-primary/35"
-                >
-                  <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-muted">
-                    {selectedEntityOption.image ? (
-                      <img src={selectedEntityOption.image} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <Sparkles className="m-4 h-6 w-6 text-primary" />
-                    )}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold">{selectedEntityOption.label}</span>
-                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">{selectedEntityOption.detail}</span>
-                  </span>
-                  <span className="hidden rounded-full border border-primary/25 px-3 py-1 text-[11px] font-semibold text-primary sm:inline-flex">
-                    применить
-                  </span>
-                </button>
-              )}
-
-              {selectedRelations.length > 0 && (
-                <div className="mt-3 rounded-2xl border border-border bg-card/70 p-3">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <p className="text-xs font-semibold uppercase text-muted-foreground">Связанные товары и услуги</p>
-                    <span className="rounded-full border border-border px-2 py-1 text-[11px] text-muted-foreground">
-                      {selectedRelations.length}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedRelations.map((relation) => (
-                      <span
-                        key={relationKey(relation)}
-                        className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-background px-2.5 py-1.5 text-xs"
-                      >
-                        {relation.image ? (
-                          <img src={relation.image} alt="" className="h-5 w-5 rounded-full object-cover" />
-                        ) : (
-                          <Sparkles className="h-3.5 w-3.5 text-primary" />
-                        )}
-                        <span className="max-w-[190px] truncate font-medium">
-                          {relation.label || relation.entityId}
-                        </span>
-                        <button
-                          type="button"
-                          className="rounded-full text-muted-foreground transition-colors hover:text-destructive"
-                          onClick={() => {
-                            setForm((prev) => {
-                              const nextRelations = (prev.relations || []).filter((item) => relationKey(item) !== relationKey(relation));
-                              const removedPrimary = prev.entityType === relation.entityType && prev.entityId === relation.entityId;
-                              return {
-                                ...prev,
-                                relations: nextRelations,
-                                entityType: removedPrimary ? nextRelations[0]?.entityType || null : prev.entityType,
-                                entityId: removedPrimary ? nextRelations[0]?.entityId || "" : prev.entityId,
-                              };
-                            });
-                          }}
-                          aria-label="Убрать связь"
-                        >
-                          ×
-                        </button>
-                      </span>
-                    ))}
-                  </div>
+          <section className="rounded-2xl border border-border bg-card/60 p-4">
+            {stepTitle(5, "Показ")}
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {toggleRow(form.active, () => set("active", !form.active), "Показывать на сайте", "Выключите, чтобы подготовить сторис заранее.")}
+              {toggleRow(form.pinned, () => set("pinned", !form.pinned), "Первой в ленте", "Закреплённые сторис стоят перед остальными.")}
+            </div>
+            <details className="mt-3 rounded-xl border border-border bg-background/40 px-3 py-2">
+              <summary className="cursor-pointer select-none py-1.5 text-sm font-semibold text-muted-foreground">
+                Расписание (необязательно)
+              </summary>
+              <p className="mt-1 text-xs text-muted-foreground">Пусто — сторис показывается всегда.</p>
+              <div className="mt-2 grid gap-3 md:grid-cols-2">
+                <div>
+                  <label className={labelClass}>Показывать с</label>
+                  <input className={fieldClass} type="datetime-local" value={form.startsAt || ""} onChange={(event) => set("startsAt", event.target.value || null)} />
                 </div>
-              )}
-            </div>
+                <div>
+                  <label className={labelClass}>Показывать по</label>
+                  <input className={fieldClass} type="datetime-local" value={form.endsAt || ""} onChange={(event) => set("endsAt", event.target.value || null)} />
+                </div>
+              </div>
+            </details>
+          </section>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className={labelClass}>Название</label>
-              <input className={fieldClass} value={form.title} onChange={(event) => set("title", event.target.value)} placeholder="Например: обзор доски 40x100" />
-            </div>
-            <div>
-              <label className={labelClass}>Короткая подпись</label>
-              <input className={fieldClass} value={form.subtitle || ""} onChange={(event) => set("subtitle", event.target.value)} placeholder="Что увидит клиент за 2 секунды" />
-            </div>
-          </div>
-
-          <div>
-            <label className={labelClass}>Описание</label>
-            <textarea className={cn(fieldClass, "min-h-[96px] resize-y")} value={form.description || ""} onChange={(event) => set("description", event.target.value)} placeholder="Короткое объяснение, почему это важно и что сделать дальше" />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className={labelClass}>Связь</label>
-              <select className={fieldClass} value={form.entityType || "general"} onChange={(event) => set("entityType", event.target.value === "general" ? null : event.target.value)}>
-                <option value="general">Общая сторис</option>
-                <option value="product">Товар</option>
-                <option value="service">Услуга</option>
-                <option value="promotion">Акция</option>
-                <option value="review">Видео-отзыв</option>
-                <option value="company">О компании</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Служебные адреса нужны редко — специалисту. Порядок меняется перетаскиванием в списке. */}
+          {/* Адреса файлов нужны редко — администратору. Менеджер работает кнопками выше. */}
           <details className="rounded-xl border border-border bg-background/40 px-3 py-2">
             <summary className="cursor-pointer select-none py-1.5 text-sm font-semibold text-muted-foreground">
-              Дополнительно — адреса файлов и связи
+              Для администратора — адреса файлов
             </summary>
-            <div className="mt-3 grid gap-4 md:grid-cols-3">
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
               <div>
                 <label className={labelClass}>Адрес видео или фото</label>
                 <input className={fieldClass} value={form.mediaUrl || ""} onChange={(event) => set("mediaUrl", event.target.value)} placeholder="/images/stories/video.mp4" />
@@ -1110,34 +1122,12 @@ function StoryModal({
                 <label className={labelClass}>Адрес обложки</label>
                 <input className={fieldClass} value={form.posterUrl || ""} onChange={(event) => set("posterUrl", event.target.value)} placeholder="/images/stories/poster.webp" />
               </div>
-              <div>
-                <label className={labelClass}>Адрес товара или услуги</label>
-                <input className={fieldClass} value={form.entityId || ""} onChange={(event) => set("entityId", event.target.value)} placeholder="doska-stroganaya-suhaya-sosna" disabled={!form.entityType} />
-              </div>
             </div>
+            <Button type="button" variant="outline" onClick={() => setMediaPickerTarget("poster")} className="mt-3 min-h-10">
+              <ImageIcon className="h-4 w-4" />
+              Обложка из библиотеки
+            </Button>
           </details>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className={labelClass}>Текст кнопки</label>
-              <input className={fieldClass} value={form.ctaLabel || ""} onChange={(event) => set("ctaLabel", event.target.value)} placeholder={suggestEntityCta(form.entityType)} />
-            </div>
-            <div>
-              <label className={labelClass}>Ссылка кнопки</label>
-              <input className={fieldClass} value={form.ctaUrl || ""} onChange={(event) => set("ctaUrl", event.target.value)} placeholder="/product/slug или /contacts" />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className={labelClass}>Старт</label>
-              <input className={fieldClass} type="datetime-local" value={form.startsAt || ""} onChange={(event) => set("startsAt", event.target.value || null)} />
-            </div>
-            <div>
-              <label className={labelClass}>Конец</label>
-              <input className={fieldClass} type="datetime-local" value={form.endsAt || ""} onChange={(event) => set("endsAt", event.target.value || null)} />
-            </div>
-          </div>
 
           {error && (
             <div className="admin-alert admin-alert-danger px-3 py-2 text-sm">
@@ -1320,6 +1310,27 @@ export default function AdminStoriesPage() {
     }));
   };
 
+  // «Сделать обложку» — без окна: меняется только пустая обложка, свою можно поставить в форме.
+  const [posterBusyId, setPosterBusyId] = useState<string | null>(null);
+  const makeStoryPoster = async (story: Story) => {
+    setError("");
+    setPosterBusyId(story.id);
+    try {
+      const res = await fetch(`/api/admin/stories/${encodeURIComponent(story.id)}/media`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "poster", confirm: true }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.error || "Не получилось сделать обложку. Сторис не изменилась.");
+      await loadStories();
+    } catch (err: any) {
+      setError(err.message || "Не получилось сделать обложку. Сторис не изменилась.");
+    } finally {
+      setPosterBusyId(null);
+    }
+  };
+
   const prepareStoryVideo = async (story: Story, retryJobId?: string) => {
     // Без окна: действие обратимо — на карточке сразу виден ход, потом «Вернуть как было».
 
@@ -1402,8 +1413,8 @@ export default function AdminStoriesPage() {
     <div className="space-y-6 px-4 py-4 pb-32 sm:px-6 sm:py-6 sm:pb-36">
       <AdminSectionTitle
         icon={CirclePlay}
-        title="Сторис и онлайн-продавец"
-        subtitle="Видео, онлайн-продавец, отзывы и привязка к товарам/услугам"
+        title="Сторис"
+        subtitle="Видео о товарах и услугах для покупателей"
         action={(
           <div className="flex gap-2">
             <Button asChild variant="outline" className="hidden min-h-11 sm:inline-flex">
@@ -1431,7 +1442,6 @@ export default function AdminStoriesPage() {
           <p className="min-w-0 text-sm text-muted-foreground">
             <span className="font-semibold text-foreground">{activeCount} на сайте</span>
             {stories.length - activeCount > 0 ? ` · ${stories.length - activeCount} скрыто` : ""}
-            {liveCount > 0 ? ` · ${liveCount} онлайн-продавец` : ""}
           </p>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setStatsOpen(true)} className="min-h-11">
@@ -1492,7 +1502,7 @@ export default function AdminStoriesPage() {
           </Reorder.Group>
         </section>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 xl:grid-cols-2 min-[1800px]:grid-cols-3">
           {stories.map((story) => {
             const Icon = getTypeIcon(story.type);
             const entityKey = story.entityType || "general";
@@ -1503,9 +1513,14 @@ export default function AdminStoriesPage() {
             const preparedWebCopy = /-web\.mp4(?:[?#]|$)/i.test(story.mediaUrl || "");
             return (
               <article key={story.id} className="overflow-hidden rounded-2xl border border-border bg-card">
-                <div className="grid gap-0 sm:grid-cols-[150px_1fr]">
-                  <StoryPreview story={story} compact />
-                  <div className="flex min-w-0 flex-col p-4">
+                {/* Замер 11.09.2026: на телефоне видео во всю ширину делало карточку выше экрана, на планшете
+                    и на 1280 текст сжимался до 145–166 точек. Теперь маленькое превью слева, кнопки — отдельной
+                    строкой: на телефоне во всю ширину карточки, на компьютере под текстом. */}
+                <div className="grid grid-cols-[88px_1fr] gap-0 sm:grid-cols-[150px_1fr] sm:grid-rows-[1fr_auto]">
+                  <div className="sm:row-span-2">
+                    <StoryPreview story={story} compact />
+                  </div>
+                  <div className="flex min-w-0 flex-col p-3 sm:p-4">
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       <Badge variant={story.active ? "default" : "outline"} className="rounded-full">
                         {story.active ? "активна" : "скрыта"}
@@ -1526,12 +1541,12 @@ export default function AdminStoriesPage() {
                     {story.subtitle && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{story.subtitle}</p>}
                     <div className="mt-3 space-y-1 text-xs text-muted-foreground">
                       <p>
-                        Связь: <span className="font-semibold text-foreground">{ENTITY_LABEL[entityKey] || entityKey}</span>
+                        О чём: <span className="font-semibold text-foreground">{ENTITY_LABEL[entityKey] || entityKey}</span>
                         {relationName(story, storyRelations) ? ` · ${relationName(story, storyRelations)}` : ""}
                       </p>
                       {storyRelations.length > 0 && (
                         <p>
-                          Связано с: <span className="font-semibold text-foreground">{storyRelations.length}</span>
+                          Товары и услуги: <span className="font-semibold text-foreground">{storyRelations.length}</span>
                           {" · "}
                           {storyRelations.slice(0, 2).map((relation) => relation.label).filter(Boolean).join(", ")}
                           {storyRelations.length > 2 ? "..." : ""}
@@ -1577,7 +1592,7 @@ export default function AdminStoriesPage() {
                                 </Button>
                               )}
                               {mediaState.canRollback && mediaState.jobId && (
-                                <Button type="button" variant="outline" onClick={() => rollbackStoryVideo(story, mediaState.jobId!)} className="min-h-9">
+                                <Button type="button" variant="outline" onClick={() => rollbackStoryVideo(story, mediaState.jobId!)} className="h-auto min-h-9 whitespace-normal text-left">
                                   <RotateCcw className="h-4 w-4" />
                                   Вернуть как было
                                 </Button>
@@ -1587,31 +1602,37 @@ export default function AdminStoriesPage() {
                         </div>
                       </div>
                     )}
-                    <div className="mt-auto flex flex-wrap gap-2 pt-4">
-                      <Button variant="outline" onClick={() => setModalStory(story)} className="min-h-11">
-                        <Pencil className="h-4 w-4" />
-                        Изменить
+                  </div>
+                  <div className="col-span-2 flex flex-wrap gap-2 px-3 pb-3 sm:col-span-1 sm:col-start-2 sm:px-4 sm:pb-4">
+                    <Button variant="outline" onClick={() => setModalStory(story)} className="min-h-11">
+                      <Pencil className="h-4 w-4" />
+                      Изменить
+                    </Button>
+                    {canPrepareVideo && !preparedWebCopy && (
+                      <Button variant="outline" onClick={() => prepareStoryVideo(story)} disabled={Boolean(mediaBusy)} className="min-h-11">
+                        {mediaBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                        Облегчить видео
                       </Button>
-                      {canPrepareVideo && !preparedWebCopy && (
-                        <Button variant="outline" onClick={() => prepareStoryVideo(story)} disabled={Boolean(mediaBusy)} className="min-h-11">
-                          {mediaBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                          Облегчить видео
-                        </Button>
-                      )}
-                      <Button variant="outline" onClick={() => toggleActive(story)} className="min-h-11">
-                        {story.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        {story.active ? "Скрыть" : "Показать"}
+                    )}
+                    {canPrepareVideo && !story.posterUrl && (
+                      <Button variant="outline" onClick={() => makeStoryPoster(story)} disabled={Boolean(mediaBusy) || posterBusyId === story.id} className="min-h-11">
+                        {posterBusyId === story.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImageIcon className="h-4 w-4" />}
+                        Сделать обложку
                       </Button>
-                      <Button asChild variant="outline" className="min-h-11">
-                        <Link href={storyPublicHref(story.id)} target="_blank">
-                          <ArrowUpRight className="h-4 w-4" />
-                          На сайте
-                        </Link>
-                      </Button>
-                      <Button variant="outline" onClick={() => setDeleteCandidate(story)} className="min-h-11 text-destructive hover:text-destructive" aria-label={`Удалить «${story.title}»`} title="Удалить">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    )}
+                    <Button variant="outline" onClick={() => toggleActive(story)} className="min-h-11">
+                      {story.active ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {story.active ? "Скрыть" : "Показать"}
+                    </Button>
+                    <Button asChild variant="outline" className="min-h-11">
+                      <Link href={storyPublicHref(story.id)} target="_blank">
+                        <ArrowUpRight className="h-4 w-4" />
+                        На сайте
+                      </Link>
+                    </Button>
+                    <Button variant="outline" onClick={() => setDeleteCandidate(story)} className="min-h-11 text-destructive hover:text-destructive" aria-label={`Удалить «${story.title}»`} title="Удалить">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </article>

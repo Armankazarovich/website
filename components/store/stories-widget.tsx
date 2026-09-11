@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight, CirclePlay, Eye, Pause, Play, Radio, Sparkles, Volume2, VolumeX, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, CirclePlay, Loader2, Pause, Play, Radio, Volume2, VolumeX, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFloatingChromeHidden } from "@/lib/use-floating-ui";
 import { useAdminOverlayGuard } from "@/lib/use-admin-overlay-guard";
@@ -42,8 +42,11 @@ type StoryRelation = {
 
 const PHOTO_STORY_MS = 6500;
 const STORIES_WIDGET_HIDDEN_KEY = "pilorus:stories-widget-hidden";
-const STORY_PREVIEW_VIDEO_DELAY_MS = 1800;
-const STORY_PREVIEW_VIDEO_MAX_BYTES = 12 * 1024 * 1024;
+// Замечание Армана 11.09.2026: превью должно крутить ролик, а не показывать картинку.
+// Короткая пауза отсекает быстрое перелистывание; 24 МБ — та же граница, до которой сайт
+// отдаёт видео без облегчения. Облегчённая копия (-web.mp4) лёгкая по потоку при любой длине.
+const STORY_PREVIEW_VIDEO_DELAY_MS = 400;
+const STORY_PREVIEW_VIDEO_MAX_BYTES = 24 * 1024 * 1024;
 const STORY_VIDEO_FALLBACK_POSTER = "";
 
 function deriveEntity(pathname: string) {
@@ -224,7 +227,8 @@ function StoryMedia({
           signal: controller.signal,
         });
         const bytes = Number(response.headers.get("content-length") || 0);
-        if (response.ok && bytes > 0 && bytes <= STORY_PREVIEW_VIDEO_MAX_BYTES) {
+        const lightWebCopy = /-web\.mp4(?:[?#]|$)/i.test(story.mediaUrl || "");
+        if (response.ok && bytes > 0 && (bytes <= STORY_PREVIEW_VIDEO_MAX_BYTES || lightWebCopy)) {
           setApprovedPreviewKey(keyAtScheduleTime);
         }
       } catch {
@@ -314,8 +318,10 @@ function StoryMedia({
           onEnded={expanded ? onVideoEnded : undefined}
         />
         {videoLoading && !videoError && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/55 text-primary">
-            <CirclePlay className="h-12 w-12 animate-pulse" />
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-background/80 text-primary">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </span>
           </div>
         )}
         {expanded && videoError && (
@@ -355,19 +361,9 @@ function StoryMedia({
     );
   }
 
-  if (isVideoStory(story)) {
-    return (
-      <div ref={setPreviewHost} className="flex h-full w-full items-center justify-center bg-card text-primary">
-        <CirclePlay className="h-10 w-10" />
-      </div>
-    );
-  }
-
-  return (
-    <div ref={setPreviewHost} className="flex h-full w-full items-center justify-center bg-card text-primary">
-      <Sparkles className="h-10 w-10" />
-    </div>
-  );
+  // Замечание Армана 11.09.2026: белая карточка со значком неприятна. Обложку из кадра сайт теперь
+  // делает сам; пока её нет — спокойный фон, через полсекунды начинает крутиться сам ролик.
+  return <div ref={setPreviewHost} className="h-full w-full bg-primary/10" />;
 }
 
 export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
@@ -650,7 +646,6 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
           className="group relative h-[214px] w-full overflow-hidden rounded-2xl border border-primary/28 bg-card shadow-2xl shadow-black/25 transition-colors hover:border-primary/58"
         >
           <StoryMedia story={current} expanded={false} allowPreviewVideo={!isCatalogPath} />
-          <span className="absolute inset-0 bg-background/68" />
           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border bg-card px-2 py-1 text-[10px] font-semibold text-foreground">
             {current.type === "LIVE" ? <Radio className="h-3 w-3" /> : <CirclePlay className="h-3 w-3" />}
             {current.type === "LIVE" ? "Онлайн" : "Видео"}
@@ -708,7 +703,6 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
           title={current.title}
         >
           <StoryMedia story={current} expanded={false} allowPreviewVideo={!isCatalogPath} />
-          <span className="absolute inset-0 bg-background/35" />
           <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/95 px-1.5 py-0.5 text-[9px] font-bold uppercase leading-none text-foreground">
             {current.type === "LIVE" ? <Radio className="h-2.5 w-2.5 text-primary" /> : <CirclePlay className="h-2.5 w-2.5 text-primary" />}
             {compactLabel}
@@ -790,17 +784,9 @@ export function StoriesWidget({ initialStories }: { initialStories: Story[] }) {
                 <h2 className="mt-2 truncate text-sm font-semibold">{current.title}</h2>
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    hideWidget();
-                  }}
-                  className="flex h-10 w-10 items-center justify-center rounded-xl border border-border text-muted-foreground transition-colors hover:text-foreground"
-                  aria-label="Скрыть сторис"
-                  title="Скрыть сторис"
-                >
-                  <Eye className="h-4 w-4" />
-                </button>
+                {/* Замечание Армана 11.09.2026: «глаз» в окне путал — значок «смотреть» прятал
+                    сторис со всего сайта. В окне остаётся только «Закрыть»; спрятать виджет
+                    можно стрелкой на самом мини-видео, вернуть — кнопкой «Показать сторис». */}
                 <button
                   type="button"
                   onClick={closeStory}

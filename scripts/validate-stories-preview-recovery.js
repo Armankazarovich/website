@@ -29,7 +29,7 @@ const baseUrl = (process.env.BROWSER_BASE_URL || "http://localhost:3111").replac
 const testPath = process.env.STORIES_TEST_PATH || "/product/vagonka-lipa";
 
 // Real, already-existing local files — no fixtures are written.
-const LIGHT_VIDEO = "/aray/orb-v2.mp4"; // ~386 KB, under the 12 MB preview threshold
+const LIGHT_VIDEO = "/aray/orb-v2.mp4"; // ~386 KB, under the 24 MiB preview threshold
 const HEAVY_VIDEO = "/images/production/hero-video.mp4"; // ~69 MB, over the threshold
 const HEAD_FAIL_VIDEO = "/images/production/does-not-exist-preview-recovery-check.mp4"; // genuine 404
 
@@ -272,7 +272,7 @@ async function main() {
     check("Test fetch shim is active (no DB writes used)", shimActive, "window.fetch was not patched before app scripts ran.");
 
     let lightApprovedVideoPresent = false;
-    for (let i = 0; i < 40; i += 1) { // poll up to ~4s past STORY_PREVIEW_VIDEO_DELAY_MS (1800ms)
+    for (let i = 0; i < 40; i += 1) { // poll up to ~4s past STORY_PREVIEW_VIDEO_DELAY_MS (400ms)
       lightApprovedVideoPresent = await client.evaluate(`Boolean(document.querySelector('[data-store-stories-card] video'))`);
       if (lightApprovedVideoPresent) break;
       await sleep(100);
@@ -309,7 +309,7 @@ async function main() {
     check("Closed widget never issues GET/Range for the heavy story", heavyGets.length === 0, `GET/Range requests observed for ${HEAVY_VIDEO}: ${JSON.stringify(heavyGets)}`);
 
     const heavyVideoStillMounted = await client.evaluate(`Boolean(document.querySelector('[data-store-stories-card] video'))`);
-    check("Heavy story stays on its poster in the closed widget", !heavyVideoStillMounted, "Heavy story's <video> mounted despite exceeding the 12MB preview threshold.");
+    check("Heavy story stays on its poster in the closed widget", !heavyVideoStillMounted, "Heavy story's <video> mounted despite exceeding the 24 MiB preview threshold.");
 
     screenshots.storyB = await client.send("Page.captureScreenshot", { format: "png" });
 

@@ -21,7 +21,7 @@ const {
   publishStoryMedia,
   rollbackStoryMedia,
 } = require("../lib/story-media-publish.cjs");
-const { runStoryMediaJob } = require("../lib/story-media-worker.cjs");
+const { createStoryPosterFile, runStoryMediaJob } = require("../lib/story-media-worker.cjs");
 
 const {
   STORY_MEDIA_OPTIMIZE_THRESHOLD_BYTES,
@@ -448,6 +448,92 @@ check("failed processing keeps the original and can be retried", () => {
     });
     assert.equal(retried.status, "QUEUED");
     assert.equal(retried.canRetry, false);
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+// Замечание Армана 11.09.2026: вместо белой карточки со значком — кадр из ролика.
+function makeSmallStoryFixture(filePath) {
+  const fixture = spawnSync(
+    ffmpegPath,
+    [
+      "-y", "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=360x640:rate=30", "-t", "2",
+      "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-movflags", "+faststart", filePath,
+    ],
+    { encoding: "utf8", windowsHide: true, timeout: 60_000 },
+  );
+  assert.equal(fixture.status, 0, fixture.stderr || "fixture generation failed");
+}
+
+check("small MP4 upload stays byte-for-byte and gets a cover from its own frame", () => {
+  assert.ok(ffmpegPath && fs.existsSync(ffmpegPath), "bundled FFmpeg is missing");
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "pilorus-story-cover-"));
+  const publicRoot = path.join(tempRoot, "public", "images", "stories");
+  try {
+    fs.mkdirSync(publicRoot, { recursive: true });
+    const plan = planStoryVideoUpload({
+      uploadStem: "upload-small-cover",
+      extension: "mp4",
+      mime: "video/mp4",
+      fileSize: 200_000,
+      publicRoot,
+    });
+    assert.equal(plan.optimize, false);
+    makeSmallStoryFixture(plan.sourcePath);
+    const before = fs.readFileSync(plan.sourcePath);
+    const payload = completeStoryVideoUpload(plan, { ffmpegPath });
+    assert.equal(payload.status, "READY");
+    assert.equal(payload.optimized, false);
+    assert.equal(payload.url, "/images/stories/upload-small-cover.mp4");
+    assert.equal(payload.posterUrl, "/images/stories/upload-small-cover-poster.jpg");
+    const posterPath = path.join(publicRoot, "upload-small-cover-poster.jpg");
+    assert.ok(fs.existsSync(posterPath) && fs.statSync(posterPath).size >= 1_000, "cover must be a real frame");
+    assert.equal(fs.existsSync(path.join(publicRoot, "upload-small-cover-poster.processing.jpg")), false);
+    assert.ok(before.equals(fs.readFileSync(plan.sourcePath)), "video must stay byte-for-byte the same");
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+check("a broken small video still uploads; only the cover is skipped", () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "pilorus-story-cover-broken-"));
+  const publicRoot = path.join(tempRoot, "public", "images", "stories");
+  try {
+    fs.mkdirSync(publicRoot, { recursive: true });
+    const plan = planStoryVideoUpload({
+      uploadStem: "upload-broken-cover",
+      extension: "mp4",
+      mime: "video/mp4",
+      fileSize: 16,
+      publicRoot,
+    });
+    fs.writeFileSync(plan.sourcePath, "not a video", "utf8");
+    const payload = completeStoryVideoUpload(plan, { ffmpegPath });
+    assert.equal(payload.status, "READY");
+    assert.equal(payload.url, "/images/stories/upload-broken-cover.mp4");
+    assert.equal(payload.posterUrl, null);
+    assert.deepEqual(fs.readdirSync(publicRoot).sort(), ["upload-broken-cover.mp4"], "no half-made cover is left behind");
+  } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+check("cover for an existing story is written next to its video, never half-made", () => {
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "pilorus-story-cover-existing-"));
+  try {
+    const sourcePath = path.join(tempRoot, "story.mp4");
+    makeSmallStoryFixture(sourcePath);
+    const posterPath = path.join(tempRoot, "story-poster-1.jpg");
+    assert.equal(createStoryPosterFile({ ffmpegPath, sourcePath, posterPath }), posterPath);
+    assert.ok(fs.statSync(posterPath).size >= 1_000, "cover must be a real frame");
+    assert.deepEqual(fs.readdirSync(tempRoot).sort(), ["story-poster-1.jpg", "story.mp4"]);
+    assert.throws(() => createStoryPosterFile({
+      ffmpegPath,
+      sourcePath: path.join(tempRoot, "missing.mp4"),
+      posterPath: path.join(tempRoot, "missing-poster.jpg"),
+    }));
+    assert.deepEqual(fs.readdirSync(tempRoot).sort(), ["story-poster-1.jpg", "story.mp4"], "failed cover leaves nothing behind");
   } finally {
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }

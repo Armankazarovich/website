@@ -20,19 +20,19 @@ const checks = [
       '"validate-store-stories"',
       '"validate-browser-stories-responsive"',
       '"validate-stories-preview-recovery"',
-      'version: "0.11.0-beta.1"',
+      'version: "1.0.0"',
       '"test-story-media-pipeline"',
-      '"docs/evidence/stories/MODULE-PASSPORT-0.11.0.md"',
+      '"docs/evidence/stories/MODULE-PASSPORT-1.0.0.md"',
       '"/api/admin/stories/reorder"',
     ],
   },
   {
-    file: "docs/evidence/stories/MODULE-PASSPORT-0.11.0.md",
+    file: "docs/evidence/stories/MODULE-PASSPORT-1.0.0.md",
     label: "stories module has a versioned passport and drift lock",
     patterns: [
       "marketing.store-stories",
-      "0.11.0-beta.1",
-      "LOCAL CANDIDATE",
+      "1.0.0",
+      "Статус:",
       "Оригинал никогда не перезаписывается",
       "условная публикация",
       "Двухуровневый откат",
@@ -44,7 +44,7 @@ const checks = [
   {
     file: "lib/story-media-worker.cjs",
     label: "media worker validates, publishes and preserves rollback evidence",
-    patterns: ["buildStoryFfmpegArgs", "inspectOutput", "PUBLISHING", "rollback", "runStoryMediaPublish"],
+    patterns: ["buildStoryFfmpegArgs", "inspectOutput", "PUBLISHING", "rollback", "runStoryMediaPublish", "createStoryPosterFile"],
   },
   {
     file: "lib/story-media-jobs.cjs",
@@ -56,6 +56,17 @@ const checks = [
       "findLatestStoryMediaJobForStory",
       "canRollback",
     ],
+  },
+  {
+    // Замечание Армана 11.09.2026: вместо белой карточки со значком — кадр из ролика.
+    file: "lib/story-media-upload.cjs",
+    label: "short video uploads get a cover from their own frame without re-encoding",
+    patterns: ["createStoryPosterFile", "-poster.jpg", "posterUrl,"],
+  },
+  {
+    file: "app/api/admin/stories/[id]/media/route.ts",
+    label: "manager adds a frame cover to an old story; a manager cover is never replaced",
+    patterns: ['action === "poster"', "createStoryPosterFile", 'posterUrl: ""', "Обложка готова."],
   },
   {
     file: "prisma/schema.prisma",
@@ -185,7 +196,11 @@ const checks = [
       "Библиотека",
       "Ссылка для публикации",
       "Связанные товары",
-      "автошаблон",
+      "подставятся из товара",
+      "О чём сторис",
+      "Кнопка под видео",
+      "Сделать обложку",
+      "makeStoryPoster",
     ],
   },
   {
@@ -224,6 +239,7 @@ const checks = [
       "Escape",
       'role="dialog"',
       "onTouchStart",
+      "lightWebCopy",
     ],
   },
   {
@@ -260,7 +276,7 @@ const checks = [
 
 const requiredFiles = [
   "lib/aray-module-registry.ts",
-  "docs/evidence/stories/MODULE-PASSPORT-0.11.0.md",
+  "docs/evidence/stories/MODULE-PASSPORT-1.0.0.md",
   "app/api/admin/stories/route.ts",
   "app/api/admin/stories/[id]/route.ts",
   "app/api/admin/stories/[id]/media/route.ts",
@@ -278,6 +294,7 @@ const requiredFiles = [
   "lib/story-media-policy.cjs",
   "lib/story-media-publish.cjs",
   "lib/story-media-worker.cjs",
+  "lib/story-media-upload.cjs",
 ];
 
 const failures = [];

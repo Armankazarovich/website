@@ -12,6 +12,7 @@ import {
   Eye,
   Film,
   Layers3,
+  Loader2,
   MessageCircle,
   Pause,
   Play,
@@ -192,8 +193,10 @@ function StoryVisual({
           onEnded={active ? onVideoEnded : undefined}
         />
         {videoLoading && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-background/55 text-primary">
-            <CirclePlay className="h-12 w-12 animate-pulse" />
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-background/80 text-primary">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </span>
           </div>
         )}
       </div>
@@ -204,19 +207,22 @@ function StoryVisual({
     return <img src={visual} alt={story.title} className="h-full w-full bg-background object-cover" loading="lazy" decoding="async" />;
   }
 
-  if (isVideo(story.type)) {
+  // Замечание Армана 11.09.2026: вместо белой карточки со значком — кадр из самого ролика
+  // (обложку сайт теперь делает сам, это запасной путь); без видео — спокойный фон.
+  if (isVideo(story.type) && story.mediaUrl && canInlineVideo(story.mediaUrl)) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-card text-primary">
-        <CirclePlay className="h-10 w-10" />
-      </div>
+      <video
+        src={`${story.mediaUrl}#t=0.1`}
+        className="pointer-events-none h-full w-full bg-primary/10 object-cover"
+        muted
+        playsInline
+        preload="metadata"
+        aria-hidden="true"
+      />
     );
   }
 
-  return (
-    <div className="flex h-full w-full items-center justify-center bg-card text-primary">
-      <Sparkles className="h-10 w-10" />
-    </div>
-  );
+  return <div className="h-full w-full bg-primary/10" />;
 }
 
 function StoryBadge({ type }: { type: StoreStoryKind }) {

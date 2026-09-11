@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import Link from "next/link";
+import { signIn, useSession } from "next-auth/react";
 import {
   buildArayBusinessMessengerText,
   type ArayBusinessMessageKind,
@@ -18,6 +19,7 @@ import {
   FileText,
   Heart,
   ImageIcon,
+  LogIn,
   MessageCircle,
   Paperclip,
   Send,
@@ -276,6 +278,11 @@ export function StoryActionDrawer({
   const [messageKind, setMessageKind] = useState<StoryMessageKind>("question");
   const [rating, setRating] = useState(5);
   const [attachments, setAttachments] = useState<StoryAttachment[]>([]);
+  // Совет Армана 11.09.2026: вошедшего покупателя сайт узнаёт сам — имя и контакт не спрашиваем;
+  // гость пишет телефон и может войти, чтобы его узнали.
+  const { data: session } = useSession();
+  const signedInName = session?.user?.name || session?.user?.email || "";
+  const [editContact, setEditContact] = useState(false);
   const [commentOpen, setCommentOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [messageStatus, setMessageStatus] = useState<"idle" | "done" | "error">("idle");
@@ -445,7 +452,9 @@ export function StoryActionDrawer({
           rating,
           pageUrl: typeof window === "undefined" ? null : window.location.href,
           attachments: attachmentMeta,
-          ...contactPayload(contact),
+          ...(signedInName && !editContact && !contact.trim()
+            ? { name: session?.user?.name || undefined, email: session?.user?.email || undefined }
+            : contactPayload(contact)),
         }),
       });
 
@@ -718,16 +727,44 @@ export function StoryActionDrawer({
                 {activeKindOption.helper}
               </p>
 
-              <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-                <input
-                  value={contact}
-                  onChange={(event) => setContact(event.target.value)}
-                  placeholder="Телефон, имя или email"
-                  aria-label="Как с вами связаться: телефон, имя или email"
-                  className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/75 focus:border-primary/55"
-                />
+              <div className="grid gap-2">
+                {signedInName && !editContact ? (
+                  <div className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 text-sm">
+                    <span className="min-w-0 truncate">
+                      Ответ придёт вам: <span className="font-semibold">{signedInName}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setEditContact(true)}
+                      className="min-h-10 shrink-0 px-1 text-xs font-semibold text-primary hover:underline"
+                    >
+                      изменить
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-1">
+                    <input
+                      value={contact}
+                      onChange={(event) => setContact(event.target.value)}
+                      placeholder="Телефон, имя или email"
+                      aria-label="Как с вами связаться: телефон, имя или email"
+                      className="min-h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none transition-colors placeholder:text-muted-foreground/75 focus:border-primary/55"
+                    />
+                    {!signedInName && (
+                      <button
+                        type="button"
+                        onClick={() => signIn(undefined, { callbackUrl: typeof window === "undefined" ? "/" : window.location.href })}
+                        className="inline-flex min-h-10 items-center gap-1.5 self-start text-xs font-semibold text-primary hover:underline"
+                      >
+                        <LogIn className="h-3.5 w-3.5" />
+                        Войти — и мы вас узнаем
+                      </button>
+                    )}
+                  </div>
+                )}
                 {messageKind === "review" && (
-                  <div className="flex min-h-10 items-center justify-center gap-1 rounded-xl border border-border bg-background px-2">
+                  <div className="order-first flex min-h-11 items-center gap-1 rounded-xl border border-border bg-background px-3">
+                    <span className="mr-2 text-xs font-semibold text-muted-foreground">Оценка</span>
                     {[1, 2, 3, 4, 5].map((value) => (
                       <button
                         key={value}

@@ -17,6 +17,7 @@ const {
   rollbackStoryMediaJob,
 } = require("@/lib/story-media-jobs.cjs");
 const { shouldOptimizeStoryVideo } = require("@/lib/story-media-policy.cjs");
+const { createStoryPosterFile } = require("@/lib/story-media-worker.cjs");
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -69,6 +70,41 @@ export async function POST(req: Request, { params }: { params: { id: string } })
       return NextResponse.json(job);
     }
 
+    if (action === "poster") {
+      // «Сделать обложку» (замечание Армана 11.09.2026): кадр из видео для сторис без обложки.
+      // Записывается только пустая обложка — свою обложку менеджера не трогаем никогда.
+      const story = await prisma.storeStory.findFirst({
+        where: { id: params.id, tenantId },
+        select: { id: true, type: true, mediaUrl: true, posterUrl: true },
+      });
+      if (!story) return NextResponse.json({ error: "Сторис не найдена" }, { status: 404 });
+      if (story.posterUrl) {
+        return NextResponse.json({ posterUrl: story.posterUrl, created: false, message: "Обложка уже есть." });
+      }
+      if ((story.type !== "VIDEO" && story.type !== "LIVE") || !story.mediaUrl) {
+        return NextResponse.json({ error: "У этой сторис нет видео для обложки" }, { status: 400 });
+      }
+      const sourcePath = resolveStoryMediaSourceFromUrl(story.mediaUrl);
+      if (!fs.existsSync(sourcePath) || !fs.statSync(sourcePath).isFile()) {
+        return NextResponse.json({ error: "Видео не найдено. Сторис не изменилась." }, { status: 404 });
+      }
+      const posterName = `${path.basename(sourcePath, path.extname(sourcePath))}-poster-${Date.now()}.jpg`;
+      const posterPath = path.join(path.dirname(sourcePath), posterName);
+      createStoryPosterFile({ ffmpegPath: require("ffmpeg-static"), sourcePath, posterPath });
+      const posterUrl = story.mediaUrl.replace(/[^/]+$/, posterName);
+      const updated = await prisma.storeStory.updateMany({
+        where: { id: story.id, tenantId, OR: [{ posterUrl: null }, { posterUrl: "" }] },
+        data: { posterUrl },
+      });
+      if (updated.count === 0) {
+        // Обложку успели поставить параллельно — лишний кадр не оставляем.
+        fs.rmSync(posterPath, { force: true });
+        return NextResponse.json({ posterUrl: null, created: false, message: "Обложку уже поставили." });
+      }
+      revalidateStorySurfaces();
+      return NextResponse.json({ posterUrl, created: true, message: "Обложка готова." });
+    }
+
     if (action !== "optimize") {
       return NextResponse.json({ error: "Неизвестное действие с видео" }, { status: 400 });
     }
@@ -115,7 +151,11 @@ export async function POST(req: Request, { params }: { params: { id: string } })
   } catch (error) {
     console.error("[stories-media] protected action failed", error);
     return NextResponse.json(
-      { error: "Не получилось облегчить видео. Сторис не изменилась — попробуйте ещё раз." },
+      {
+        error: action === "poster"
+          ? "Не получилось сделать обложку. Сторис не изменилась — попробуйте ещё раз."
+          : "Не получилось облегчить видео. Сторис не изменилась — попробуйте ещё раз.",
+      },
       { status: 409 },
     );
   }
